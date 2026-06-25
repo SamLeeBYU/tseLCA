@@ -1,0 +1,27 @@
+Package: teLCA
+Type: Package
+Title: Three-Step Estimation for Latent Class Analysis
+Version: 0.1.0
+Authors@R: person("Sam", "Lee", email = "samlee@arizona.edu", role = c("aut", "cre"))
+Description: Implements BCH and ML three-step estimators for latent class
+    analysis (LCA) with covariates and distal outcomes, following Bakk, Tekle &
+    Vermunt (2013), Bakk & Kuha (2018), and Bakk, Pohle & Kuha (2025). The
+    package uses multilevLCA for Step-1 measurement model estimation and
+    provides correct sandwich variance estimation that propagates measurement
+    uncertainty from the first-step LCA through classification-error correction
+    in the final step. Supports polytomous items, missing data via FIML, and
+    Gaussian, Poisson, and binomial distal outcome families. A data-generating
+    process replicating the Bakk & Kuha (2018) simulation study is included.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 4.1.0)
+Imports:
+    multilevLCA
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
