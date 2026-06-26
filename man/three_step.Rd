@@ -25,6 +25,7 @@ three_step(
   use.bch = FALSE,
   em.maxIter = 200L,
   get.twostep.vcov = FALSE,
+  rebase = "C1",
   family = "gaussian",
   correct.spec = FALSE,
   verbose = FALSE
@@ -73,6 +74,11 @@ three_step(
 \code{\link[=fitZ_from_multiLCA]{fitZ_from_multiLCA()}} to obtain multilevLCA's corrected standard errors
 for the two-step gamma estimates and store them in \verb{$two_step_vcov}.
 Requires \pkg{multilevLCA}. Default \code{FALSE}.}
+
+\item{rebase}{Character (e.g. \code{"C1"}, \code{"C2"}) or integer specifying which
+latent class to use as the reference category in the multinomial logit
+for Steps 2 and 3. The measurement model is permuted so this class
+becomes column 1 before any structural estimation. Default \code{"C1"}.}
 
 \item{family}{One of \code{"gaussian"} (default), \code{"poisson"}, \code{"binomial"}.}
 

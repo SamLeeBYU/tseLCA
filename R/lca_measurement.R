@@ -94,6 +94,10 @@ lca_indiv_varmat <- function(mY, T, pi, phi) {
 #' @param incomplete Logical. FIML for partially missing indicators.
 #' @param maxIter.fitZ Maximum BFGS-EM iterations for `fitZ_from_fit0()`.
 #' @param include.intercept Logical. Prepend intercept to covariate design matrix.
+#' @param rebase Character or integer specifying the reference latent class.
+#'   Use `"C1"`, `"C2"`, etc. or an integer index. Default `"C1"`. The
+#'   measurement model is permuted so this class becomes column 1, making it
+#'   the reference for all downstream multinomial logit parameterisations.
 #' @param verbose Logical. Print progress messages. Default `FALSE`.
 #'
 #' @return A list with `$fit0` (multilevLCA measurement model) and `$fitZ`
@@ -114,6 +118,7 @@ lca_step1 <- function(
   incomplete = FALSE,
   maxIter.fitZ = 200L,
   include.intercept = TRUE,
+  rebase = "C1",
   verbose = FALSE
 ) {
   run_measurement_fit <- function(extra_args = list()) {
@@ -197,6 +202,12 @@ lca_step1 <- function(
     NULL
   }
 
+  # Permute classes so the desired reference is column 1
+  if (!is.null(fit0)) {
+    ref_idx <- parse_rebase(rebase, n_classes)
+    fit0 <- permute_fit0_classes(fit0, ref_idx)
+  }
+
   fitZ <- if (use.two.step && !is.null(Zp.names) && !is.null(fit0)) {
     fitZ_from_fit0(
       fit0 = fit0,
@@ -207,6 +218,7 @@ lca_step1 <- function(
       maxIter = maxIter.fitZ,
       incomplete = incomplete,
       include.intercept = include.intercept,
+      rebase = rebase,
       verbose = verbose
     )
   } else {
@@ -232,6 +244,10 @@ lca_step1 <- function(
 #' @param maxIter Maximum EM iterations.
 #' @param incomplete Logical.
 #' @param include.intercept Logical.
+#' @param rebase Character or integer. Reference class for the multinomial logit
+#'   parameterisation (e.g. `"C1"`, `"C2"`, or an integer). Default `"C1"`.
+#'   Must match the `rebase` used in `lca_step1()` so class column ordering
+#'   is consistent.
 #' @param starting_val Optional Q x (T-1) starting value matrix for `mGamma`.
 #' @param verbose Logical. Print convergence messages. Default `FALSE`.
 #'
@@ -247,6 +263,7 @@ fitZ_from_fit0 <- function(
   maxIter = 200L,
   incomplete = FALSE,
   include.intercept = TRUE,
+  rebase = "C1",
   starting_val = NULL,
   verbose = FALSE
 ) {
@@ -365,7 +382,11 @@ fitZ_from_fit0 <- function(
   vOmega <- colMeans(pi_final)
 
   rownames(gamma) <- colnames(mZ)
-  colnames(gamma) <- paste0("C", seq_len(iT - 1L) + 1L)
+  # Column names reflect the non-reference classes
+  # (all classes except the reference, in ascending order)
+  ref_idx <- parse_rebase(rebase, iT)
+  non_ref_classes <- seq_len(iT)[-ref_idx]
+  colnames(gamma) <- paste0("C", non_ref_classes)
 
   list(
     mGamma = gamma,

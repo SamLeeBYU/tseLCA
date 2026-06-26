@@ -19,6 +19,7 @@ lca_step1(
   incomplete = FALSE,
   maxIter.fitZ = 200L,
   include.intercept = TRUE,
+  rebase = "C1",
   verbose = FALSE
 )
 }
@@ -52,6 +53,11 @@ only compute \code{fitZ}.}
 \item{maxIter.fitZ}{Maximum BFGS-EM iterations for \code{fitZ_from_fit0()}.}
 
 \item{include.intercept}{Logical. Prepend intercept to covariate design matrix.}
+
+\item{rebase}{Character or integer specifying the reference latent class.
+Use \code{"C1"}, \code{"C2"}, etc. or an integer index. Default \code{"C1"}. The
+measurement model is permuted so this class becomes column 1, making it
+the reference for all downstream multinomial logit parameterisations.}
 
 \item{verbose}{Logical. Print progress messages. Default \code{FALSE}.}
 }

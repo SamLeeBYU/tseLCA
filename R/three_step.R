@@ -1272,6 +1272,10 @@ lca_vcov_distal <- function(
 #'   [teLCA::fitZ_from_multiLCA()] to obtain multilevLCA's corrected standard errors
 #'   for the two-step gamma estimates and store them in `$two_step_vcov`.
 #'   Requires \pkg{multilevLCA}. Default `FALSE`.
+#' @param rebase Character (e.g. `"C1"`, `"C2"`) or integer specifying which
+#'   latent class to use as the reference category in the multinomial logit
+#'   for Steps 2 and 3. The measurement model is permuted so this class
+#'   becomes column 1 before any structural estimation. Default `"C1"`.
 #' @param family One of `"gaussian"` (default), `"poisson"`, `"binomial"`.
 #' @param correct.spec Logical. Use model-robust (outer-product) Hessian.
 #' @param verbose Logical. Print progress messages.
@@ -1314,13 +1318,20 @@ three_step <- function(
   use.bch = FALSE,
   em.maxIter = 200L,
   get.twostep.vcov = FALSE,
+  rebase = "C1",
   family = "gaussian",
   correct.spec = FALSE,
   verbose = FALSE
 ) {
   # -- Step 1: measurement model -----------------------------------------------
   if (!is.null(step1)) {
-    s1 <- step1
+    # Normalise: accept raw lca_step1() list or any teLCA object
+    s1 <- if (inherits(step1, "teLCA")) step1$measurement_model else step1
+    # Apply rebase permutation so the desired reference class is column 1.
+    # Invalidate any pre-existing fitZ -- it was estimated under the old ordering.
+    ref_idx <- parse_rebase(rebase, n_classes)
+    s1$fit0 <- permute_fit0_classes(s1$fit0, ref_idx)
+    s1$fitZ <- NULL
   } else {
     s1 <- lca_step1(
       data,
@@ -1335,6 +1346,7 @@ three_step <- function(
       get.twostep.vcov,
       incomplete = incomplete,
       include.intercept = include.intercept,
+      rebase = rebase,
       verbose = verbose
     )
   }
@@ -1353,6 +1365,7 @@ three_step <- function(
       maxIter = em.maxIter,
       incomplete = incomplete,
       include.intercept = include.intercept,
+      rebase = rebase,
       verbose = verbose
     )
   }
@@ -1565,7 +1578,9 @@ three_step <- function(
     }
 
     coefs <- matrix(s3$res$par, ncol = T - 1)
-    colnames(coefs) <- paste0("C", seq_len(T - 1) + 1L)
+    ref_idx <- parse_rebase(rebase, T)
+    non_ref_classes <- seq_len(T)[-ref_idx]
+    colnames(coefs) <- paste0("C", non_ref_classes)
     rownames(coefs) <- c("Intercept", Zp.names)
 
     # -- Variance -----------------------------------------------------------------
@@ -1634,7 +1649,7 @@ three_step <- function(
       raw <- fZ_ml$raw_fit
       param_names <- as.vector(outer(
         c("Intercept", Zp.names),
-        paste0("C", seq_len(T - 1L) + 1L),
+        paste0("C", seq_len(T)[-parse_rebase(rebase, T)]),
         paste,
         sep = ":"
       ))

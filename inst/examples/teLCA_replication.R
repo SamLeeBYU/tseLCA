@@ -207,6 +207,37 @@ d.low.three_step.prop <- three_step(
 #Much better than the BCH approach
 summary(d.low.three_step.prop)
 
+###############################################################
+### choose different class as reference category in regression
+###############################################################
+
+#The default reference class for the multinomial logistic parameterization
+# in the three-step/two-step estimation procedure is class one ("C1")
+# however, this can be changed with the argument 'rebase'
+
+summary(d.three_step.simple) #C1 is reference
+
+d.three_step.simpleC2 <- three_step(
+  data = d,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3,
+  Zp.names = "Zp",
+  use.simple.cov = TRUE,
+  rebase = "C2"
+)
+summary(d.three_step.simpleC2)
+
+d.three_step.simpleC3 <- three_step(
+  data = d,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3,
+  Zp.names = "Zp",
+  use.simple.cov = TRUE,
+  rebase = "C3"
+)
+summary(d.three_step.simpleC3)
+
+
 ##############################################################
 ### pass in measurement model as argument
 ##############################################################

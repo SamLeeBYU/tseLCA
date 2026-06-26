@@ -13,6 +13,7 @@ fitZ_from_fit0(
   maxIter = 200L,
   incomplete = FALSE,
   include.intercept = TRUE,
+  rebase = "C1",
   starting_val = NULL,
   verbose = FALSE
 )
@@ -33,6 +34,11 @@ fitZ_from_fit0(
 \item{incomplete}{Logical.}
 
 \item{include.intercept}{Logical.}
+
+\item{rebase}{Character or integer. Reference class for the multinomial logit
+parameterisation (e.g. \code{"C1"}, \code{"C2"}, or an integer). Default \code{"C1"}.
+Must match the \code{rebase} used in \code{lca_step1()} so class column ordering
+is consistent.}
 
 \item{starting_val}{Optional Q x (T-1) starting value matrix for \code{mGamma}.}
 

@@ -172,3 +172,60 @@ clean_data <- function(
     keep_step3_Z0 = if (!is.null(Zo.name)) keep_step3_Z0 else integer(0L)
   )
 }
+
+
+#' Parse and validate the rebase argument
+#'
+#' @param rebase Character like "C2" or integer class index.
+#' @param T      Total number of classes.
+#' @return Integer class index (1-based) to use as reference.
+#' @keywords internal
+parse_rebase <- function(rebase, T) {
+  if (is.character(rebase)) {
+    if (!grepl("^C[0-9]+$", rebase)) {
+      stop(
+        sprintf(
+          '`rebase` must be "C1", "C2", ... "C%d" or an integer. Got: "%s".',
+          T,
+          rebase
+        ),
+        call. = FALSE
+      )
+    }
+    idx <- as.integer(sub("^C", "", rebase))
+  } else {
+    idx <- as.integer(rebase)
+  }
+  if (idx < 1L || idx > T) {
+    stop(
+      sprintf(
+        "`rebase` must be between 1 and %d. Got: %d.",
+        T,
+        idx
+      ),
+      call. = FALSE
+    )
+  }
+  idx
+}
+
+#' Permute class columns of a fit0 object so that class ref_idx is first
+#'
+#' Reorders columns of mPhi and vPi so that the desired reference class
+#' becomes column 1 before estimation. This ensures the multinomial logit
+#' is parameterised with the correct baseline from the start.
+#'
+#' @param fit0    Raw multilevLCA fit object (has $mPhi and $vPi).
+#' @param ref_idx Integer. Class index to move to position 1.
+#' @return fit0 with columns permuted.
+#' @keywords internal
+permute_fit0_classes <- function(fit0, ref_idx) {
+  if (ref_idx == 1L) {
+    return(fit0)
+  }
+  T <- ncol(fit0$mPhi)
+  ord <- c(ref_idx, seq_len(T)[-ref_idx])
+  fit0$mPhi <- fit0$mPhi[, ord, drop = FALSE]
+  fit0$vPi <- fit0$vPi[ord]
+  fit0
+}
