@@ -34,7 +34,7 @@ lca_indiv_varmat <- function(mY, T, pi, phi) {
   log_phi <- log(phi) # H x T
   log_1mphi <- log(1 - phi) # H x T
 
-  # N x T: log p(Y? | X=t)
+  # N x T: log p(Y | X=t)
   log_pY_t <- mY %*% log_phi + (1L - mY) %*% log_1mphi
 
   # log-sum-exp over classes
@@ -76,7 +76,7 @@ lca_indiv_varmat <- function(mY, T, pi, phi) {
 #'
 #' Estimates the latent class measurement model via \pkg{multilevLCA} and,
 #' optionally, fixes `mPhi` and estimates covariate effects (two-step
-#' initialisation) via `fitZ_from_fit0()`.
+#' initialization) via `fitZ_from_fit0()`.
 #'
 #' @param data A data.frame containing at minimum the indicator columns.
 #' @param Y.names Character vector of item column names.
@@ -97,11 +97,25 @@ lca_indiv_varmat <- function(mY, T, pi, phi) {
 #' @param rebase Character or integer specifying the reference latent class.
 #'   Use `"C1"`, `"C2"`, etc. or an integer index. Default `"C1"`. The
 #'   measurement model is permuted so this class becomes column 1, making it
-#'   the reference for all downstream multinomial logit parameterisations.
+#'   the reference for all downstream multinomial logit parameterizations.
 #' @param verbose Logical. Print progress messages. Default `FALSE`.
 #'
 #' @return A list with `$fit0` (multilevLCA measurement model) and `$fitZ`
 #'   (two-step covariate model from `fitZ_from_fit0`, or `NULL`).
+#' @examples
+#' \donttest{
+#' d <- generate_data(200, "high", "covariate", seed = 1)
+#'
+#' # Measurement model only
+#' s1 <- lca_step1(d, Y.names = paste0("Y", 1:6), n_classes = 3)
+#' s1$fit0$vPi    # estimated class prevalences
+#' s1$fit0$mPhi   # item-response probabilities
+#'
+#' # With two-step covariate initialization
+#' s1z <- lca_step1(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+#'                  Zp.names = "Zp", use.two.step = TRUE, verbose = TRUE)
+#' s1z$fitZ$mGamma   # two-step gamma estimates
+#' }
 #' @export
 lca_step1 <- function(
   data,
@@ -245,7 +259,7 @@ lca_step1 <- function(
 #' @param incomplete Logical.
 #' @param include.intercept Logical.
 #' @param rebase Character or integer. Reference class for the multinomial logit
-#'   parameterisation (e.g. `"C1"`, `"C2"`, or an integer). Default `"C1"`.
+#'   parameterization (e.g. `"C1"`, `"C2"`, or an integer). Default `"C1"`.
 #'   Must match the `rebase` used in `lca_step1()` so class column ordering
 #'   is consistent.
 #' @param starting_val Optional Q x (T-1) starting value matrix for `mGamma`.
@@ -253,6 +267,22 @@ lca_step1 <- function(
 #'
 #' @return A list with `$mGamma` (Q x (T-1)), `$mPhi`, `$vOmega`,
 #'   `$LLKSeries`, `$converged`, `$n_obs`.
+#' @examples
+#' \donttest{
+#' d  <- generate_data(200, "high", "covariate", seed = 1)
+#' s1 <- lca_step1(d, Y.names = paste0("Y", 1:6), n_classes = 3)
+#'
+#' # Estimate two-step gamma with mPhi fixed at Step-1 values
+#' fZ <- fitZ_from_fit0(
+#'   fit0     = s1$fit0,
+#'   data     = d,
+#'   Y.names  = paste0("Y", 1:6),
+#'   Zp.names = "Zp",
+#'   verbose  = TRUE
+#' )
+#' fZ$mGamma   # Q x (T-1) coefficient matrix
+#' fZ$converged
+#' }
 #' @export
 fitZ_from_fit0 <- function(
   fit0,
@@ -426,6 +456,25 @@ fitZ_from_fit0 <- function(
 #' @return A list with `$mGamma`, `$mPhi`, `$vOmega`, `$LLKSeries`, and
 #'   `$raw_fit` (the full multilevLCA output, including `$Varmat_cor` and
 #'   `$SEs_cor_gamma` if available).
+#' @examples
+#' \donttest{
+#' d <- generate_data(200, "high", "covariate", seed = 1)
+#'
+#' # Two-step estimation via multiLCA (fixedpars = 1)
+#' fZ_ml <- fitZ_from_multiLCA(
+#'   data                = d,
+#'   Y.names             = paste0("Y", 1:6),
+#'   n_classes           = 3,
+#'   Zp.names            = "Zp",
+#'   maxIter.measurement = 5000L,
+#'   measurement.tol     = 1e-8,
+#'   covariate.tol       = 1e-6,
+#'   iter.measurement    = 10L,
+#'   R2.threshold        = 0.70
+#' )
+#' fZ_ml$mGamma           # two-step estimates
+#' fZ_ml$raw_fit$Varmat_cor   # multilevLCA corrected vcov
+#' }
 #' @export
 fitZ_from_multiLCA <- function(
   data,
