@@ -787,11 +787,14 @@ lca_step3 <- function(
       H <- matrix(0, Q * (T - 1), Q * (T - 1))
       pi_ <- p.xz(beta)
       for (k in seq_len(T - 1)) {
-        for (l in seq_len(T - 1)) {
+        for (l in k:(T - 1)) {
+          # upper triangle only
           w_kl <- w.it_plus * pi_[, k + 1L] * ((k == l) - pi_[, l + 1L])
           idx_k <- ((k - 1) * Q + 1):(k * Q)
           idx_l <- ((l - 1) * Q + 1):(l * Q)
-          H[idx_k, idx_l] <- -t(Z_mat_cc) %*% (w_kl * Z_mat_cc)
+          block <- -t(Z_mat_cc) %*% (w_kl * Z_mat_cc)
+          H[idx_k, idx_l] <- block
+          if (k != l) H[idx_l, idx_k] <- t(block) # Clairaut: H symmetric
         }
       }
 
@@ -854,11 +857,14 @@ lca_step3 <- function(
 
         H <- matrix(0, Q * (T - 1), Q * (T - 1))
         for (k in seq_len(T - 1)) {
-          for (l in seq_len(T - 1)) {
+          for (l in k:(T - 1)) {
+            # upper triangle only
             w_kl <- gamma_plus * p_nr1[, k] * ((k == l) - p_nr1[, l])
             idx_k <- ((k - 1) * Q + 1):(k * Q)
             idx_l <- ((l - 1) * Q + 1):(l * Q)
-            H[idx_k, idx_l] <- -t(Z_mat_cc) %*% (w_kl * Z_mat_cc)
+            block <- -t(Z_mat_cc) %*% (w_kl * Z_mat_cc)
+            H[idx_k, idx_l] <- block
+            if (k != l) H[idx_l, idx_k] <- t(block) # Clairaut: H symmetric
           }
         }
 
@@ -1604,7 +1610,7 @@ three_step <- function(
     # -- Optional two-step vcov from multiLCA -------------------------------------
     # get.twostep.vcov = TRUE always calls fitZ_from_multiLCA() to get
     # multilevLCA's bias-corrected SEs for the two-step estimator.
-    # This is independent of whether fitZ_from_fit0 has already run — the two
+    # This is independent of whether fitZ_from_fit0 has already run -- the two
     # functions use different estimation strategies and produce different vcovs.
     two_step_vcov <- if (get.twostep.vcov) {
       fZ_ml <- fitZ_from_multiLCA(
