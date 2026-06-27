@@ -4,8 +4,9 @@ Calls
 [`multilevLCA::multiLCA`](https://rdrr.io/pkg/multilevLCA/man/multiLCA.html)
 with `fixedpars = 1` and `Z = Zp.names` to fit the two-step covariate
 model. This is the original multilevLCA approach and is used when
-`get.twostep.vcov = TRUE` in `teLCA::three_step()` to obtain
-multilevLCA's corrected standard errors for the two-step gamma
+`get.twostep.vcov = TRUE` in
+[`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+to obtain multilevLCA's corrected standard errors for the two-step gamma
 estimates.
 
 ## Usage
@@ -72,8 +73,9 @@ fitZ_from_multiLCA(
 - rebase:
 
   Character or integer. Reference class for column naming of `$mGamma`.
-  Must match the `rebase` used in `teLCA::three_step()` so coefficient
-  labels are consistent. Default `"C1"`.
+  Must match the `rebase` used in
+  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+  so coefficient labels are consistent. Default `"C1"`.
 
 - verbose:
 

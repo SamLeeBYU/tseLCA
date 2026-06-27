@@ -1,7 +1,7 @@
-# Individual-level BHHH Varmat matching teLCA's lca_em.cpp
+# Individual-level BHHH Varmat matching tseLCA's lca_em.cpp
 
 Computes the standard outer-product (BHHH) sandwich variance on the N
-individual observations, exactly replicating what LCA_teLCA returns in
+individual observations, exactly replicating what LCA_tseLCA returns in
 \$Varmat and \$mScore.
 
 ## Usage
