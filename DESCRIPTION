@@ -27,7 +27,7 @@ Suggests:
     rmarkdown
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
-URL: https://github.com/SamLeeBYU/tseLCA
+URL: https://SamLeeBYU.github.io/tseLCA/, https://samleebyu.github.io/tseLCA/
 BugReports: https://github.com/SamLeeBYU/tseLCA/issues
 VignetteBuilder: 
     knitr,

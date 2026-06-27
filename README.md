@@ -1,7 +1,9 @@
 # tseLCA
 
 <!-- badges: start -->
+
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+
 <!-- badges: end -->
 
 ## Overview
@@ -26,9 +28,9 @@ Unlike conventional latent class software that uses a one-step estimation approa
 
 **tseLCA** provides native support for a broad range of distal outcome distributions, including:
 
-* Continuous outcomes (Gaussian)
-* Count outcomes (Poisson)
-* Binary outcomes (Bernoulli).
+-   Continuous outcomes (Gaussian)
+-   Count outcomes (Poisson)
+-   Binary outcomes (Bernoulli).
 
 ### Automated Model Optimization
 
@@ -54,9 +56,12 @@ pak::pak("SamLeeBYU/tseLCA")
 
 Then read the introductory vignette:
 
-```r
-vignette("tseLCA-workflow", package = "tseLCA")
+``` r
+vignette.file <- system.file("doc", "tseLCA-workflow.html", package="tseLCA")
+browseURL(vignette.file)
 ```
+
+Or simply view the vignette on this package's webpage here: <https://SamLeeBYU.github.io/tseLCA/articles/tseLCA-workflow.html>
 
 ## Example
 
