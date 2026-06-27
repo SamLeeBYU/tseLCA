@@ -1,4 +1,4 @@
-# teLCA/R/lca_measurement.R
+# tseLCA/R/lca_measurement.R
 #
 # Step-1 measurement model via multilevLCA::multiLCA.
 #
@@ -10,10 +10,10 @@
 
 # -- lca_step1 -----------------------------------------------------------------
 
-#' Individual-level BHHH Varmat matching teLCA's lca_em.cpp
+#' Individual-level BHHH Varmat matching tseLCA's lca_em.cpp
 #'
 #' Computes the standard outer-product (BHHH) sandwich variance on the N
-#' individual observations, exactly replicating what LCA_teLCA returns in
+#' individual observations, exactly replicating what LCA_tseLCA returns in
 #' $Varmat and $mScore.
 #'
 #' Infomat = S'S / N,   Varmat = psinv(Infomat) / N = \eqn{(S'S)^{-1}}
@@ -58,7 +58,7 @@ lca_indiv_varmat <- function(mY, T, pi, phi) {
 
   S <- cbind(pi_score, phi_score) # N x p
 
-  # -- Infomat and Varmat (teLCA convention) ------------------------------------
+  # -- Infomat and Varmat (tseLCA convention) ------------------------------------
   # Matches C++: Infomat = S'S/N, Varmat = psinv(Infomat)/N = \eqn{(S'S)^{-1}}
   Infomat <- crossprod(S) / N
   Varmat <- qr.solve(Infomat) / N
@@ -435,7 +435,7 @@ fitZ_from_fit0 <- function(
 #'
 #' Calls `multilevLCA::multiLCA` with `fixedpars = 1` and `Z = Zp.names` to
 #' fit the two-step covariate model.  This is the original multilevLCA approach
-#' and is used when `get.twostep.vcov = TRUE` in [teLCA::three_step()] to obtain
+#' and is used when `get.twostep.vcov = TRUE` in [tseLCA::three_step()] to obtain
 #' multilevLCA's corrected standard errors for the two-step gamma estimates.
 #'
 #' @param data A data.frame.
@@ -449,7 +449,7 @@ fitZ_from_fit0 <- function(
 #' @param R2.threshold Entropy R\eqn{^2} restart threshold.
 #' @param incomplete Logical.
 #' @param rebase Character or integer. Reference class for column naming of
-#'   `$mGamma`. Must match the `rebase` used in [teLCA::three_step()] so
+#'   `$mGamma`. Must match the `rebase` used in [tseLCA::three_step()] so
 #'   coefficient labels are consistent. Default `"C1"`.
 #' @param verbose Logical.
 #'

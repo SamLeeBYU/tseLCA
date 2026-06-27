@@ -41,7 +41,7 @@ fitZ_from_multiLCA(
 \item{incomplete}{Logical.}
 
 \item{rebase}{Character or integer. Reference class for column naming of
-\verb{$mGamma}. Must match the \code{rebase} used in \code{\link[teLCA:three_step]{teLCA::three_step()}} so
+\verb{$mGamma}. Must match the \code{rebase} used in \code{\link[=three_step]{three_step()}} so
 coefficient labels are consistent. Default \code{"C1"}.}
 
 \item{verbose}{Logical.}
@@ -54,7 +54,7 @@ A list with \verb{$mGamma}, \verb{$mPhi}, \verb{$vOmega}, \verb{$LLKSeries}, and
 \description{
 Calls \code{multilevLCA::multiLCA} with \code{fixedpars = 1} and \code{Z = Zp.names} to
 fit the two-step covariate model.  This is the original multilevLCA approach
-and is used when \code{get.twostep.vcov = TRUE} in \code{\link[teLCA:three_step]{teLCA::three_step()}} to obtain
+and is used when \code{get.twostep.vcov = TRUE} in \code{\link[=three_step]{three_step()}} to obtain
 multilevLCA's corrected standard errors for the two-step gamma estimates.
 }
 \examples{
