@@ -18,7 +18,8 @@ Roxygen: list(markdown = TRUE)
 Depends:
     R (>= 4.1.0)
 Imports:
-    multilevLCA
+    multilevLCA,
+    cli
 Suggests:
     poLCA,
     testthat (>= 3.0.0),

@@ -17,14 +17,6 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, message = FALSE, warning=FALSE}
-# Install pak if it is not already available
-if (!require("pak")) {
-  install.packages("pak")
-}
-
-# Install tseLCA from the GitHub repository
-pak::pak("SamLeeBYU/tseLCA")
-
 library(tseLCA)
 ```
 
