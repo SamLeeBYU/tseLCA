@@ -163,6 +163,8 @@ improved three-step approaches. *Political Analysis*, 18(4), 450–469.
 
 Useful links:
 
+- <https://samleebyu.github.io/tseLCA/>
+
 - <https://github.com/SamLeeBYU/tseLCA>
 
 - Report bugs at <https://github.com/SamLeeBYU/tseLCA/issues>
