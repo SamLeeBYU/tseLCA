@@ -207,9 +207,9 @@ d.low.fitZ <- fitZ_from_fit0(
   starting_val = d.fitZ$mGamma
 )
 d.low.fitZ$mGamma
-#>                   C2        C3
-#> Intercept  0.1647684 -3.396233
-#> Zp        -0.5668117  0.937924
+#>                   C2         C3
+#> Intercept  0.1647683 -3.3962308
+#> Zp        -0.5668125  0.9379235
 ```
 
 ------------------------------------------------------------------------
@@ -443,7 +443,7 @@ summary(d.low.three_step.prop)
 #> Intercept:C2   0.9140    2.5972  0.3519 0.7249     
 #> Zp:C2         -1.0336    2.8770 -0.3593 0.7194     
 #> Intercept:C3  -4.2276    2.7433 -1.5411 0.1233     
-#> Zp:C3          1.1703    0.6606  1.7717 0.0764  .  
+#> Zp:C3          1.1703    0.6606  1.7717 0.0765  .  
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -630,21 +630,21 @@ summary(d.low.three_step.prop2)
 #> -- tseLCA Three-Step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
-#> Log-likelihood : -1986.2340
-#> AIC            : 4052.4680
-#> BIC            : 4221.0523
+#> Log-likelihood : -1986.2348
+#> AIC            : 4052.4695
+#> BIC            : 4221.0538
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
-#> Intercept  1.3687 -4.0525
+#> Intercept  1.3688 -4.0524
 #> Zp        -0.3242  1.0992
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.3449    0.6945  1.9365 0.0528  .  
-#> Zp:C2         -0.2669    0.2214 -1.2056 0.2280     
-#> Intercept:C3  -4.9820    1.1880 -4.1937 < 0.001 ***
-#> Zp:C3          1.2694    0.2475  5.1278 < 0.001 ***
+#> Intercept:C2   1.3450    0.6945  1.9366 0.0528  .  
+#> Zp:C2         -0.2669    0.2213 -1.2056 0.2280     
+#> Intercept:C3  -4.9819    1.1880 -4.1934 < 0.001 ***
+#> Zp:C3          1.2693    0.2476  5.1275 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -675,21 +675,21 @@ summary(d.low.three_step.prop3)
 #> -- tseLCA Three-Step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
-#> Log-likelihood : -1986.2340
-#> AIC            : 4052.4680
-#> BIC            : 4221.0523
+#> Log-likelihood : -1986.2348
+#> AIC            : 4052.4695
+#> BIC            : 4221.0538
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
-#> Intercept  1.3687 -4.0525
+#> Intercept  1.3688 -4.0524
 #> Zp        -0.3242  1.0992
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.3449    0.6945  1.9365 0.0528  .  
-#> Zp:C2         -0.2669    0.2214 -1.2056 0.2280     
-#> Intercept:C3  -4.9820    1.1880 -4.1937 < 0.001 ***
-#> Zp:C3          1.2694    0.2475  5.1278 < 0.001 ***
+#> Intercept:C2   1.3450    0.6945  1.9366 0.0528  .  
+#> Zp:C2         -0.2669    0.2213 -1.2056 0.2280     
+#> Intercept:C3  -4.9819    1.1880 -4.1934 < 0.001 ***
+#> Zp:C3          1.2693    0.2476  5.1275 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
