@@ -1,0 +1,194 @@
+# tseLCA
+
+## Overview
+
+**tseLCA** (*Three-Step Estimation for Latent Class Analysis*)
+introduces bias-adjusted three-step estimation for structural latent
+class models in R. The package provides a comprehensive framework for
+estimating latent class models with covariates and distal outcomes while
+preserving the measurement structure established during class formation.
+
+Building upon the efficient measurement-model estimation procedures
+implemented in **multilevLCA**, **tseLCA** extends existing
+functionality through modern three-step estimators, classification-error
+corrections, and variance estimation procedures that appropriately
+account for uncertainty from the latent class measurement stage.
+
+## Key Features
+
+### Bias-Adjusted Three-Step Estimation
+
+**tseLCA** is the first R package to provide a unified implementation of
+modern bias-adjusted three-step estimators for latent class analysis. In
+contrast to traditional one-step approaches (implemented by the popular
+package, **poLCA**), where the inclusion of covariates may alter the
+underlying latent class definitions, three-step methods preserve the
+measurement model estimated in the first stage and subsequently adjust
+for classification error when estimating structural relationships.
+
+The package implements both BCH- and ML-based three-step estimators with
+sandwich variance estimators that propagate uncertainty from the
+measurement model through the classification-error correction process.
+
+### Flexible Measurement and Structural Samples
+
+Unlike conventional latent class software that uses a one-step
+estimation approach, **tseLCA** allows measurement and structural models
+to be estimated using different datasets. This flexibility enables
+researchers to calibrate a measurement model on a primary or reference
+sample and subsequently apply the resulting class definitions to an
+external dataset.
+
+### Support for Multiple Distal Outcome Types
+
+**tseLCA** provides native support for a broad range of distal outcome
+distributions, including:
+
+- Continuous outcomes (Gaussian)
+- Count outcomes (Poisson)
+- Binary outcomes (Bernoulli).
+
+### Automated Model Optimization
+
+Latent class estimation is often susceptible to local maxima and
+convergence to suboptimal solutions. To improve estimation reliability,
+**tseLCA** incorporates automated diagnostic procedures that monitor
+model quality during measurement-model estimation.
+
+### Missing Data Handling
+
+Following a similar approach as **multilevLCA**, **tseLCA** employs
+Full-Information Maximum Likelihood (FIML) estimation to accommodate
+partially observed response patterns without discarding incomplete
+observations.
+
+## Installation
+
+You can install the development version of tseLCA from GitHub like so:
+
+``` r
+
+# Install pak if it is not already available
+if (!require("pak")) {
+  install.packages("pak")
+}
+
+# Install tseLCA from the GitHub repository
+pak::pak("SamLeeBYU/tseLCA")
+```
+
+Then read the introductory vignette:
+
+``` r
+
+vignette.file <- system.file("doc", "tseLCA-workflow.html", package="tseLCA")
+browseURL(vignette.file)
+```
+
+Or simply view the vignette on this package’s webpage here:
+<https://SamLeeBYU.github.io/tseLCA/articles/tseLCA-workflow.html>
+
+## Example
+
+This is a basic example which shows you how to simulate data and run a
+three-step LCA with a covariate in a single function call:
+
+``` r
+
+library(tseLCA)
+
+# 1. Generate synthetic data 
+# (3 classes, 6 dichotomous items, and a multinomial logit covariate 'Zp')
+d <- generate_data(
+  n = 500, 
+  separation = "high", 
+  scenario = "covariate", 
+  seed = 1
+)
+
+# 2. Estimate the three-step model
+# This automatically fits the measurement model and estimates covariate effects
+fit <- three_step(
+  data = d,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3,
+  Zp.names = "Zp",
+  # Proportional assignment is recommended for better uncertainty propagation
+  use.modal.assignment = FALSE
+)
+
+# 3. View the measurement and structural model estimates
+summary(fit)
+```
+
+# Package index
+
+## All functions
+
+- [`bk2018_params`](https://samleebyu.github.io/tseLCA/reference/bk2018_params.md)
+  : Default population parameters for the Bakk & Kuha (2018) simulation
+- [`coef(`*`<tseLCA_measurement>`*`)`](https://samleebyu.github.io/tseLCA/reference/coef.tseLCA_measurement.md)
+  [`coef(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/coef.tseLCA_measurement.md)
+  [`coef(`*`<tseLCA_distal>`*`)`](https://samleebyu.github.io/tseLCA/reference/coef.tseLCA_measurement.md)
+  [`coef(`*`<tseLCA_both>`*`)`](https://samleebyu.github.io/tseLCA/reference/coef.tseLCA_measurement.md)
+  : Extract coefficients from a tseLCA model object
+- [`draw_Zo()`](https://samleebyu.github.io/tseLCA/reference/draw_Zo.md)
+  : Draw a continuous distal outcome given true class memberships
+  (scenario "distal")
+- [`draw_Zp()`](https://samleebyu.github.io/tseLCA/reference/draw_Zp.md)
+  : Draw the covariate Zp ~ Uniform{1, 2, 3, 4, 5}
+- [`draw_classes()`](https://samleebyu.github.io/tseLCA/reference/draw_classes.md)
+  : Draw latent class memberships from their marginal distribution
+- [`draw_classes_given_Zp()`](https://samleebyu.github.io/tseLCA/reference/draw_classes_given_Zp.md)
+  : Draw latent classes conditional on the covariate (scenario
+  "covariate")
+- [`draw_indicators()`](https://samleebyu.github.io/tseLCA/reference/draw_indicators.md)
+  : Draw binary indicators given true class memberships
+- [`fitZ_from_fit0()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md)
+  : Estimate covariate effects with measurement parameters fixed
+  (two-step EM)
+- [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md)
+  : Estimate two-step covariate model via multilevLCA (optional
+  reference path)
+- [`generate_all_conditions()`](https://samleebyu.github.io/tseLCA/reference/generate_all_conditions.md)
+  : Generate datasets for all 18 conditions in the simulation design
+- [`generate_data()`](https://samleebyu.github.io/tseLCA/reference/generate_data.md)
+  : Generate one dataset following the Bakk & Kuha (2018) simulation
+  design
+- [`lca_indiv_varmat()`](https://samleebyu.github.io/tseLCA/reference/lca_indiv_varmat.md)
+  : Individual-level BHHH Varmat matching teLCA's lca_em.cpp
+- [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
+  : Fit the LCA measurement model (Step 1)
+- [`make_rho()`](https://samleebyu.github.io/tseLCA/reference/make_rho.md)
+  : Build the item-response probability matrix for the simulation
+- [`mnl_probs()`](https://samleebyu.github.io/tseLCA/reference/mnl_probs.md)
+  : Compute multinomial logistic class probabilities given a covariate
+- [`plot(`*`<tseLCA_measurement>`*`)`](https://samleebyu.github.io/tseLCA/reference/plot.tseLCA_measurement.md)
+  [`plot(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/plot.tseLCA_measurement.md)
+  [`plot(`*`<tseLCA_distal>`*`)`](https://samleebyu.github.io/tseLCA/reference/plot.tseLCA_measurement.md)
+  [`plot(`*`<tseLCA_both>`*`)`](https://samleebyu.github.io/tseLCA/reference/plot.tseLCA_measurement.md)
+  : Plot item-response probability profiles for a tseLCA model
+- [`print(`*`<tseLCA_measurement>`*`)`](https://samleebyu.github.io/tseLCA/reference/print.tseLCA_measurement.md)
+  [`print(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/print.tseLCA_measurement.md)
+  [`print(`*`<tseLCA_distal>`*`)`](https://samleebyu.github.io/tseLCA/reference/print.tseLCA_measurement.md)
+  [`print(`*`<tseLCA_both>`*`)`](https://samleebyu.github.io/tseLCA/reference/print.tseLCA_measurement.md)
+  : Print a tseLCA model object
+- [`summary(`*`<tseLCA_measurement>`*`)`](https://samleebyu.github.io/tseLCA/reference/summary.tseLCA_measurement.md)
+  [`summary(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/summary.tseLCA_measurement.md)
+  [`summary(`*`<tseLCA_distal>`*`)`](https://samleebyu.github.io/tseLCA/reference/summary.tseLCA_measurement.md)
+  [`summary(`*`<tseLCA_both>`*`)`](https://samleebyu.github.io/tseLCA/reference/summary.tseLCA_measurement.md)
+  : Summarize a tseLCA model object
+- [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+  : Three-step LCA estimation with covariates and/or distal outcomes
+- [`vcov(`*`<tseLCA_measurement>`*`)`](https://samleebyu.github.io/tseLCA/reference/vcov.tseLCA_measurement.md)
+  [`vcov(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/vcov.tseLCA_measurement.md)
+  [`vcov(`*`<tseLCA_distal>`*`)`](https://samleebyu.github.io/tseLCA/reference/vcov.tseLCA_measurement.md)
+  [`vcov(`*`<tseLCA_both>`*`)`](https://samleebyu.github.io/tseLCA/reference/vcov.tseLCA_measurement.md)
+  : Extract the variance-covariance matrix from a tseLCA model object
+
+# Articles
+
+### All vignettes
+
+- [tseLCA
+  Workflow](https://samleebyu.github.io/tseLCA/articles/tseLCA-workflow.md):
