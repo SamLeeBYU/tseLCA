@@ -804,3 +804,6 @@ sim.results <- run_simulation(
   out_path = "tseLCA_output/simulation/sim-results.rds",
   n_cores = 1
 )
+
+
+sim.cond(datasets, measurement_models, cond = c("distal", "high", "1000"))

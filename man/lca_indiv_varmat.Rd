@@ -4,24 +4,63 @@
 \alias{lca_indiv_varmat}
 \title{Individual-level BHHH Varmat for binary and polytomous LCA}
 \usage{
-lca_indiv_varmat(Y.exp, mDesign.exp, fit0, ivItemcat, use.freq = TRUE)
+lca_indiv_varmat(
+  Y.exp,
+  mDesign.exp,
+  fit0,
+  ivItemcat,
+  boundary.tol = 0.01,
+  use.freq = TRUE
+)
 }
 \arguments{
-\item{Y.exp}{Expanded indicator matrix (N x sum(K_h)).}
+\item{Y.exp}{Expanded one-hot matrix (N x sum(K_h)).}
 
-\item{mDesign.exp}{Expanded design matrix (same dimensions as \code{Y.exp}),
-or \code{NULL} for complete data.}
+\item{mDesign.exp}{Expanded design matrix (same dims), or \code{NULL}.}
 
-\item{fit0}{Step-1 measurement model.}
+\item{fit0}{Step-1 fit with \code{$vPi} and \code{$mPhi}.}
 
-\item{ivItemcat}{Number of categories for each item.}
+\item{ivItemcat}{Integer vector of category counts per item.}
 
-\item{use.freq}{Logical. Collapse duplicate score vectors before computing
-the BHHH information matrix.}
+\item{boundary.tol}{Scalar tolerance for boundary detection. Default
+\code{1e-2}.}
+
+\item{use.freq}{Collapse duplicate score rows before cross-product.
+Default \code{TRUE}.}
 }
 \value{
 A list containing \code{Infomat}, \code{Varmat},
 \code{SEs}, and the individual score matrix \code{mScore}.
+Individual-level BHHH Varmat for binary and polytomous LCA
+
+Computes the outer-product (BHHH) information matrix and variance-covariance
+matrix for LCA measurement model parameters in the unconstrained
+(logit/log-ratio) space.
+
+Assumes \code{fit0$mPhi} has the following structure (from multilevLCA):
+\itemize{
+\item Dichotomous item h (\code{ivItemcat[h] == 2}): 1 row =
+\eqn{P(Y=1|C)}. The base level \eqn{P(Y=0|C)} is excluded.
+\item Polytomous item h (\code{ivItemcat[h] > 2}): \code{K_h} rows =
+\eqn{P(Y=0|C), \ldots, P(Y=K_h-1|C)}. The base level IS included.
+}
+\code{expand_Y} produces one-hot columns in the same order so that
+\code{expand_Phi(fit0$mPhi, ivItemcat)} aligns column-wise with
+\code{expand_Y(mY, ivItemcat)}.
+
+Free (estimable) parameters per item:
+\itemize{
+\item Dichotomous: the single row of \code{mPhi} (\eqn{P(Y=1|C)}).
+\item Polytomous: rows 2..K_h of \code{mPhi} (\eqn{P(Y=1|C), \ldots}).
+Row 1 (\eqn{P(Y=0|C)}) is the reference and is not a free parameter.
+}
+
+Boundary parameters (within \code{boundary.tol} of 0 or 1) are treated as
+fixed: their score columns are zeroed so they do not contribute to the
+information matrix.
+
+List with \code{$Infomat}, \code{$Varmat}, \code{$SEs},
+\code{$mScore}.
 }
 \description{
 Computes the outer-product (BHHH) information matrix and variance-covariance

@@ -359,7 +359,11 @@ lca_step2 <- function(
     theta2_from_theta1 = theta2_from_theta1,
     J.2 = J.2,
     p.xy = p.xy,
-    compute_J_unc = compute_J_unc_analytical
+    compute_J_unc = if (use.simple.cov) {
+      NULL
+    } else {
+      compute_J_unc_analytical
+    }
   )
 }
 

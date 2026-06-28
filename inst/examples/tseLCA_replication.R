@@ -512,7 +512,7 @@ d.distal.three_step.bch <- three_step(
 #The advantage with BCH with distal outcomes is that there exists a closed-form solution
 #for both parameter estimates and hessian (though again, not guarunteed to be PSD)
 
-#Note that the mean parameters for each class were generated as 0, 1, and -1 for classes C1, C2, and C3, respectively
+#Note that the mean parameters for each class were generated as -1, 1, and 0 for classes C1, C2, and C3, respectively
 summary(d.distal.three_step.ml)
 summary(d.distal.three_step.bch)
 
