@@ -255,9 +255,9 @@ low-separation fit to help it converge.</p>
 <span>  starting_val <span class="op">=</span> <span class="va">d.fitZ</span><span class="op">$</span><span class="va">mGamma</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">d.low.fitZ</span><span class="op">$</span><span class="va">mGamma</span></span>
-<span><span class="co">#&gt;                   C2         C3</span></span>
-<span><span class="co">#&gt; Intercept  0.1647683 -3.3962308</span></span>
-<span><span class="co">#&gt; Zp        -0.5668125  0.9379235</span></span></code></pre></div>
+<span><span class="co">#&gt;                   C2        C3</span></span>
+<span><span class="co">#&gt; Intercept  0.1647684 -3.396233</span></span>
+<span><span class="co">#&gt; Zp        -0.5668117  0.937924</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
@@ -291,10 +291,10 @@ assignment.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   1.8739    0.3159  5.9313 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8833    0.1331 -6.6364 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.3703    0.6918 -6.3169 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.1945    0.1735  6.8850 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   1.8739    0.3145  5.9578 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -0.8833    0.1323 -6.6760 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.3703    0.6863 -6.3681 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.1945    0.1722  6.9378 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <p>The standard <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> S3 methods
@@ -305,11 +305,11 @@ work on any <code>tseLCA</code> object.</p>
 <span><span class="co">#&gt; Intercept  1.8738903 -4.370297</span></span>
 <span><span class="co">#&gt; Zp        -0.8833431  1.194500</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">d.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              Intercept:C2        Zp:C2 Intercept:C3        Zp:C3</span></span>
-<span><span class="co">#&gt; Intercept:C2  0.099811915 -0.037977145  -0.02047535  0.003563972</span></span>
-<span><span class="co">#&gt; Zp:C2        -0.037977145  0.017717066   0.01161711 -0.001880094</span></span>
-<span><span class="co">#&gt; Intercept:C3 -0.020475347  0.011617106   0.47864889 -0.117651101</span></span>
-<span><span class="co">#&gt; Zp:C3         0.003563972 -0.001880094  -0.11765110  0.030100056</span></span></code></pre></div>
+<span><span class="co">#&gt;              Intercept:C2       Zp:C2 Intercept:C3        Zp:C3</span></span>
+<span><span class="co">#&gt; Intercept:C2  0.098927154 -0.03755319  -0.01804415  0.002973586</span></span>
+<span><span class="co">#&gt; Zp:C2        -0.037553186  0.01750763   0.01052578 -0.001615810</span></span>
+<span><span class="co">#&gt; Intercept:C3 -0.018044146  0.01052578   0.47097629 -0.115779777</span></span>
+<span><span class="co">#&gt; Zp:C3         0.002973586 -0.00161581  -0.11577978  0.029643072</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="proportional-assignment">Proportional assignment<a class="anchor" aria-label="anchor" href="#proportional-assignment"></a>
@@ -350,10 +350,10 @@ separation is high.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   1.8671    0.3189  5.8552 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8756    0.1352 -6.4764 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.5000    0.6967 -6.4591 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.2258    0.1752  6.9950 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   1.8671    0.3151  5.9261 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -0.8756    0.1334 -6.5631 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.5000    0.6861 -6.5584 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.2258    0.1727  7.0971 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 </div>
@@ -469,10 +469,10 @@ more reliable in this setting.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   0.9140    1.7455  0.5237 0.6005     </span></span>
-<span><span class="co">#&gt; Zp:C2         -1.0336    1.6784 -0.6158 0.5380     </span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.2276    1.7326 -2.4400 0.0147  *  </span></span>
-<span><span class="co">#&gt; Zp:C3          1.1703    0.3835  3.0515 0.0023  ** </span></span>
+<span><span class="co">#&gt; Intercept:C2   0.9140    0.8652  1.0565 0.2908     </span></span>
+<span><span class="co">#&gt; Zp:C2         -1.0336    0.6246 -1.6547 0.0980  .  </span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.2276    0.9280 -4.5558 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.1703    0.2458  4.7616 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <hr>
@@ -611,10 +611,10 @@ it to a smaller analysis sample.</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   1.8671    0.3189  5.8552 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8756    0.1352 -6.4764 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.5000    0.6967 -6.4591 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.2258    0.1752  6.9950 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   1.8671    0.3151  5.9261 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -0.8756    0.1334 -6.5631 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.5000    0.6861 -6.5584 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.2258    0.1727  7.0971 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
@@ -646,21 +646,21 @@ it to a smaller analysis sample.</li>
 <span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1986.2348</span></span>
-<span><span class="co">#&gt; AIC            : 4052.4695</span></span>
-<span><span class="co">#&gt; BIC            : 4221.0538</span></span>
+<span><span class="co">#&gt; Log-likelihood : -1986.2340</span></span>
+<span><span class="co">#&gt; AIC            : 4052.4680</span></span>
+<span><span class="co">#&gt; BIC            : 4221.0523</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
 <span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  1.3688 -4.0524</span></span>
+<span><span class="co">#&gt; Intercept  1.3687 -4.0525</span></span>
 <span><span class="co">#&gt; Zp        -0.3242  1.0992</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   1.3450    1.1548  1.1647 0.2441     </span></span>
-<span><span class="co">#&gt; Zp:C2         -0.2669    0.5540 -0.4817 0.6300     </span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.9819    1.8209 -2.7360 0.0062  ** </span></span>
-<span><span class="co">#&gt; Zp:C3          1.2693    0.3157  4.0205 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   1.3449    0.4028  3.3392 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -0.2669    0.1553 -1.7180 0.0858  .  </span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.9820    0.9245 -5.3886 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.2694    0.2203  5.7631 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <p>You can also compute two-step starting values separately and inject
@@ -686,21 +686,21 @@ them before calling <code><a href="../reference/three_step.html">three_step()</a
 <span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1986.2348</span></span>
-<span><span class="co">#&gt; AIC            : 4052.4695</span></span>
-<span><span class="co">#&gt; BIC            : 4221.0538</span></span>
+<span><span class="co">#&gt; Log-likelihood : -1986.2340</span></span>
+<span><span class="co">#&gt; AIC            : 4052.4680</span></span>
+<span><span class="co">#&gt; BIC            : 4221.0523</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
 <span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  1.3688 -4.0524</span></span>
+<span><span class="co">#&gt; Intercept  1.3687 -4.0525</span></span>
 <span><span class="co">#&gt; Zp        -0.3242  1.0992</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   1.3450    1.1548  1.1647 0.2441     </span></span>
-<span><span class="co">#&gt; Zp:C2         -0.2669    0.5540 -0.4817 0.6300     </span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.9819    1.8209 -2.7360 0.0062  ** </span></span>
-<span><span class="co">#&gt; Zp:C3          1.2693    0.3157  4.0205 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   1.3449    0.4028  3.3392 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -0.2669    0.1553 -1.7180 0.0858  .  </span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.9820    0.9245 -5.3886 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.2694    0.2203  5.7631 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <hr>
@@ -839,10 +839,10 @@ Steps 1 and 2.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.6060    0.3945  6.6066 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -1.0627    0.1670 -6.3627 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.2255    0.5606 -7.5373 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.1247    0.1436  7.8307 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   2.6060    0.3930  6.6303 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -1.0627    0.1661 -6.3986 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.2255    0.5598 -7.5483 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.1247    0.1434  7.8434 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <p>A FIML measurement model can be passed in and then reused for the
@@ -876,10 +876,10 @@ covariate step on the same sparse data.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.6060    0.3945  6.6066 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -1.0627    0.1670 -6.3627 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.2255    0.5606 -7.5373 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.1247    0.1436  7.8307 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   2.6060    0.3930  6.6303 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -1.0627    0.1661 -6.3986 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.2255    0.5598 -7.5483 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.1247    0.1434  7.8434 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <hr>
@@ -933,10 +933,10 @@ package.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error  z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C1  -2.4701    0.3098  -7.9728 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; PARTY:C1       0.4077    0.0564   7.2248 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C2   1.7324    0.1671  10.3703 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; PARTY:C2      -0.6727    0.0551 -12.2042 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C1  -2.4701    0.3077  -8.0287 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; PARTY:C1       0.4077    0.0561   7.2641 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   1.7324    0.1660  10.4338 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; PARTY:C2      -0.6727    0.0546 -12.3108 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
@@ -1017,9 +1017,9 @@ estimators are available.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Distal outcome estimates by class:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error  z.value     p.value</span></span>
-<span><span class="co">#&gt; mu_C1 (mean)  -1.0899    0.0795 -13.7040 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C2 (mean)   1.0012    0.0818  12.2438 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C3 (mean)   0.0450    0.0856   0.5257 0.5991     </span></span>
+<span><span class="co">#&gt; mu_C1 (mean)  -1.0899    0.0795 -13.7126 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; mu_C2 (mean)   1.0012    0.0817  12.2577 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; mu_C3 (mean)   0.0450    0.0855   0.5260 0.5989     </span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.distal.three_step.bch</span><span class="op">)</span></span>
@@ -1103,17 +1103,17 @@ procedures for the distal outcome model in step 3.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariate -- three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.4602    0.3855  6.3819 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -1.1178    0.1771 -6.3119 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.6274    0.6030 -7.6738 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.2413    0.1499  8.2791 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C2   2.4602    0.3814  6.4505 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -1.1178    0.1748 -6.3942 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -4.6274    0.5986 -7.7309 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          1.2413    0.1487  8.3460 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Distal outcome -- three-step estimates:</span></span>
 <span><span class="co">#&gt;              Estimate Std.Error  z.value     p.value</span></span>
-<span><span class="co">#&gt; mu_C1 (mean)  -0.9346    0.0774 -12.0711 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C2 (mean)   1.0685    0.0894  11.9577 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; mu_C1 (mean)  -0.9346    0.0774 -12.0781 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; mu_C2 (mean)   1.0685    0.0893  11.9597 &lt; 0.001 ***</span></span>
 <span><span class="co">#&gt; mu_C3 (mean)  -0.0007    0.0745  -0.0097 0.9923     </span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
@@ -1133,7 +1133,7 @@ distal outcome estimation than if there were no covariates in the model
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      mu_C1      mu_C2      mu_C3 </span></span>
-<span><span class="co">#&gt; 0.07688217 0.09796084 0.07614852</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.07681106 0.09776083 0.07603885</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
