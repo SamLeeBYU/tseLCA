@@ -298,7 +298,8 @@ if (length(pending) == 0L) {
 sim.cond <- function(
   datasets,
   measurement_models,
-  cond = c("covariate", "low", "500")
+  cond = c("covariate", "low", "500"),
+  alpha = 0.05
 ) {
   sets <- datasets[[cond[1]]][[cond[2]]][[cond[3]]]
   m.mods <- measurement_models[[cond[1]]][[cond[2]]][[cond[3]]]
@@ -626,7 +627,7 @@ sim.cond <- function(
     err <- e - true_val
     bias <- mean(err)
     rmse <- sqrt(mean(err^2))
-    coverage <- mean(abs(err) <= 1.96 * se, na.rm = TRUE)
+    coverage <- mean(abs(err) <= qnorm(1 - alpha / 2) * se, na.rm = TRUE)
     se_sd <- mean(se, na.rm = TRUE) / sd(e)
 
     cli::cli_alert_success(
@@ -800,5 +801,6 @@ run_simulation <- function(
 sim.results <- run_simulation(
   datasets,
   measurement_models,
-  out_path = "tseCLA_output/simulation/sim-results.rds"
+  out_path = "tseCLA_output/simulation/sim-results.rds",
+  n_cores = 1
 )
