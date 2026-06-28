@@ -23,17 +23,18 @@ r_opts <- options(
 
 # Loading libraries and installing if unavailable
 # Install the development version from GitHub
-if (!require("pak")) {
-  install.packages("pak")
+if (!require("tseLCA")) {
+  if (!require("pak")) {
+    install.packages("pak")
+  }
+  pak::pak("SamLeeBYU/tseLCA")
 }
+
 #For access to the polytomous data 'election'
 if (!require("poLCA")) {
   install.packages("poLCA")
 }
 
-if (!require("tseLCA")) {
-  pak::pak("SamLeeBYU/tseLCA")
-}
 
 library(tseLCA)
 

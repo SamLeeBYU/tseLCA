@@ -595,7 +595,7 @@ d.covariate.three_step <- three_step(
 summary(d.covariate.three_step)
 ```
 
-Note that with covariates in the model, the standard errors above are systematically smaller for distal outcome estimation than if there were no covariates in the model (see below).
+Note that with covariates in a model with high separation, the standard errors above should, on average, by systematically smaller for distal outcome estimation than if there were no covariates in the model (see below).
 
 ```{r}
 three_step(

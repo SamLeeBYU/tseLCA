@@ -383,7 +383,7 @@ sim.cond <- function(
       # ── modal BCH ───────────────────────────────────────────────────────
       fit <- tryCatch(
         {
-          if (as.integer(cond[3]) >= 1000L || cond[2] != "low") {
+          if (cond[2] != "low") {
             three_step(
               data = dat.s,
               Y.names = paste0("Y", 1:6),
@@ -433,7 +433,7 @@ sim.cond <- function(
       # ── proportional BCH ─────────────────────────────────────────────────
       fit <- tryCatch(
         {
-          if (as.integer(cond[3]) >= 1000L || cond[2] != "low") {
+          if (cond[2] != "low") {
             three_step(
               data = dat.s,
               Y.names = paste0("Y", 1:6),
@@ -651,4 +651,154 @@ sim.cond <- function(
   out
 }
 
-sim.cond(datasets, measurement_models, cond = c("covariate", "low", "1000"))
+###################################################
+### Run all simulation conditions in parallel
+###################################################
+
+run_simulation <- function(
+  datasets,
+  measurement_models,
+  n_cores = NULL,
+  out_path = NULL
+) {
+  # ---- Parse available conditions from the datasets structure ----------------
+  # Structure: datasets[[scenario]][[separation]][[n]][[rep]]
+  conditions <- do.call(
+    rbind,
+    lapply(
+      names(measurement_models),
+      function(scenario) {
+        do.call(
+          rbind,
+          lapply(
+            names(measurement_models[[scenario]]),
+            function(sep) {
+              do.call(
+                rbind,
+                lapply(
+                  names(measurement_models[[scenario]][[sep]]),
+                  function(n) {
+                    data.frame(
+                      scenario = scenario,
+                      separation = sep,
+                      n = n,
+                      stringsAsFactors = FALSE
+                    )
+                  }
+                )
+              )
+            }
+          )
+        )
+      }
+    )
+  )
+  rownames(conditions) <- NULL
+
+  if (is.null(n_cores)) {
+    n_cores <- max(c(
+      1L,
+      min(3 * ((parallel::detectCores() - 1L) %/% 3), nrow(conditions))
+    ))
+  }
+
+  cli::cli_h1("tseLCA Simulation Study")
+  cli::cli_alert_info(sprintf(
+    "%d condition(s) detected across %d scenario(s), %d separation level(s), %d sample size(s)",
+    nrow(conditions),
+    length(unique(conditions$scenario)),
+    length(unique(conditions$separation)),
+    length(unique(conditions$n))
+  ))
+  cli::cli_alert_info(sprintf("Parallelising over %d core(s)", n_cores))
+
+  # ---- Run conditions in parallel --------------------------------------------
+  if (n_cores > 1L && requireNamespace("parallel", quietly = TRUE)) {
+    cl <- parallel::makeCluster(n_cores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+
+    parallel::clusterExport(
+      cl,
+      varlist = c("datasets", "measurement_models", "sim.cond"),
+      envir = environment()
+    )
+    parallel::clusterEvalQ(cl, {
+      library(tseLCA)
+      library(cli)
+    })
+
+    results_list <- parallel::parLapplyLB(
+      cl,
+      seq_len(nrow(conditions)),
+      fun = function(i) {
+        cond <- unlist(conditions[i, ])
+        tryCatch(
+          sim.cond(datasets, measurement_models, cond = cond),
+          error = function(e) {
+            cli::cli_alert_danger(
+              "Condition {cond[1]}/{cond[2]}/{cond[3]} failed: {conditionMessage(e)}"
+            )
+            data.frame(
+              estimator = NA_character_,
+              bias = NA_real_,
+              rmse = NA_real_,
+              coverage = NA_real_,
+              se_sd_ratio = NA_real_,
+              n_ok = 0L,
+              scenario = cond[1],
+              separation = cond[2],
+              n = cond[3]
+            )
+          }
+        )
+      }
+    )
+  } else {
+    results_list <- lapply(
+      seq_len(nrow(conditions)),
+      function(i) {
+        cond <- unlist(conditions[i, ])
+        tryCatch(
+          sim.cond(datasets, measurement_models, cond = cond),
+          error = function(e) {
+            cli::cli_alert_danger(
+              "Condition {cond[1]}/{cond[2]}/{cond[3]} failed: {conditionMessage(e)}"
+            )
+            data.frame(
+              estimator = NA_character_,
+              bias = NA_real_,
+              rmse = NA_real_,
+              coverage = NA_real_,
+              se_sd_ratio = NA_real_,
+              n_ok = 0L,
+              scenario = cond[1],
+              separation = cond[2],
+              n = cond[3]
+            )
+          }
+        )
+      }
+    )
+  }
+
+  results <- do.call(rbind, results_list)
+  rownames(results) <- NULL
+
+  # ---- Save if requested -----------------------------------------------------
+  if (!is.null(out_path)) {
+    if (!dir.exists(dirname(out_path))) {
+      dir.create(dirname(out_path), recursive = TRUE)
+    }
+    saveRDS(results, file = out_path)
+    cli::cli_alert_success("Results saved to: {.path {out_path}}")
+  }
+
+  cli::cli_h2("Simulation complete")
+  results
+}
+
+sim.results <- run_simulation(
+  datasets,
+  measurement_models,
+  out_path = "tseCLA_output/simulation/sim-results.rds"
+)
