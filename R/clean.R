@@ -4,21 +4,21 @@
 #
 # The central function is clean_data() which takes the raw data.frame and
 # returns consistently prepared matrices for Y (expanded one-hot), Z
-# (covariate design), Z0 (distal outcome), and mDesign (FIML mask).
+# (covariate design), Zo (distal outcome), and mDesign (FIML mask).
 #
-# Row-filtering philosophy
+# Missing data handling
 # ------------------------
 # Steps 1 & 2 (measurement model, posteriors):
 #   Use as much Y data as possible.
 #   - Drop rows where ALL Y items are missing (completely uninformative).
 #   - If incomplete = FALSE, also drop rows where ANY Y is missing.
-#   - Missingness in Z or Z0 is irrelevant at this stage.
+#   - Missingness in Z or Zo is irrelevant at this stage.
 #
 # Step 3 covariate:
 #   Restrict to rows that (a) passed the Y filter AND (b) have complete Z.
 #
 # Step 3 distal:
-#   Restrict to rows that (a) passed the Y filter AND (b) have complete Z0.
+#   Restrict to rows that (a) passed the Y filter AND (b) have complete Zo.
 
 #' Prepare and validate data for tseLCA estimation
 #'
@@ -40,8 +40,8 @@
 #'   \item{keep_Y}{Integer indices of rows kept for Steps 1 & 2 (into original N).}
 #'   \item{Z_mat}{N_Z x Q covariate design matrix, or NULL.}
 #'   \item{keep_step3_Z_in_Y}{Positions of Z-complete rows within keep_Y.}
-#'   \item{Z0_mat}{N_Z0 x 1 distal outcome matrix, or NULL.}
-#'   \item{keep_step3_Z0_in_Y}{Positions of Z0-complete rows within keep_Y.}
+#'   \item{Zo_mat}{N_Zo x 1 distal outcome matrix, or NULL.}
+#'   \item{keep_step3_Zo_in_Y}{Positions of Zo-complete rows within keep_Y.}
 #' }
 clean_data <- function(
   data,
@@ -137,27 +137,27 @@ clean_data <- function(
 
   # ---- Distal outcome matrix --------------------------------------------------
   if (!is.null(Zo.name)) {
-    Z0_mat_full <- as.matrix(data[, Zo.name, drop = FALSE])
-    any_Z0_missing_full <- !complete.cases(Z0_mat_full)
+    Zo_mat_full <- as.matrix(data[, Zo.name, drop = FALSE])
+    any_Zo_missing_full <- !complete.cases(Zo_mat_full)
 
-    drop_step3_Z0 <- drop_Y | any_Z0_missing_full
-    keep_step3_Z0 <- which(!drop_step3_Z0)
-    Z0_mat <- Z0_mat_full[keep_step3_Z0, , drop = FALSE]
-    keep_step3_Z0_in_Y <- match(keep_step3_Z0, keep_Y)
+    drop_step3_Zo <- drop_Y | any_Zo_missing_full
+    keep_step3_Zo <- which(!drop_step3_Zo)
+    Zo_mat <- Zo_mat_full[keep_step3_Zo, , drop = FALSE]
+    keep_step3_Zo_in_Y <- match(keep_step3_Zo, keep_Y)
 
-    if (any(is.na(keep_step3_Z0_in_Y))) {
-      stop("Internal error: Z0 rows not a subset of Y rows.", call. = FALSE)
+    if (any(is.na(keep_step3_Zo_in_Y))) {
+      stop("Internal error: Zo rows not a subset of Y rows.", call. = FALSE)
     }
 
-    if (sum(any_Z0_missing_full[keep_Y]) > 0L && verbose) {
+    if (sum(any_Zo_missing_full[keep_Y]) > 0L && verbose) {
       message(sprintf(
-        "%d row(s) excluded from distal step (missing Z0).",
-        sum(any_Z0_missing_full[keep_Y])
+        "%d row(s) excluded from distal step (missing Zo).",
+        sum(any_Zo_missing_full[keep_Y])
       ))
     }
   } else {
-    Z0_mat <- NULL
-    keep_step3_Z0_in_Y <- seq_along(keep_Y)
+    Zo_mat <- NULL
+    keep_step3_Zo_in_Y <- seq_along(keep_Y)
   }
 
   list(
@@ -167,9 +167,9 @@ clean_data <- function(
     keep_Y = keep_Y,
     Z_mat = Z_mat,
     keep_step3_Z_in_Y = keep_step3_Z_in_Y,
-    Z0_mat = Z0_mat,
-    keep_step3_Z0_in_Y = keep_step3_Z0_in_Y,
-    keep_step3_Z0 = if (!is.null(Zo.name)) keep_step3_Z0 else integer(0L)
+    Zo_mat = Zo_mat,
+    keep_step3_Zo_in_Y = keep_step3_Zo_in_Y,
+    keep_step3_Zo = if (!is.null(Zo.name)) keep_step3_Zo else integer(0L)
   )
 }
 
@@ -209,7 +209,7 @@ parse_rebase <- function(rebase, T) {
   idx
 }
 
-#' Normalise row/column names of a fitZ$mGamma matrix
+#' Normalize row/column names of a fitZ$mGamma matrix
 #'
 #' A plain `multiLCA` object uses `rownames` like `"gamma(Intercept|C)"` and
 #' `"gamma(Zp|C)"`. This function strips the `gamma(...)` wrapper so names
@@ -222,16 +222,16 @@ parse_rebase <- function(rebase, T) {
 #'   are stripped from the `gamma(X|C)` pattern only.
 #' @param n_classes Integer. Total number of classes (used to derive clean
 #'   column names if they are non-standard).
-#' @return `fitZ` with normalised `$mGamma` row/col names.
+#' @return `fitZ` with normalized `$mGamma` row/col names.
 #' @keywords internal
-normalise_fitZ_names <- function(fitZ, Zp.names = NULL, n_classes = NULL) {
+normalize_fitZ_names <- function(fitZ, Zp.names = NULL, n_classes = NULL) {
   if (is.null(fitZ) || is.null(fitZ$mGamma)) {
     return(fitZ)
   }
 
   mG <- fitZ$mGamma
 
-  # ---- Normalise rownames ----------------------------------------------------
+  # ---- Normalize rownames ----------------------------------------------------
   rn <- rownames(mG)
   if (!is.null(rn)) {
     # Strip "gamma(X|C)" -> "X"
@@ -243,10 +243,10 @@ normalise_fitZ_names <- function(fitZ, Zp.names = NULL, n_classes = NULL) {
     rownames(mG) <- c("Intercept", Zp.names)
   }
 
-  # ---- Normalise colnames ----------------------------------------------------
+  # ---- Normalize colnames ----------------------------------------------------
   cn <- colnames(mG)
   if (!is.null(cn)) {
-    # Already clean ("C2", "C3", ...) -- leave alone
+    # Already clean ("C2", "C3", ...)
     if (!all(grepl("^C[0-9]+$", cn))) {
       # Non-standard: derive from n_classes if available
       if (!is.null(n_classes)) {
@@ -267,9 +267,9 @@ normalise_fitZ_names <- function(fitZ, Zp.names = NULL, n_classes = NULL) {
 #' `fitZ_from_multiLCA`) so that `ref_idx` becomes the reference class.
 #' This involves:
 #' \enumerate{
-#'   \item Rebasing `$mGamma` -- reconstructing the full T-column log-ratio
+#'   \item Rebasing `$mGamma`: reconstructing the full T-column log-ratio
 #'     matrix, subtracting the new reference column, and dropping it.
-#'   \item Propagating through `$Varmat_cor` via the delta method -- the
+#'   \item Propagating through `$Varmat_cor` via the delta method: the
 #'     rebasing transformation is linear (`gamma_new = A * gamma_old`)
 #'     so the vcov transforms exactly as `A %*% V %*% t(A)`.
 #'   \item Updating all column names.
@@ -285,10 +285,10 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
     return(NULL)
   }
 
-  # Normalise names first so all downstream logic sees clean "Intercept"/"Zp"
+  # Normalize names first so all downstream logic sees clean "Intercept"/"Zp"
   # rownames and "C2"/"C3" colnames regardless of whether fitZ came from
   # fitZ_from_fit0, fitZ_from_multiLCA, or a raw multiLCA call.
-  fitZ <- normalise_fitZ_names(fitZ, n_classes = ncol(fitZ$mGamma) + 1L)
+  fitZ <- normalize_fitZ_names(fitZ, n_classes = ncol(fitZ$mGamma) + 1L)
 
   mGamma <- fitZ$mGamma # Q x (T-1): cols = non-ref classes (C2..CT)
   Q <- nrow(mGamma)
@@ -296,17 +296,16 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
 
   if (ref_idx == 1L) {
     return(fitZ)
-  } # already the right reference
+  }
 
   # ---- Step 1: rebase mGamma --------------------------------------------------
   # Reconstruct Q x T full log-ratio matrix (column 1 = 0, reference)
   gamma_full <- cbind(0, mGamma) # Q x T
 
-  # Subtract the new reference column
   new_ref_col <- gamma_full[, ref_idx, drop = FALSE] # Q x 1
   gamma_rebased <- gamma_full - as.vector(new_ref_col) # Q x T, col ref_idx = 0
 
-  # Drop the new reference column; keep remaining classes in ascending order
+  # Drop the new reference column and keep remaining classes in ascending order
   keep_cols <- seq_len(T)[-ref_idx] # T-1 indices
   gamma_new <- gamma_rebased[, keep_cols, drop = FALSE]
   colnames(gamma_new) <- paste0("C", keep_cols)
@@ -319,8 +318,7 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
   # After rebasing: theta_new = (A_kron_I_Q) * theta_old
   # where A is the (T-1) x (T-1) contrast matrix acting on class columns.
   #
-  # A[i, j] = I(keep_cols[i] == old_col_j) - I(ref_idx == old_col_j + 1)
-  # Simpler: A = gamma_rebased[, keep_cols] expressed as a linear function
+  # A = gamma_rebased[, keep_cols] expressed as a linear function
   # of gamma_full[, -1] (the original non-ref columns).
   #
   # gamma_full[, keep_cols] = gamma_full[, keep_cols]
@@ -330,8 +328,8 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
   # with the convention that the "C1" column has index 0 (not in basis).
   #
   # For the original columns j = 2..T (indexed 1..T-1 in mGamma):
-  #   A[i, j] = I(keep_cols[i] - 1 == j)       (direct contribution)
-  #           - I(ref_idx - 1   == j)            (subtracted reference)
+  #   A[i, j] = I(keep_cols[i] - 1 == j)
+  #           - I(ref_idx - 1   == j)
 
   if (!is.null(fitZ$Varmat_cor) || !is.null(fitZ$raw_fit$Varmat_cor)) {
     V <- if (!is.null(fitZ$Varmat_cor)) {
@@ -358,7 +356,6 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
       }
     }
 
-    # Kronecker: A acts on class columns, I_Q acts on predictor rows
     # Full transformation: (A kron I_Q)
     A_kron <- kronecker(A, diag(Q)) # Q*(T-1) x Q*(T-1)
     V_new <- A_kron %*% V %*% t(A_kron)
@@ -388,7 +385,7 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
 #'
 #' Reorders columns of mPhi and vPi so that the desired reference class
 #' becomes column 1 before estimation. This ensures the multinomial logit
-#' is parameterised with the correct baseline from the start.
+#' is parameterized with the correct baseline from the start.
 #'
 #' @param fit0    Raw multilevLCA fit object (has $mPhi and $vPi).
 #' @param ref_idx Integer. Class index to move to position 1.
@@ -432,7 +429,6 @@ compress_Y <- function(mY_exp, ivItemcat) {
     all_na <- rowSums(!is.na(block)) == 0L
 
     # which.max returns the column index of the first 1 (0-based: subtract 1)
-    # For NA rows, which.max on NAs returns 1L but we override with NA
     codes <- apply(block, 1L, \(row) {
       if (all(is.na(row))) {
         NA_integer_
@@ -456,7 +452,7 @@ compress_Y <- function(mY_exp, ivItemcat) {
 #'
 #' For dichotomous items (K_h=2) the two columns are stored. For polytomous
 #' items (K_h>2) all K_h columns are stored. This function first compresses
-#' the expanded Y back to integer codes via \code{compress_Y}, then re-expands
+#' the expanded Y back to integer codes through \code{compress_Y}, then re-expands
 #' consistently via \code{expand_Y} so downstream functions receive the correct
 #' N x K_total matrix.
 #'
@@ -477,7 +473,7 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
   mU <- fit0$mU
   if (is.null(mU)) {
     stop(
-      "fit0$mU is NULL -- multilevLCA must be run with mU stored.",
+      "fit0$mU is NULL -- multilevLCA must be run with mU stored. Run multiLCA again with etxout=TRUE.",
       call. = FALSE
     )
   }
@@ -497,7 +493,6 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
         call. = FALSE
       )
     }
-    # Y columns are everything except the last T columns
     y_names <- cn[seq_len(ncol(mU) - T)]
     # Polytomous columns end in ".0", ".1", etc.; dichotomous do not
     has_suffix <- grepl("\\.[0-9]+$", y_names)
