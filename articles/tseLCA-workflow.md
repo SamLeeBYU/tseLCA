@@ -238,6 +238,7 @@ summary(d.three_step)
 #> Log-likelihood : -1338.2884
 #> AIC            : 2756.5768
 #> BIC            : 2925.1611
+#> Entropy R²     : 0.8846  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -246,10 +247,10 @@ summary(d.three_step)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.8739    0.3145  5.9578 < 0.001 ***
-#> Zp:C2         -0.8833    0.1323 -6.6760 < 0.001 ***
-#> Intercept:C3  -4.3703    0.6863 -6.3681 < 0.001 ***
-#> Zp:C3          1.1945    0.1722  6.9378 < 0.001 ***
+#> Intercept:C2   1.8739    0.3159  5.9313 < 0.001 ***
+#> Zp:C2         -0.8833    0.1331 -6.6364 < 0.001 ***
+#> Intercept:C3  -4.3703    0.6918 -6.3169 < 0.001 ***
+#> Zp:C3          1.1945    0.1735  6.8850 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -265,11 +266,11 @@ coef(d.three_step)
 #> Intercept  1.8738903 -4.370297
 #> Zp        -0.8833431  1.194500
 vcov(d.three_step)
-#>              Intercept:C2       Zp:C2 Intercept:C3        Zp:C3
-#> Intercept:C2  0.098927154 -0.03755319  -0.01804415  0.002973586
-#> Zp:C2        -0.037553186  0.01750763   0.01052578 -0.001615810
-#> Intercept:C3 -0.018044146  0.01052578   0.47097629 -0.115779777
-#> Zp:C3         0.002973586 -0.00161581  -0.11577978  0.029643072
+#>              Intercept:C2        Zp:C2 Intercept:C3        Zp:C3
+#> Intercept:C2  0.099811915 -0.037977145  -0.02047535  0.003563972
+#> Zp:C2        -0.037977145  0.017717066   0.01161711 -0.001880094
+#> Intercept:C3 -0.020475347  0.011617106   0.47864889 -0.117651101
+#> Zp:C3         0.003563972 -0.001880094  -0.11765110  0.030100056
 ```
 
 ### Proportional assignment
@@ -302,6 +303,7 @@ summary(d.three_step.prop)
 #> Log-likelihood : -1338.3943
 #> AIC            : 2756.7886
 #> BIC            : 2925.3730
+#> Entropy R²     : 0.8842  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -310,10 +312,10 @@ summary(d.three_step.prop)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.8671    0.3151  5.9261 < 0.001 ***
-#> Zp:C2         -0.8756    0.1334 -6.5631 < 0.001 ***
-#> Intercept:C3  -4.5000    0.6861 -6.5584 < 0.001 ***
-#> Zp:C3          1.2258    0.1727  7.0971 < 0.001 ***
+#> Intercept:C2   1.8671    0.3189  5.8552 < 0.001 ***
+#> Zp:C2         -0.8756    0.1352 -6.4764 < 0.001 ***
+#> Intercept:C3  -4.5000    0.6967 -6.4591 < 0.001 ***
+#> Zp:C3          1.2258    0.1752  6.9950 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -341,6 +343,7 @@ summary(d.three_step.simple)
 #> Log-likelihood : -1338.2884
 #> AIC            : 2756.5768
 #> BIC            : 2925.1611
+#> Entropy R²     : 0.8846  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -381,6 +384,7 @@ summary(d.three_step.bch)
 #> Log-likelihood : -1338.4071
 #> AIC            : 2756.8142
 #> BIC            : 2925.3985
+#> Entropy R²     : 0.8853  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -432,6 +436,7 @@ summary(d.low.three_step.prop)
 #> Log-likelihood : -1974.5489
 #> AIC            : 4029.0977
 #> BIC            : 4197.6821
+#> Entropy R²     : 0.4410  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -440,10 +445,10 @@ summary(d.low.three_step.prop)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   0.9140    0.8652  1.0565 0.2908     
-#> Zp:C2         -1.0336    0.6246 -1.6547 0.0980  .  
-#> Intercept:C3  -4.2276    0.9280 -4.5558 < 0.001 ***
-#> Zp:C3          1.1703    0.2458  4.7616 < 0.001 ***
+#> Intercept:C2   0.9140    1.7455  0.5237 0.6005     
+#> Zp:C2         -1.0336    1.6784 -0.6158 0.5380     
+#> Intercept:C3  -4.2276    1.7326 -2.4400 0.0147  *  
+#> Zp:C3          1.1703    0.3835  3.0515 0.0023  ** 
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -468,6 +473,7 @@ summary(d.three_step.simple)
 #> Log-likelihood : -1338.2884
 #> AIC            : 2756.5768
 #> BIC            : 2925.1611
+#> Entropy R²     : 0.8846  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -501,6 +507,7 @@ summary(d.three_step.simpleC2)
 #> Log-likelihood : -1338.2884
 #> AIC            : 2756.5768
 #> BIC            : 2925.1611
+#> Entropy R²     : 0.8846  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C1      C3
@@ -534,6 +541,7 @@ summary(d.three_step.simpleC3)
 #> Log-likelihood : -1338.2884
 #> AIC            : 2756.5768
 #> BIC            : 2925.1611
+#> Entropy R²     : 0.8846  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C1      C2
@@ -584,6 +592,7 @@ summary(d.three_step.prop2)
 #> Log-likelihood : -1338.3943
 #> AIC            : 2756.7886
 #> BIC            : 2925.3730
+#> Entropy R²     : 0.8842  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -592,10 +601,10 @@ summary(d.three_step.prop2)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.8671    0.3151  5.9261 < 0.001 ***
-#> Zp:C2         -0.8756    0.1334 -6.5631 < 0.001 ***
-#> Intercept:C3  -4.5000    0.6861 -6.5584 < 0.001 ***
-#> Zp:C3          1.2258    0.1727  7.0971 < 0.001 ***
+#> Intercept:C2   1.8671    0.3189  5.8552 < 0.001 ***
+#> Zp:C2         -0.8756    0.1352 -6.4764 < 0.001 ***
+#> Intercept:C3  -4.5000    0.6967 -6.4591 < 0.001 ***
+#> Zp:C3          1.2258    0.1752  6.9950 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -633,6 +642,7 @@ summary(d.low.three_step.prop2)
 #> Log-likelihood : -1986.2340
 #> AIC            : 4052.4680
 #> BIC            : 4221.0523
+#> Entropy R²     : 0.3761  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -641,10 +651,10 @@ summary(d.low.three_step.prop2)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.3449    0.4028  3.3392 < 0.001 ***
-#> Zp:C2         -0.2669    0.1553 -1.7180 0.0858  .  
-#> Intercept:C3  -4.9820    0.9245 -5.3886 < 0.001 ***
-#> Zp:C3          1.2694    0.2203  5.7631 < 0.001 ***
+#> Intercept:C2   1.3449    0.6437  2.0894 0.0367  *  
+#> Zp:C2         -0.2669    0.3026 -0.8820 0.3778     
+#> Intercept:C3  -4.9820    1.1859 -4.2009 < 0.001 ***
+#> Zp:C3          1.2694    0.2457  5.1662 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -678,6 +688,7 @@ summary(d.low.three_step.prop3)
 #> Log-likelihood : -1986.2340
 #> AIC            : 4052.4680
 #> BIC            : 4221.0523
+#> Entropy R²     : 0.3761  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -686,10 +697,10 @@ summary(d.low.three_step.prop3)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.3449    0.4028  3.3392 < 0.001 ***
-#> Zp:C2         -0.2669    0.1553 -1.7180 0.0858  .  
-#> Intercept:C3  -4.9820    0.9245 -5.3886 < 0.001 ***
-#> Zp:C3          1.2694    0.2203  5.7631 < 0.001 ***
+#> Intercept:C2   1.3449    0.6437  2.0894 0.0367  *  
+#> Zp:C2         -0.2669    0.3026 -0.8820 0.3778     
+#> Intercept:C3  -4.9820    1.1859 -4.2009 < 0.001 ***
+#> Zp:C3          1.2694    0.2457  5.1662 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -833,6 +844,7 @@ summary(d.sparse.three_step)
 #> Log-likelihood : -1126.5227
 #> AIC            : 2333.0454
 #> BIC            : 2498.0327
+#> Entropy R²     : 0.8571  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -841,10 +853,10 @@ summary(d.sparse.three_step)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.6060    0.3930  6.6303 < 0.001 ***
-#> Zp:C2         -1.0627    0.1661 -6.3986 < 0.001 ***
-#> Intercept:C3  -4.2255    0.5598 -7.5483 < 0.001 ***
-#> Zp:C3          1.1247    0.1434  7.8434 < 0.001 ***
+#> Intercept:C2   2.6060    0.3945  6.6051 < 0.001 ***
+#> Zp:C2         -1.0627    0.1671 -6.3612 < 0.001 ***
+#> Intercept:C3  -4.2255    0.5607 -7.5359 < 0.001 ***
+#> Zp:C3          1.1247    0.1436  7.8297 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -874,6 +886,7 @@ summary(d.sparse.three_step2)
 #> Log-likelihood : -1126.5227
 #> AIC            : 2333.0454
 #> BIC            : 2498.0327
+#> Entropy R²     : 0.8571  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -882,10 +895,10 @@ summary(d.sparse.three_step2)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.6060    0.3930  6.6303 < 0.001 ***
-#> Zp:C2         -1.0627    0.1661 -6.3986 < 0.001 ***
-#> Intercept:C3  -4.2255    0.5598 -7.5483 < 0.001 ***
-#> Zp:C3          1.1247    0.1434  7.8434 < 0.001 ***
+#> Intercept:C2   2.6060    0.3945  6.6051 < 0.001 ***
+#> Zp:C2         -1.0627    0.1671 -6.3612 < 0.001 ***
+#> Intercept:C3  -4.2255    0.5607 -7.5359 < 0.001 ***
+#> Zp:C3          1.1247    0.1436  7.8297 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -930,6 +943,8 @@ elec.three_step <- three_step(
   #With the neutral group as the base-category
   rebase = "C3"
 )
+#> Warning: lca_indiv_varmat: Infomat is singular even after removing boundary
+#> parameters; returning NA matrix. Check for near-empty classes.
 summary(elec.three_step)
 #> -- tseLCA Three-Step Covariate Model -----------------------
 #> Latent classes : 3
@@ -937,6 +952,7 @@ summary(elec.three_step)
 #> Log-likelihood : -16278.0242
 #> AIC            : 32852.0485
 #> BIC            : 33617.2262
+#> Entropy R²     : 0.7956  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C1      C2
@@ -944,11 +960,11 @@ summary(elec.three_step)
 #> PARTY      0.4289 -0.6983
 #> 
 #> Three-step estimates:
-#>              Estimate Std.Error  z.value     p.value
-#> Intercept:C1  -2.4701    0.3077  -8.0287 < 0.001 ***
-#> PARTY:C1       0.4077    0.0561   7.2641 < 0.001 ***
-#> Intercept:C2   1.7324    0.1660  10.4338 < 0.001 ***
-#> PARTY:C2      -0.6727    0.0546 -12.3108 < 0.001 ***
+#>              Estimate Std.Error z.value p.value
+#> Intercept:C1  -2.4701        NA      NA      NA
+#> PARTY:C1       0.4077        NA      NA      NA
+#> Intercept:C2   1.7324        NA      NA      NA
+#> PARTY:C2      -0.6727        NA      NA      NA
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -1037,9 +1053,9 @@ summary(d.distal.three_step.ml)
 #> 
 #> Distal outcome estimates by class:
 #>              Estimate Std.Error  z.value     p.value
-#> mu_C1 (mean)  -1.0899    0.0795 -13.7126 < 0.001 ***
-#> mu_C2 (mean)   1.0012    0.0817  12.2577 < 0.001 ***
-#> mu_C3 (mean)   0.0450    0.0855   0.5260 0.5989     
+#> mu_C1 (mean)  -1.0899    0.0795 -13.7040 < 0.001 ***
+#> mu_C2 (mean)   1.0012    0.0818  12.2438 < 0.001 ***
+#> mu_C3 (mean)   0.0450    0.0856   0.5257 0.5991     
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 summary(d.distal.three_step.bch)
@@ -1110,17 +1126,17 @@ summary(d.covariate.three_step)
 #> 
 #> Covariate -- three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.4602    0.3814  6.4505 < 0.001 ***
-#> Zp:C2         -1.1178    0.1748 -6.3942 < 0.001 ***
-#> Intercept:C3  -4.6274    0.5986 -7.7309 < 0.001 ***
-#> Zp:C3          1.2413    0.1487  8.3460 < 0.001 ***
+#> Intercept:C2   2.4602    0.3855  6.3819 < 0.001 ***
+#> Zp:C2         -1.1178    0.1771 -6.3119 < 0.001 ***
+#> Intercept:C3  -4.6274    0.6030 -7.6738 < 0.001 ***
+#> Zp:C3          1.2413    0.1499  8.2791 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #> 
 #> Distal outcome -- three-step estimates:
 #>              Estimate Std.Error  z.value     p.value
-#> mu_C1 (mean)  -0.9346    0.0774 -12.0781 < 0.001 ***
-#> mu_C2 (mean)   1.0685    0.0893  11.9597 < 0.001 ***
+#> mu_C1 (mean)  -0.9346    0.0774 -12.0711 < 0.001 ***
+#> mu_C2 (mean)   1.0685    0.0894  11.9577 < 0.001 ***
 #> mu_C3 (mean)  -0.0007    0.0745  -0.0097 0.9923     
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -1144,7 +1160,7 @@ three_step(
   diag() |>
   sqrt()
 #>      mu_C1      mu_C2      mu_C3 
-#> 0.07681106 0.09776083 0.07603885
+#> 0.07688217 0.09796084 0.07614852
 ```
 
 ------------------------------------------------------------------------

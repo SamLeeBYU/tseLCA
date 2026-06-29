@@ -1,12 +1,17 @@
 # Extract the variance-covariance matrix from a tseLCA model object
 
-Extract the variance-covariance matrix from a tseLCA model object
+For measurement models, returns the BHHH variance-covariance matrix in
+the unconstrained log-ratio parameterisation (NOT the probability
+scale). Row and column names identify each parameter as `log(pi_t/pi_1)`
+(class prevalences) or `log(P(Y=k|C_t)/P(Y=0|C_t))` (item-response
+probabilities). An attribute `"parameterisation"` is attached to remind
+the user of the scale.
 
 ## Usage
 
 ``` r
 # S3 method for class 'tseLCA_measurement'
-vcov(object, ...)
+vcov(object, boundary.tol = 0.01, ...)
 
 # S3 method for class 'tseLCA_covariate'
 vcov(object, which = c("three_step", "two_step"), ...)
@@ -30,6 +35,11 @@ vcov(
   A `tseLCA` object returned by
   [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md).
 
+- boundary.tol:
+
+  Scalar. Parameters within this tolerance of 0 or 1 are treated as
+  fixed. Default `1e-2`.
+
 - ...:
 
   Further arguments (currently unused).
@@ -46,17 +56,33 @@ vcov(
 
 ## Value
 
-A named square matrix. The two-step vcov is only available when
-`get.twostep.vcov = TRUE` was set in
-[`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md).
+A named square matrix in the unconstrained log-ratio parameterisation.
+Row/column names identify each parameter as `log(pi_t/pi_1)` or
+`log(P(Y=k|C_t)/P(Y=0|C_t))`. An attribute `"parameterisation"` is
+attached as a reminder. Returns `NULL` invisibly if `fit0$mU` is not
+available. For structural models, returns the Step-3 vcov matrix; the
+two-step vcov is only available when `get.twostep.vcov = TRUE`.
 
 ## Examples
 
 ``` r
 d    <- generate_data(100, "high", "covariate", seed = 1)
 fit_m <- three_step(d, paste0("Y", 1:6), n_classes = 3)
-vcov(fit_m)   # returns NULL with a message
-#> No variance-covariance matrix available for measurement-only models.
+V <- vcov(fit_m)
+# Names show log-ratio parameterisation:
+rownames(V)
+#>  [1] "log(pi_C2/pi_C1)"           "log(pi_C3/pi_C1)"          
+#>  [3] "log(P(Y1=1|C1)/P(Y1=0|C1))" "log(P(Y2=1|C1)/P(Y2=0|C1))"
+#>  [5] "log(P(Y3=1|C1)/P(Y3=0|C1))" "log(P(Y4=1|C1)/P(Y4=0|C1))"
+#>  [7] "log(P(Y5=1|C1)/P(Y5=0|C1))" "log(P(Y6=1|C1)/P(Y6=0|C1))"
+#>  [9] "log(P(Y1=1|C2)/P(Y1=0|C2))" "log(P(Y2=1|C2)/P(Y2=0|C2))"
+#> [11] "log(P(Y3=1|C2)/P(Y3=0|C2))" "log(P(Y4=1|C2)/P(Y4=0|C2))"
+#> [13] "log(P(Y5=1|C2)/P(Y5=0|C2))" "log(P(Y6=1|C2)/P(Y6=0|C2))"
+#> [15] "log(P(Y1=1|C3)/P(Y1=0|C3))" "log(P(Y2=1|C3)/P(Y2=0|C3))"
+#> [17] "log(P(Y3=1|C3)/P(Y3=0|C3))" "log(P(Y4=1|C3)/P(Y4=0|C3))"
+#> [19] "log(P(Y5=1|C3)/P(Y5=0|C3))" "log(P(Y6=1|C3)/P(Y6=0|C3))"
+attr(V, "parameterisation")
+#> [1] "log-ratio (unconstrained); NOT probabilities"
 # \donttest{
 d   <- generate_data(200, "high", "covariate", seed = 1)
 fit <- three_step(d, paste0("Y", 1:6), n_classes = 3,

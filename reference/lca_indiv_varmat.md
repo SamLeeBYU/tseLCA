@@ -13,7 +13,8 @@ lca_indiv_varmat(
   fit0,
   ivItemcat,
   boundary.tol = 0.01,
-  use.freq = TRUE
+  use.freq = TRUE,
+  u_post = NULL
 )
 ```
 
@@ -42,6 +43,12 @@ lca_indiv_varmat(
 - use.freq:
 
   Collapse duplicate score rows before cross-product. Default `TRUE`.
+
+- u_post:
+
+  Optional N x T matrix of posterior class probabilities. When supplied
+  (e.g. extracted from `fit0$mU` via `extract_Y_from_mU`),
+  `compute_posteriors` is skipped. Default `NULL`.
 
 ## Value
 

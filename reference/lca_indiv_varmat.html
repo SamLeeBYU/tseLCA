@@ -37,7 +37,7 @@ matrix for LCA measurement model parameters in the unconstrained
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Individual-level BHHH Varmat for binary and polytomous LCA</h1>
-      <small class="dont-index">Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/R/lca_measurement.R" class="external-link"><code>R/lca_measurement.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/R/three_step.R" class="external-link"><code>R/three_step.R</code></a></small>
       <div class="d-none name"><code>lca_indiv_varmat.Rd</code></div>
     </div>
 
@@ -55,7 +55,8 @@ matrix for LCA measurement model parameters in the unconstrained
 <span>  <span class="va">fit0</span>,</span>
 <span>  <span class="va">ivItemcat</span>,</span>
 <span>  boundary.tol <span class="op">=</span> <span class="fl">0.01</span>,</span>
-<span>  use.freq <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  use.freq <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  u_post <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -87,6 +88,13 @@ matrix for LCA measurement model parameters in the unconstrained
 <dt id="arg-use-freq">use.freq<a class="anchor" aria-label="anchor" href="#arg-use-freq"></a></dt>
 <dd><p>Collapse duplicate score rows before cross-product.
 Default <code>TRUE</code>.</p></dd>
+
+
+<dt id="arg-u-post">u_post<a class="anchor" aria-label="anchor" href="#arg-u-post"></a></dt>
+<dd><p>Optional N x T matrix of posterior class probabilities.
+When supplied (e.g. extracted from <code>fit0$mU</code> via
+<code>extract_Y_from_mU</code>), <code>compute_posteriors</code> is skipped.
+Default <code>NULL</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -53,6 +53,7 @@ fit <- three_step(d, paste0("Y", 1:6), n_classes = 3,
 print(fit)
 #> tseLCA -- three-step covariate model
 #>   Classes: 3   Estimator: ML   Log-lik: -542.3379   AIC: 1164.68   BIC: 1296.61
+#>   Entropy R² (covariate-adjusted): 0.8772
 #> 
 #> Covariate coefficients (three-step):
 #>              Estimate Std.Error z.value     p.value

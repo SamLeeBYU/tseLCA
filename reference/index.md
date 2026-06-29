@@ -32,8 +32,6 @@
 - [`generate_data()`](https://samleebyu.github.io/tseLCA/reference/generate_data.md)
   : Generate one dataset following the Bakk & Kuha (2018) simulation
   design
-- [`lca_indiv_varmat()`](https://samleebyu.github.io/tseLCA/reference/lca_indiv_varmat.md)
-  : Individual-level BHHH Varmat for binary and polytomous LCA
 - [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
   : Fit the LCA measurement model (Step 1)
 - [`make_rho()`](https://samleebyu.github.io/tseLCA/reference/make_rho.md)

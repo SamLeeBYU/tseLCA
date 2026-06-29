@@ -78,6 +78,7 @@ summary(fit)
 #> Log-likelihood : -542.3379
 #> AIC            : 1164.6758
 #> BIC            : 1296.6084
+#> Entropy R²     : 0.8772  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3

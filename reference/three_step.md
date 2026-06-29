@@ -143,8 +143,32 @@ three_step(
 
 ## Value
 
-A list containing `$measurement_model`, `$covariate` (if `Zp.names`
-supplied), and/or `$distal` (if `Zo.name` supplied).
+An S3 object of class `tseLCA` with subclass depending on which models
+were estimated:
+
+- `tseLCA_measurement`:
+
+  Measurement model only. Contains `$measurement_model`, `$llik`,
+  `$AIC`, `$BIC`, `$R2entr`, `$n_classes`, `$posteriors` (N x T soft
+  posterior matrix), `$classifications` (length-N modal class vector).
+
+- `tseLCA_covariate`:
+
+  Covariate model. Adds `$three_step` (gamma coefficient matrix),
+  `$three_step_vcov`, `$two_step`, `$two_step_vcov`, `$estimator`,
+  `$entropy.R2` (covariate-adjusted entropy R^2), `$posteriors`,
+  `$classifications`.
+
+- `tseLCA_distal`:
+
+  Distal outcome model. Contains `$three_step` (class means or
+  log-rates), `$three_step_vcov`, `$family`, `$estimator`,
+  `$posteriors`, `$classifications`.
+
+- `tseLCA_both`:
+
+  Both models. Top-level `$covariate` and `$distal` sub-lists plus
+  shared `$posteriors`, `$classifications`, `$estimator`.
 
 ## References
 
@@ -207,6 +231,7 @@ summary(fit)
 #> Log-likelihood : -542.3379
 #> AIC            : 1164.6758
 #> BIC            : 1296.6084
+#> Entropy R²     : 0.8772  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -243,6 +268,7 @@ summary(fit_cor)
 #> Log-likelihood : -542.2847
 #> AIC            : 1164.5695
 #> BIC            : 1296.5022
+#> Entropy R²     : 0.8775  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -251,10 +277,10 @@ summary(fit_cor)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.9436    0.4719  4.1187 < 0.001 ***
-#> Zp:C2         -0.7810    0.1831 -4.2646 < 0.001 ***
-#> Intercept:C3  -5.3427    1.2147 -4.3985 < 0.001 ***
-#> Zp:C3          1.4236    0.3110  4.5776 < 0.001 ***
+#> Intercept:C2   1.9436    0.4771  4.0742 < 0.001 ***
+#> Zp:C2         -0.7810    0.1855 -4.2091 < 0.001 ***
+#> Intercept:C3  -5.3427    1.2445 -4.2931 < 0.001 ***
+#> Zp:C3          1.4236    0.3179  4.4777 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -269,6 +295,7 @@ summary(fit_bch)
 #> Log-likelihood : -542.5750
 #> AIC            : 1165.1501
 #> BIC            : 1297.0828
+#> Entropy R²     : 0.8767  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -295,6 +322,7 @@ summary(fit_c2)
 #> Log-likelihood : -542.3379
 #> AIC            : 1164.6758
 #> BIC            : 1296.6084
+#> Entropy R²     : 0.8772  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C1      C3
@@ -341,6 +369,7 @@ summary(fit2)
 #> Log-likelihood : -542.3379
 #> AIC            : 1164.6758
 #> BIC            : 1296.6084
+#> Entropy R²     : 0.8772  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3

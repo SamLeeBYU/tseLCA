@@ -181,9 +181,30 @@ becomes column 1 before any structural estimation. Default <code>"C1"</code>.</p
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing <code>$measurement_model</code>, <code>$covariate</code> (if
-<code>Zp.names</code> supplied), and/or <code>$distal</code> (if <code>Zo.name</code> supplied).</p>
-    </div>
+    <p>An S3 object of class <code>tseLCA</code> with subclass depending on which
+models were estimated:</p><dl><dt><code>tseLCA_measurement</code></dt>
+<dd><p>Measurement model only. Contains
+<code>$measurement_model</code>, <code>$llik</code>, <code>$AIC</code>, <code>$BIC</code>, <code>$R2entr</code>,
+<code>$n_classes</code>, <code>$posteriors</code> (N x T soft posterior matrix),
+<code>$classifications</code> (length-N modal class vector).</p></dd>
+
+<dt><code>tseLCA_covariate</code></dt>
+<dd><p>Covariate model. Adds <code>$three_step</code> (gamma
+coefficient matrix), <code>$three_step_vcov</code>, <code>$two_step</code>,
+<code>$two_step_vcov</code>, <code>$estimator</code>, <code>$entropy.R2</code> (covariate-adjusted
+entropy R^2), <code>$posteriors</code>, <code>$classifications</code>.</p></dd>
+
+<dt><code>tseLCA_distal</code></dt>
+<dd><p>Distal outcome model. Contains <code>$three_step</code>
+(class means or log-rates), <code>$three_step_vcov</code>, <code>$family</code>,
+<code>$estimator</code>, <code>$posteriors</code>, <code>$classifications</code>.</p></dd>
+
+<dt><code>tseLCA_both</code></dt>
+<dd><p>Both models. Top-level <code>$covariate</code> and <code>$distal</code>
+sub-lists plus shared <code>$posteriors</code>, <code>$classifications</code>, <code>$estimator</code>.</p></dd>
+
+
+</dl></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Bakk, Z., Tekle, F. B., &amp; Vermunt, J. K. (2013). Estimating the association
@@ -241,6 +262,7 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
 <span class="r-out co"><span class="r-pr">#&gt;</span> Log-likelihood : -542.3379</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> AIC            : 1164.6758</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> BIC            : 1296.6084</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Entropy R²     : 0.8772  (covariate-adjusted)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Two-step (starting) estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                C2      C3</span>
@@ -277,6 +299,7 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
 <span class="r-out co"><span class="r-pr">#&gt;</span> Log-likelihood : -542.2847</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> AIC            : 1164.5695</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> BIC            : 1296.5022</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Entropy R²     : 0.8775  (covariate-adjusted)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Two-step (starting) estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                C2      C3</span>
@@ -285,10 +308,10 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Three-step estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>              Estimate Std.Error z.value     p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept:C2   1.9436    0.4719  4.1187 &lt; 0.001 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Zp:C2         -0.7810    0.1831 -4.2646 &lt; 0.001 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept:C3  -5.3427    1.2147 -4.3985 &lt; 0.001 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Zp:C3          1.4236    0.3110  4.5776 &lt; 0.001 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept:C2   1.9436    0.4771  4.0742 &lt; 0.001 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zp:C2         -0.7810    0.1855 -4.2091 &lt; 0.001 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept:C3  -5.3427    1.2445 -4.2931 &lt; 0.001 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zp:C3          1.4236    0.3179  4.4777 &lt; 0.001 ***</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span>
 <span class="r-in"><span></span></span>
@@ -303,6 +326,7 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
 <span class="r-out co"><span class="r-pr">#&gt;</span> Log-likelihood : -542.5750</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> AIC            : 1165.1501</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> BIC            : 1297.0828</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Entropy R²     : 0.8767  (covariate-adjusted)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Two-step (starting) estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                C2      C3</span>
@@ -329,6 +353,7 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
 <span class="r-out co"><span class="r-pr">#&gt;</span> Log-likelihood : -542.3379</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> AIC            : 1164.6758</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> BIC            : 1296.6084</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Entropy R²     : 0.8772  (covariate-adjusted)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Two-step (starting) estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                C1      C3</span>
@@ -375,6 +400,7 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
 <span class="r-out co"><span class="r-pr">#&gt;</span> Log-likelihood : -542.3379</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> AIC            : 1164.6758</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> BIC            : 1296.6084</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Entropy R²     : 0.8772  (covariate-adjusted)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Two-step (starting) estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                C2      C3</span>

@@ -8,11 +8,13 @@
 <url><loc>https://samleebyu.github.io/tseLCA/reference/bk2018_params.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/clean_data.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/coef.tseLCA_measurement.html</loc></url>
+<url><loc>https://samleebyu.github.io/tseLCA/reference/compress_Y.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/draw_Zo.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/draw_Zp.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/draw_classes.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/draw_classes_given_Zp.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/draw_indicators.html</loc></url>
+<url><loc>https://samleebyu.github.io/tseLCA/reference/extract_Y_from_mU.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.html</loc></url>
 <url><loc>https://samleebyu.github.io/tseLCA/reference/generate_all_conditions.html</loc></url>
