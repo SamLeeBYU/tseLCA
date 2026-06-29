@@ -432,9 +432,6 @@ elec <- election
 elec.items <- colnames(election)[1:12]
 #Like multiLCA, we require that all variables in Y are coded as sequential integers with base level coded as 0
 elec[, elec.items] <- lapply(elec[, elec.items], function(x) as.integer(x) - 1L)
-#For covariate estimation
-elec$GENDER <- elec$GENDER - 1L
-elec$AGE <- elec$AGE - mean(elec$AGE, na.rm = TRUE)
 
 #Measurement model (not necessarily required to be run separately like this)
 elec.measurement <- three_step(
@@ -447,9 +444,11 @@ elec.three_step <- three_step(
   data = elec,
   Y.names = elec.items,
   n_classes = 3,
-  Zp.names = c("AGE", "GENDER"),
+  Zp.names = c("PARTY"),
   step1 = elec.measurement$measurement_model,
-  incomplete = TRUE
+  incomplete = TRUE,
+  #With the neutral group as the base-category
+  rebase = "C3"
 )
 summary(elec.three_step)
 
