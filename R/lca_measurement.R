@@ -3,43 +3,41 @@
 # Step-1 measurement model via multilevLCA::multiLCA.
 #
 # Exports:
-#   lca_step1()        - measurement model fit + optional two-step fitZ
-#   fitZ_from_fit0()   - pure-R EM for gamma with mPhi fixed (default fitZ path)
-#   fitZ_from_multiLCA() - two-step via multiLCA(fixedpars=1, Z=...) (used when
-#                          get.twostep.vcov = TRUE in three_step())
+#   lca_step1()          - measurement model fit + optional two-step fitZ
+#   fitZ_from_fit0()     - pure-R EM for gamma with mPhi fixed (default fitZ path)
+#   fitZ_from_multiLCA() - two-step estimation with multiLCA(fixedpars=1, Z=...) (used when get.twostep.vcov = TRUE in three_step())
 
 # -- lca_step1 -----------------------------------------------------------------
 
 #' Fit the LCA measurement model (Step 1)
 #'
-#' Estimates the latent class measurement model via \pkg{multilevLCA} and,
+#' Estimates the latent class measurement model with \pkg{multilevLCA} and
 #' optionally, fixes `mPhi` and estimates covariate effects (two-step
-#' initialization) via `fitZ_from_fit0()`.
+#' initialization) with `fitZ_from_fit0()`.
 #'
 #' @param data A data.frame containing at minimum the indicator columns.
 #' @param Y.names Character vector of item column names.
 #' @param n_classes Integer. Number of latent classes.
 #' @param Zp.names Character vector of covariate column names, or `NULL`.
-#' @param maxIter.measurement Maximum EM iterations. Default `5000L`.
+#' @param maxIter.measurement Maximum EM iterations before giving up on convergence. Default `5000L`.
 #' @param measurement.tol Convergence tolerance. Default `1e-8`.
-#' @param covariate.tol Convergence tolerance for the `fitZ` BFGS M-step.
-#' @param iter.measurement Number of random restarts when entropy R\eqn{^2} is low.
-#' @param R2.threshold Entropy R\eqn{^2} below which restarts are triggered.
-#' @param use.two.step Logical. If `TRUE`, also estimate `fitZ` via
-#'   `fitZ_from_fit0()`.
-#' @param estimate.one.step Logical. If `FALSE`, skip the unconditional EM and
-#'   only compute `fitZ`.
-#' @param incomplete Logical. FIML for partially missing indicators.
-#' @param maxIter.fitZ Maximum BFGS-EM iterations for `fitZ_from_fit0()`.
-#' @param include.intercept Logical. Prepend intercept to covariate design matrix.
+#' @param covariate.tol Convergence tolerance for the `fitZ` M-step. Default `1e-6`.
+#' @param iter.measurement Number of random restarts when entropy R\eqn{^2} is low. Default `10`.
+#' @param R2.threshold Entropy R\eqn{^2} below which restarts are triggered. Default `0.7`.
+#' @param use.two.step Logical. If `TRUE`, also estimate `fitZ` with `fitZ_from_fit0()` if `Zp.names` is applied. Default `TRUE`.
+#' @param estimate.one.step Logical. If `FALSE`, skip the unconditional EM and only compute `fitZ`. Default `TRUE`.
+#' @param incomplete Logical. FIML for partially missing indicators. See the
+#'   \code{Missing Data} section of \code{vignette("tseLCA", package = "tseLCA")}. Default `FALSE`.
+#' @param maxIter.fitZ Maximum EM iterations for `fitZ_from_fit0()`. Default `200`.
+#' @param include.intercept Logical. Prepend intercept to covariate design matrix. Default `TRUE`.
 #' @param rebase Character or integer specifying the reference latent class.
 #'   Use `"C1"`, `"C2"`, etc. or an integer index. Default `"C1"`. The
 #'   measurement model is permuted so this class becomes column 1, making it
 #'   the reference for all downstream multinomial logit parameterizations.
 #' @param verbose Logical. Print progress messages. Default `FALSE`.
 #'
-#' @return A list with `$fit0` (multilevLCA measurement model) and `$fitZ`
-#'   (two-step covariate model from `fitZ_from_fit0`, or `NULL`).
+#' @return A list with `$fit0` ([multilevLCA::multiLCA()] measurement model) and `$fitZ`
+#'   (two-step covariate model from [fitZ_from_fit0()], or `NULL`).
 #' @examples
 #' \donttest{
 #' d <- generate_data(200, "high", "covariate", seed = 1)
@@ -154,7 +152,7 @@ lca_step1 <- function(
     NULL
   }
 
-  # Permute classes so the desired reference is column 1
+  #Permute classes so the desired reference is column 1
   if (!is.null(fit0)) {
     ref_idx <- parse_rebase(rebase, n_classes)
     fit0 <- permute_fit0_classes(fit0, ref_idx)
@@ -192,10 +190,11 @@ lca_step1 <- function(
 #' @param data A data.frame.
 #' @param Y.names Character vector of item column names.
 #' @param Zp.names Character vector of covariate column names.
-#' @param tol Convergence tolerance.
-#' @param maxIter Maximum EM iterations.
-#' @param incomplete Logical.
-#' @param include.intercept Logical.
+#' @param tol Convergence tolerance. Default `1e-6`.
+#' @param maxIter Maximum EM iterations. Default `200`.
+#' @param incomplete Logical. FIML for partially missing indicators. See the
+#'   \code{Missing Data} section of \code{vignette("tseLCA", package = "tseLCA")}. Default `FALSE`.
+#' @param include.intercept Logical. Prepend intercept to covariate design matrix. Default `TRUE`.
 #' @param rebase Character or integer. Reference class for the multinomial logit
 #'   parameterization (e.g. `"C1"`, `"C2"`, or an integer). Default `"C1"`.
 #'   Must match the `rebase` used in `lca_step1()` so class column ordering
@@ -203,8 +202,26 @@ lca_step1 <- function(
 #' @param starting_val Optional Q x (T-1) starting value matrix for `mGamma`.
 #' @param verbose Logical. Print convergence messages. Default `FALSE`.
 #'
-#' @return A list with `$mGamma` (Q x (T-1)), `$mPhi`, `$vOmega`,
-#'   `$LLKSeries`, `$converged`, `$n_obs`.
+#' @return A list with the following elements:
+#'   \describe{
+#'     \item{`mGamma`}{Q x (T-1) numeric matrix of multinomial logit
+#'       coefficients, where Q is the number of columns in the covariate design
+#'       matrix (including intercept if `include.intercept = TRUE`). Rows are
+#'       named by covariate, columns by non-reference class (e.g. `"C2"`,
+#'       `"C3"`).}
+#'     \item{`mPhi`}{Expanded item parameter matrix (items x classes), fixed at
+#'       `fit0$mPhi` throughout estimation.}
+#'     \item{`vOmega`}{Length-T vector of marginal class proportions implied by
+#'       the final `mGamma`, computed as column means of the fitted class
+#'       probability matrix.}
+#'     \item{`LLKSeries`}{Single-column matrix of observed-data log-likelihoods,
+#'       one row per EM iteration. Useful for diagnosing convergence.}
+#'     \item{`converged`}{Logical. `TRUE` if the EM loop exited before
+#'       `maxIter` iterations or if the final log-likelihood change was below
+#'       `tol`.}
+#'     \item{`n_obs`}{Integer. Number of observations used in estimation after
+#'       listwise deletion on covariates.}
+#'   }
 #' @examples
 #' \donttest{
 #' d  <- generate_data(200, "high", "covariate", seed = 1)
@@ -248,7 +265,7 @@ fitZ_from_fit0 <- function(
   ivItemcat <- cd$ivItemcat
   # For fitZ we need the Z rows that overlap with the Y-kept rows
   mZ <- cd$Z_mat # N_Z x Q, already complete-case
-  # Restrict Y to the Z-complete rows
+
   mY <- mY[cd$keep_step3_Z_in_Y, , drop = FALSE]
   if (!is.null(mDesign)) {
     mDesign <- mDesign[cd$keep_step3_Z_in_Y, , drop = FALSE]
@@ -259,6 +276,7 @@ fitZ_from_fit0 <- function(
   iN <- nrow(mY)
   iP <- ncol(mZ)
 
+  #Prevent parameter estimates on the boundary of the support (prevents NA's in posteriors)
   phi_clamped <- pmax(pmin(mPhi, 1 - 1e-10), 1e-10)
   log_p_it <- if (is.null(mDesign)) {
     mY %*% log(phi_clamped)
@@ -385,15 +403,31 @@ fitZ_from_fit0 <- function(
 #' @param covariate.tol NR tolerance for the covariate model.
 #' @param iter.measurement Number of random restarts.
 #' @param R2.threshold Entropy R\eqn{^2} restart threshold.
-#' @param incomplete Logical.
+#' @param incomplete Logical. FIML for partially missing indicators. See the
+#'   \code{Missing Data} section of \code{vignette("tseLCA", package = "tseLCA")}.
+#'   Default `FALSE`.
 #' @param rebase Character or integer. Reference class for column naming of
 #'   `$mGamma`. Must match the `rebase` used in [tseLCA::three_step()] so
 #'   coefficient labels are consistent. Default `"C1"`.
 #' @param verbose Logical.
 #'
-#' @return A list with `$mGamma`, `$mPhi`, `$vOmega`, `$LLKSeries`, and
-#'   `$raw_fit` (the full multilevLCA output, including `$Varmat_cor` and
-#'   `$SEs_cor_gamma` if available).
+#' @return A list with the following elements:
+#'   \describe{
+#'     \item{`mGamma`}{Q x (T-1) numeric matrix of multinomial logit
+#'       coefficients. Rows are named by covariate (including `"Intercept"`),
+#'       columns by non-reference class (e.g. `"C2"`, `"C3"`).}
+#'     \item{`mPhi`}{Item parameter matrix (items x classes) from the
+#'       fixed-parameter multilevLCA fit.}
+#'     \item{`vOmega`}{Length-T vector of marginal class proportions, computed
+#'       as the average of the fitted class probability matrix (`vPi_avg` in
+#'       multilevLCA output).}
+#'     \item{`LLKSeries`}{Matrix of observed-data log-likelihoods across EM
+#'       iterations, passed through directly from the multilevLCA fit.}
+#'     \item{`raw_fit`}{The full [multilevLCA::multiLCA()] output object,
+#'       including `$Varmat_cor` (corrected variance matrix) and
+#'       `$SEs_cor_gamma` (corrected standard errors for `mGamma`) if
+#'       available.}
+#'   }
 #' @examples
 #' \donttest{
 #' d <- generate_data(200, "high", "covariate", seed = 1)
