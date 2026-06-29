@@ -6,6 +6,9 @@
 ### E-Mail: samlee@arizona.edu
 #####################################################
 
+# Run this script with:
+# source(system.file("examples", "tseLCA_sim.R", package = "tseLCA"))
+
 ###################################################
 ### preliminaries
 ###################################################
@@ -65,9 +68,7 @@ if (!file.exists(dataset_path)) {
 
 # Pre-computing measurement models for each replicate saves time when
 # comparing estimators (BCH vs ML, proportional/modal assignment) because
-# lca_step1() is the computational bottleneck. Every dataset is unique
-# (different seed per replicate x condition), so no measurement models
-# can be shared.
+# lca_step1() is the computational bottleneck.
 #
 # We call multiLCA to obtain two-step vcov estimates.
 # While multiLCA cannot accomodate fixed parameter values as input,
@@ -175,6 +176,7 @@ if (length(pending) == 0L) {
         next
       }
 
+      #Set a unique seed for reproducibility
       set.seed(
         which(scenarios == sc) *
           1e6 +
@@ -206,6 +208,8 @@ if (length(pending) == 0L) {
             verbose = FALSE
           )$measurement_model
 
+          #Two-step starting values are currently not available for distal outcomes
+          # so we only compare tseLCA to multiLCA's two-step estimation approach
           if (sc == "covariate") {
             c.fitZ <- fitZ_from_fit0(
               fit0 = m.r$fit0,
@@ -245,6 +249,7 @@ if (length(pending) == 0L) {
             )
 
             m.r$fitZ <- c.r
+            #So we can check which measurement models failed to converged (if any) after the fact
             m.r$fitZ_converged <- abs(diff(tail(c.r$LLKSeries, 2))) < 1e-8
             m.r$fitZ_iters <- c.r$iter
           }
@@ -284,9 +289,6 @@ if (length(pending) == 0L) {
 #
 # cond: character(3), e.g. c("covariate", "low", "500")
 #
-# Returns a data.frame with one row per estimator and columns:
-#   estimator, bias, rmse, coverage, se_sd_ratio, n_ok
-#
 # Covariate scenario: 5 estimators
 #   modal.ml, modal.bch, prop.ml, prop.bch, two_step
 #   Target parameter: Zp:C3 slope (true = 1), index 4 in coef vector
@@ -294,6 +296,19 @@ if (length(pending) == 0L) {
 # Distal scenario: 4 estimators
 #   modal.ml, modal.bch, prop.ml, prop.bch
 #   Target parameter: mu_C3 (true = 0), index 3 in coef vector
+#
+# Returns a data.frame with one row per estimator and columns:
+#   estimator   : A string to indicator which estimator was evaluated
+#                - modal.ml  : Vermunt (2010) ML correction with modal assignment in step 2
+#                - modal.bch : BCH correction with modal assignment in step 2
+#                - prop.ml   : Vermunt (2010) ML correction with proportional assignment in step 2
+#                - prop.bch  : BCH correction with proportional assignment in step 2
+#                - two_step  : Bakk & Kuha (2018) two-step estimator (for the covariate scenario only: Zp -> X -> Y)
+#   bias        : Monte Carlo mean estimate of the difference between the true value (testing the slope on C2 for covariate estimation and the mu parameter on C3 for the distal outcomes scenario) and the estimated parameter
+#   rmse        : Monte Carlo mean estimate of the squared difference between the true values and estimated parameters
+#   coverage    : Monte Carlo mean estimate of the coverage of the true parameters (e.g., the proportion that the true values are within estimate +/- 1.96*SE(estimate)) for an alpha-level Wald test
+#   se_sd_ratio : Monte Carlo mean estimate of the estimated SE of the estimator divided by the standard deviation of the respective sampled distribution of the corresponding parameter estimates (the closer to 1, the better)
+#   n_ok        : How many replications (out of the total 500) for that estimator resulted in a non-degenerate case (happens most frequently for the BCH methods, where the method yields a non-PSD Hessian)
 
 sim.cond <- function(
   datasets,
@@ -312,7 +327,7 @@ sim.cond <- function(
     cond[3]
   ))
 
-  # ── Covariate scenario ────────────────────────────────────────────────────
+  # ---- Covariate scenario --------------------------------------------------------------------------------------------------------
   if (cond[1] == "covariate") {
     true_val <- 1 # Zp:C3 slope
     param_idx <- 4L # [Int:C2, Zp:C2, Int:C3, Zp:C3]
@@ -352,7 +367,7 @@ sim.cond <- function(
         next
       }
 
-      # ── modal ML ────────────────────────────────────────────────────────
+      # ---- modal ML ----------------------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         three_step(
           data = dat.s,
@@ -381,7 +396,7 @@ sim.cond <- function(
         }
       }
 
-      # ── modal BCH ───────────────────────────────────────────────────────
+      # ---- modal BCH --------------------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         {
           if (cond[2] != "low") {
@@ -409,7 +424,7 @@ sim.cond <- function(
         ses[s, "modal.bch"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
       }
 
-      # ── proportional ML ──────────────────────────────────────────────────
+      # ---- proportional ML ----------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         three_step(
           data = dat.s,
@@ -431,7 +446,7 @@ sim.cond <- function(
         ses[s, "prop.ml"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
       }
 
-      # ── proportional BCH ─────────────────────────────────────────────────
+      # ---- proportional BCH --------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         {
           if (cond[2] != "low") {
@@ -465,7 +480,7 @@ sim.cond <- function(
 
     cli::cli_progress_done()
 
-    # ── Distal scenario ───────────────────────────────────────────────────────
+    # ---- Distal scenario --------------------------------------------------------------------------------------------------------------
   } else if (cond[1] == "distal") {
     true_val <- 0 # mu_C3
     param_idx <- 3L # [mu_C1, mu_C2, mu_C3]
@@ -505,7 +520,7 @@ sim.cond <- function(
         next
       }
 
-      # ── modal ML ────────────────────────────────────────────────────────
+      # ---- modal ML ----------------------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         three_step(
           data = dat.s,
@@ -528,7 +543,7 @@ sim.cond <- function(
         ses[s, "modal.ml"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
       }
 
-      # ── modal BCH ───────────────────────────────────────────────────────
+      # ---- modal BCH --------------------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         {
           if (cond[2] != "low") {
@@ -556,7 +571,7 @@ sim.cond <- function(
         ses[s, "modal.bch"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
       }
 
-      # ── proportional ML ──────────────────────────────────────────────────
+      # ---- proportional ML ----------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         three_step(
           data = dat.s,
@@ -579,7 +594,7 @@ sim.cond <- function(
         ses[s, "prop.ml"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
       }
 
-      # ── proportional BCH ─────────────────────────────────────────────────
+      # ---- proportional BCH --------------------------------------------------------------------------------------------------
       fit <- tryCatch(
         {
           if (cond[2] != "low") {
@@ -616,7 +631,7 @@ sim.cond <- function(
     stop("cond[1] must be 'covariate' or 'distal'.", call. = FALSE)
   }
 
-  # ── Compute metrics ─────────────────────────────────────────────────────────
+  # ---- Compute metrics ------------------------------------------------------------------------------------------------------------------
   results <- lapply(estimators, function(est) {
     ok <- n_ok[, est]
     e <- ests[ok, est]
@@ -813,5 +828,6 @@ sim.results <- run_simulation(
   datasets,
   measurement_models,
   out_path = "tseLCA_output/simulation/sim-results.rds",
+  #Just run sequentially
   n_cores = 1
 )

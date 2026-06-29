@@ -6,6 +6,9 @@
 ### E-Mail: samlee@arizona.edu
 #####################################################
 
+# Run this script with:
+# source(system.file("examples", "tseLCA_replication.R", package = "tseLCA"))
+
 ###################################################
 ### preliminaries
 ###################################################
@@ -42,7 +45,7 @@ library(tseLCA)
 ### generate synthetic data
 ###################################################
 message(
-  "\n── Generating synthetic data ──────────────────────────────────────────"
+  "\n---- Generating synthetic data ------------------------------------------------------------------------------------"
 )
 
 #Data-generating process described in
@@ -77,7 +80,7 @@ head(d.low)
 ### estimate measurement model
 ###################################################
 message(
-  "\n── Step 1: Measurement model ──────────────────────────────────────────"
+  "\n---- Step 1: Measurement model ------------------------------------------------------------------------------------"
 )
 
 #Calls multilev::multiLCA under the hood
@@ -92,13 +95,13 @@ d.measurement <- three_step(
 summary(d.measurement)
 
 #In cases of low-separation, fit multiple measurement models
-#and pick the best one
+# and pick the best one
 d.low.measurement <- three_step(
   data = d.low,
   Y.names = paste0("Y", 1:6),
   n_classes = 3,
   iter.measurement = 10, #How many models we want to try
-  R2.threshold = 0.9 #If R^2 entropy is below this value -> trigger iter.measurment # of restarts
+  R2.threshold = 0.9 #If R^2 entropy is below this value => trigger iter.measurement # of restarts
 )
 summary(d.low.measurement)
 
@@ -109,12 +112,12 @@ plot(d.measurement)
 ### obtain two-step estimates
 ###################################################
 message(
-  "\n── Two-step estimates (fitZ_from_fit0) ────────────────────────────────"
+  "\n---- Two-step estimates (fitZ_from_fit0) ----------------------------------------------------------------"
 )
 
 #Two-step LCA model converges smoothly with EM algorithm
 #These estimates can be used as starting parameter values
-#for three-step procedure
+# for three-step procedure
 
 d.fitZ <- fitZ_from_fit0(
   fit0 = d.measurement$measurement_model$fit0,
@@ -139,7 +142,7 @@ d.low.fitZ$mGamma
 ### obtain three-step estimates
 #####################################################
 message(
-  "\n── Three-step estimation ──────────────────────────────────────────────"
+  "\n---- Three-step estimation --------------------------------------------------------------------------------------------"
 )
 
 #Three-step estimation can be done with one tseLCA function call
@@ -196,6 +199,8 @@ summary(d.three_step.bch)
 #BCH works well in cases of high separation
 #When separation is low, then the BCH weights may cause the hessian in the Newton-Rhapson algorithm to be ill-defined (not positive semi-definite)
 
+#The BCH algorithm will run for a certain amount of iterations and if the Hessian is still not PSD, then the function will exit with an error
+
 #This will take longer to run than usual because both the
 #measurement model estimation (re-estimated here) and BCH estimation procedures struggle to converge
 message(
@@ -227,7 +232,7 @@ summary(d.low.three_step.prop)
 ### choose different class as reference category in regression
 ###############################################################
 message(
-  "\n── Reference class selection (rebase) ─────────────────────────────────"
+  "\n---- Reference class selection (rebase) ------------------------------------------------------------------"
 )
 
 #The default reference class for the multinomial logistic parameterization
@@ -261,12 +266,12 @@ summary(d.three_step.simpleC3)
 ### pass in measurement model as argument
 ##############################################################
 message(
-  "\n── Passing pre-fitted measurement model via step1 ─────────────────────"
+  "\n---- Passing pre-fitted measurement model via step1 ------------------------------------------"
 )
 
 #The first stage measurement can be passed in as an argument
 # even if computed on a different sample (uncertainty is properly calibrated)
-#This is the biggest advantage of using tseLCA as opposed to one-step estimation (poLCA)
+#This is the biggest advantage of using tseLCA as opposed to one-step estimation (poLCA) or using mutilevLCA
 
 d.three_step.prop2 <- three_step(
   data = d,
@@ -282,7 +287,7 @@ d.three_step.prop2 <- three_step(
 #Same as summary(d.three_step.prop)!
 summary(d.three_step.prop2)
 
-#A measurement model from a different sample
+#A measurement model from a different sample with lower uncerainty (due to higher sample size)
 d.low2000 <- generate_data(
   n = 2000,
   separation = "low",
@@ -294,7 +299,7 @@ d.low.measurement2000 <- three_step(
   Y.names = paste0("Y", 1:6),
   n_classes = 3
 )
-#But use covariates only available in d.low
+#But covariates are only available in d.low
 d.low.three_step.prop2 <- three_step(
   data = d.low,
   Y.names = paste0("Y", 1:6),
@@ -302,7 +307,7 @@ d.low.three_step.prop2 <- three_step(
   Zp.names = "Zp",
   use.modal.assignment = FALSE,
   step1 = d.low.measurement2000$measurement_model,
-  #You can also get the vcov matrix returned by multiLCA (set FALSE by default)
+  #You can also get the covariance matrix of the two-step esitmates returned by multiLCA (set FALSE by default)
   get.twostep.vcov = TRUE
 )
 summary(d.low.three_step.prop2)
@@ -331,7 +336,7 @@ summary(d.low.three_step.prop3)
 ### missing data
 ##############################################################
 message(
-  "\n── Missing data handling ──────────────────────────────────────────────"
+  "\n---- Missing data handling --------------------------------------------------------------------------------------------"
 )
 
 #tseLCA handles missing data similar to multilevLCA
@@ -375,7 +380,7 @@ d.sparse.measurement2 <- three_step(
 #Parameter estimates should be unbiased with data with MCAR-type missingness
 summary(d.sparse.measurement2)
 
-# Similar to multiLCA, we drop rows in the Z matrix if *any* covariate is missing
+#Similar to multiLCA, we drop rows in the Z matrix if *any* covariate is missing
 d.sparse.three_step <- three_step(
   data = d.sparse,
   Y.names = paste0("Y", 1:6),
@@ -384,12 +389,12 @@ d.sparse.three_step <- three_step(
   incomplete = FALSE,
   verbose = TRUE
 )
-# In the above call we first drop rows where *any* Y is missing, then estimate the measurement model
-# The Z that are dropped after that are the remaining rows where there's a missing Z (but not missing Y in that row)
+#In the above call we first drop rows where *any* Y is missing, then estimate the measurement model
+#The Z that are dropped after that are the remaining rows where there's a missing Z (but not missing Y in that row)
 sum(is.na(d.sparse$Zp[!apply(d.sparse[, 1:6], 1, \(x) any(is.na(x)))]))
 
 #Similar, even if incomplete=TRUE, we still drop rows in Z with any missing covariate cell
-#incomplete=TRUE only affects the way the measurement model is estimated
+# incomplete=TRUE only affects the way the measurement model is estimated
 d.sparse.three_step2 <- three_step(
   data = d.sparse,
   Y.names = paste0("Y", 1:6),
@@ -421,10 +426,11 @@ summary(d.sparse.three_step3)
 ### polytomous outcomes
 ##############################################################
 message(
-  "\n── Polytomous items (election data) ───────────────────────────────────"
+  "\n---- Polytomous items (election data) ----------------------------------------------------------------------"
 )
 
 #Like other LCA software, we can accomodate polytomous outcomes
+#Here we demonstrate tseLCA on the election data, following the example from poLCA
 
 #Data preparation
 data(election, package = "poLCA")
@@ -433,7 +439,7 @@ elec.items <- colnames(election)[1:12]
 #Like multiLCA, we require that all variables in Y are coded as sequential integers with base level coded as 0
 elec[, elec.items] <- lapply(elec[, elec.items], function(x) as.integer(x) - 1L)
 
-#Measurement model (not necessarily required to be run separately like this)
+#Measurement model (again, not necessarily required to be ran separately like this)
 elec.measurement <- three_step(
   data = elec,
   Y.names = elec.items,
@@ -456,11 +462,12 @@ summary(elec.three_step)
 ### distal outcomes
 ###################################################
 message(
-  "\n── Distal outcomes ────────────────────────────────────────────────────"
+  "\n---- Distal outcomes --------------------------------------------------------------------------------------------------------"
 )
 
 #Unlike multilevLCA, we can accomodate distal outcomes
 
+#DGP Reminder:
 # Zp -> X -> Y (scenario="covariate")
 # Zo <- X -> Y (scenario="distal")
 
@@ -471,7 +478,7 @@ d.distal <- generate_data(
   seed = 4
 )
 
-#For estimation, however, a distributional assumption on P(Z|X)
+#For estimation, however, we need a distributional assumption on P(Z|X)
 #Current families available in tseLCA are:
 # - family="gaussian": for continuous Zo
 # - family="poisson": for positive discrete Zo
@@ -508,10 +515,10 @@ d.distal.three_step.bch <- three_step(
   use.bch = TRUE,
   family = "gaussian"
 )
-#The advantage with BCH with distal outcomes is that there exists a closed-form solution
-#for both parameter estimates and hessian (though again, not guarunteed to be PSD)
+#The advantage with BCH with distal outcomes is that there exists a closed-form solution when family="gaussian"
+# for both parameter estimates and hessian (though again, not guarunteed to be PSD)
 
-#Note that the mean parameters for each class were generated as -1, 1, and 0 for classes C1, C2, and C3, respectively
+#Note that the mean (mu) parameters for each class were generated as -1, 1, and 0 for classes C1, C2, and C3, respectively
 summary(d.distal.three_step.ml)
 summary(d.distal.three_step.bch)
 
@@ -520,7 +527,7 @@ summary(d.distal.three_step.bch)
 #######################################################################
 
 message(
-  "\n── Covariate estimation and distal outcomes ───────────────────────────"
+  "\n---- Covariate estimation and distal outcomes ------------------------------------------------------"
 )
 
 d.covariate <- generate_data(
@@ -546,7 +553,7 @@ summary(d.covariate.three_step)
 ### reset options
 ###################################################
 message(
-  "\n── Done ───────────────────────────────────────────────────────────────"
+  "\n---- Done ------------------------------------------------------------------------------------------------------------------------------"
 )
 options(r_opts)
 rm(list = ls())
