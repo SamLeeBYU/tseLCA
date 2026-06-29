@@ -357,13 +357,13 @@ ml_hessian_distal <- function(
   p.zx,
   pi_mat,
   pwx,
-  Z0_cc,
+  Zo_cc,
   w.is_cc,
   T,
   family,
   sigma2 = 1
 ) {
-  N <- length(Z0_cc)
+  N <- length(Zo_cc)
   pzx <- exp(pmax(p.zx(beta), -500))
   assignment_errors <- w.is_cc %*% pwx # N x T: P(W=s_i|X=t)
   q_i <- rowSums(pi_mat * pzx * assignment_errors) # N x 1
@@ -371,16 +371,16 @@ ml_hessian_distal <- function(
 
   if (family == "gaussian") {
     mu <- beta
-    g_it <- outer(Z0_cc, mu, "-") / sigma2 # N x T
+    g_it <- outer(Zo_cc, mu, "-") / sigma2 # N x T
     h_t <- rep(-1 / sigma2, T) # length T
   } else if (family == "poisson") {
     mu <- exp(beta)
-    g_it <- outer(Z0_cc, rep(1, T)) -
+    g_it <- outer(Zo_cc, rep(1, T)) -
       outer(rep(1, N), mu) # N x T: z_i - mu_t
     h_t <- -mu # length T
   } else if (family == "binomial") {
     mu <- 1 / (1 + exp(-beta))
-    g_it <- outer(Z0_cc, rep(1, T)) -
+    g_it <- outer(Zo_cc, rep(1, T)) -
       outer(rep(1, N), mu) # N x T: z_i - mu_t
     h_t <- -mu * (1 - mu) # length T
   }
@@ -405,7 +405,7 @@ lca_step3.distal <- function(
   T,
   covariate.tol,
   use.bch = FALSE,
-  Z0_cc = NULL,
+  Zo_cc = NULL,
   w.is_cc = NULL,
   pwx = NULL,
   em.maxIter = 200L,
@@ -415,7 +415,7 @@ lca_step3.distal <- function(
   pi_mat = NULL, # covariate-adjusted N x T, or NULL for flat vPi
   verbose = FALSE
 ) {
-  N <- length(Z0_cc)
+  N <- length(Zo_cc)
   # use covariate-adjusted pi if provided, otherwise flat vPi
   pi_s <- if (!is.null(pi_mat)) {
     pi_mat
@@ -430,14 +430,14 @@ lca_step3.distal <- function(
     # BCH score: w.it fixed, no pi_mat/pwx needed
     score_nt_bch <- function(mu) {
       if (family == "gaussian") {
-        resid <- outer(Z0_cc, mu, "-")
+        resid <- outer(Zo_cc, mu, "-")
         w.it * resid
       } else if (family == "poisson") {
         mu_val <- exp(mu)
-        w.it * (outer(Z0_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+        w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
       } else if (family == "binomial") {
         mu_val <- 1 / (1 + exp(-mu))
-        w.it * (outer(Z0_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+        w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
       }
     }
 
@@ -452,13 +452,13 @@ lca_step3.distal <- function(
     }
 
     if (family == "gaussian") {
-      beta <- colSums(w.it * Z0_cc) / w_colsums # closed-form weighted mean
-      resid <- outer(Z0_cc, beta, "-")
+      beta <- colSums(w.it * Zo_cc) / w_colsums # closed-form weighted mean
+      resid <- outer(Zo_cc, beta, "-")
       sigma2 <- sum(w.it * resid^2) / sum(w.it)
 
       three_step.score <- function(params) {
         mu <- params[1:T]
-        resid <- outer(Z0_cc, mu, "-")
+        resid <- outer(Zo_cc, mu, "-")
         w.it * resid / sigma2
       }
 
@@ -510,20 +510,20 @@ lca_step3.distal <- function(
         if (nr == em.maxIter) warning("BCH NR reached maximum iterations.")
       }
 
-      resid <- outer(Z0_cc, beta, "-")
+      resid <- outer(Zo_cc, beta, "-")
       sigma2 <- sum(w.it * resid^2) / sum(w.it)
 
       three_step.score <- function(params) {
         mu <- params[1:T]
         if (family == "gaussian") {
-          resid <- outer(Z0_cc, mu, "-")
+          resid <- outer(Zo_cc, mu, "-")
           w.it * resid
         } else if (family == "poisson") {
           mu_val <- exp(mu)
-          w.it * (outer(Z0_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+          w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
         } else if (family == "binomial") {
           mu_val <- 1 / (1 + exp(-mu))
-          w.it * (outer(Z0_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+          w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
         }
       }
 
@@ -552,21 +552,21 @@ lca_step3.distal <- function(
       q_i <- rowSums(pi_s * pzx * assignment_errors) # N x 1
 
       if (family == "gaussian") {
-        resid <- outer(Z0_cc, mu, "-")
+        resid <- outer(Zo_cc, mu, "-")
         pi_s * pzx * assignment_errors * resid / (q_i * sigma2)
       } else if (family == "poisson") {
         mu_val <- exp(mu)
-        score <- outer(Z0_cc, rep(1, T)) - outer(rep(1, N), mu_val)
+        score <- outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val)
         pi_s * pzx * assignment_errors * score / q_i
       } else if (family == "binomial") {
         mu_val <- 1 / (1 + exp(-mu))
-        score <- outer(Z0_cc, rep(1, T)) - outer(rep(1, N), mu_val)
+        score <- outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val)
         pi_s * pzx * assignment_errors * score / q_i
       }
     }
 
     beta <- beta_init
-    Z_long <- rep(Z0_cc, T)
+    Z_long <- rep(Zo_cc, T)
     X_long <- factor(rep(seq_len(T), each = N))
 
     for (iter in seq_len(em.maxIter)) {
@@ -593,7 +593,7 @@ lca_step3.distal <- function(
       pzx <- exp(pmax(p.zx(beta), -500))
       joint <- pi_s * pzx * (w.is_cc %*% pwx)
       w_tilde <- joint / rowSums(joint)
-      resid <- outer(Z0_cc, beta, "-")
+      resid <- outer(Zo_cc, beta, "-")
       sum(w_tilde * resid^2) / sum(w_tilde)
     } else {
       NULL
@@ -611,7 +611,7 @@ lca_step3.distal <- function(
         p.zx,
         pi_s,
         pwx,
-        Z0_cc,
+        Zo_cc,
         w.is_cc,
         T,
         family
@@ -1509,10 +1509,10 @@ three_step <- function(
     s1 <- if (inherits(step1, "tseLCA")) step1$measurement_model else step1
     # Apply rebase permutation so the desired reference class is column 1.
     s1$fit0 <- permute_fit0_classes(s1$fit0, ref_idx)
-    # Normalise fitZ names first (handles raw multiLCA output with
+    # Normalize fitZ names first (handles raw multiLCA output with
     # "gamma(X|C)" rownames), then rebase to the new reference class.
     if (!is.null(s1$fitZ)) {
-      s1$fitZ <- normalise_fitZ_names(
+      s1$fitZ <- normalize_fitZ_names(
         s1$fitZ,
         n_classes = n_classes
       )
@@ -1575,9 +1575,9 @@ three_step <- function(
   keep_Y <- cd$keep_Y
   Z_mat <- cd$Z_mat
   keep_step3_Z_in_Y <- cd$keep_step3_Z_in_Y
-  Z0_mat <- cd$Z0_mat
-  keep_step3_Z0_in_Y <- cd$keep_step3_Z0_in_Y
-  keep_step3_Z0 <- cd$keep_step3_Z0
+  Zo_mat <- cd$Zo_mat
+  keep_step3_Zo_in_Y <- cd$keep_step3_Zo_in_Y
+  keep_step3_Zo <- cd$keep_step3_Zo
 
   # Augment s1 with Y.names and ivItemcat so vcov.tseLCA_measurement can
   # build named rows/columns. Done before early return so measurement-only
@@ -1672,19 +1672,19 @@ three_step <- function(
     NULL
   }
 
-  s2_for_dis <- if (!is.null(Z0_mat)) {
-    # Recompute J.2 on the Z0-complete subset (keep_step3_Z0_in_Y rows).
-    # C1_mat in lca_vcov_distal sums over N_Z0 rows; using s2$J.2 (all N_Y
-    # rows) would mismatch the normalisation when N_Z0 < N_Y.
+  s2_for_dis <- if (!is.null(Zo_mat)) {
+    # Recompute J.2 on the Zo-complete subset (keep_step3_Zo_in_Y rows).
+    # C1_mat in lca_vcov_distal sums over N_Zo rows; using s2$J.2 (all N_Y
+    # rows) would mismatch the normalisation when N_Zo < N_Y.
     # Skip when use.simple.cov = TRUE or use.bch = TRUE.
     J.2_dis <- if (!is.null(s2$compute_J_unc)) {
-      Y_dis <- Y.obs[keep_step3_Z0_in_Y, , drop = FALSE]
+      Y_dis <- Y.obs[keep_step3_Zo_in_Y, , drop = FALSE]
       mDes_dis <- if (!is.null(mDesign)) {
-        mDesign[keep_step3_Z0_in_Y, , drop = FALSE]
+        mDesign[keep_step3_Zo_in_Y, , drop = FALSE]
       } else {
         matrix(1L, nrow(Y_dis), ncol(Y_dis))
       }
-      p_xy_dis <- s2$p.xy[keep_step3_Z0_in_Y, , drop = FALSE]
+      p_xy_dis <- s2$p.xy[keep_step3_Zo_in_Y, , drop = FALSE]
       s2$compute_J_unc(
         p_xy_dis,
         Y_dis,
@@ -1704,9 +1704,9 @@ three_step <- function(
       gamma_vec_to_pwx = s2$gamma_vec_to_pwx,
       theta2_from_theta1 = s2$theta2_from_theta1,
       J.2 = J.2_dis,
-      w.is = s2$w.is[keep_step3_Z0_in_Y, , drop = FALSE],
+      w.is = s2$w.is[keep_step3_Zo_in_Y, , drop = FALSE],
       post = if (!is.null(s2$post)) {
-        s2$post[keep_step3_Z0_in_Y, , drop = FALSE]
+        s2$post[keep_step3_Zo_in_Y, , drop = FALSE]
       } else {
         NULL
       }
@@ -2031,7 +2031,7 @@ three_step <- function(
     )
   }
 
-  if (!is.null(Z0_mat)) {
+  if (!is.null(Zo_mat)) {
     if (!(family %in% c("gaussian", "poisson", "binomial"))) {
       message(
         'Provided family is not one of "gaussian", "poisson", nor "binomial". Defaulting to family="gaussain".'
@@ -2039,10 +2039,10 @@ three_step <- function(
     }
 
     if (!is.null(Zp.names)) {
-      # Build Z_mat_dis: covariate design for the Z0-complete rows.
-      # keep_step3_Z0 contains the original row indices of Z0-complete obs;
+      # Build Z_mat_dis: covariate design for the Zo-complete rows.
+      # keep_step3_Zo contains the original row indices of Zo-complete obs;
       # we re-index into the full raw Z columns from data.
-      Z_mat_dis <- if (!is.null(Z_mat) && length(keep_step3_Z0) > 0L) {
+      Z_mat_dis <- if (!is.null(Z_mat) && length(keep_step3_Zo) > 0L) {
         Z_full_raw <- if (include.intercept) {
           m <- cbind(1, as.matrix(data[, Zp.names, drop = FALSE]))
           colnames(m) <- c("Intercept", Zp.names)
@@ -2050,14 +2050,14 @@ three_step <- function(
         } else {
           as.matrix(data[, Zp.names, drop = FALSE])
         }
-        Z_full_raw[keep_step3_Z0, , drop = FALSE]
+        Z_full_raw[keep_step3_Zo, , drop = FALSE]
       } else {
         NULL
       }
 
       if (!is.null(Z_mat_dis)) {
         pi_adj_full <- cbind(1, p.xz(matrix(s3$res$par, ncol = T - 1)))
-        # p.xz was built on the Z step3 rows; rebuild for Z0 rows
+        # p.xz was built on the Z step3 rows; rebuild for Zo rows
         p.xz_dis <- function(params) {
           eta_full <- cbind(0, Z_mat_dis %*% params)
           row_max <- apply(eta_full, 1L, max)
@@ -2068,18 +2068,18 @@ three_step <- function(
       } else {
         pi_adj <- matrix(
           fit0$vPi,
-          nrow = length(keep_step3_Z0_in_Y),
+          nrow = length(keep_step3_Zo_in_Y),
           ncol = T,
           byrow = TRUE
         )
       }
 
       res_adj <- compute_pwx_adj(
-        Y.obs[keep_step3_Z0_in_Y, , drop = FALSE],
+        Y.obs[keep_step3_Zo_in_Y, , drop = FALSE],
         fit0,
         ivItemcat,
         if (!is.null(mDesign)) {
-          mDesign[keep_step3_Z0_in_Y, , drop = FALSE]
+          mDesign[keep_step3_Zo_in_Y, , drop = FALSE]
         } else {
           NULL
         },
@@ -2089,7 +2089,7 @@ three_step <- function(
     } else {
       pi_adj <- matrix(
         fit0$vPi,
-        nrow = length(keep_step3_Z0_in_Y),
+        nrow = length(keep_step3_Zo_in_Y),
         ncol = T,
         byrow = TRUE
       )
@@ -2110,13 +2110,13 @@ three_step <- function(
         mu <- exp(log_mu) # length T
         # P(Z=z_i | X=t) = mu_t^z_i * exp(-mu_t) / z_i!
         # log P = z_i * log(mu_t) - mu_t - log(z_i!)
-        z <- Z0_mat[, 1L] # N vector
+        z <- Zo_mat[, 1L] # N vector
         outer(z, log_mu, "*") - # N x T: z_i * log(mu_t)
-          outer(rep(1, nrow(Z0_mat)), mu, "*") - # N x T: mu_t
+          outer(rep(1, nrow(Zo_mat)), mu, "*") - # N x T: mu_t
           lgamma(z + 1L) # N x 1, recycled
       }
       starting.lm <- glm(
-        Z0_mat[, 1L] ~ -1 + as.factor(max.col(w.is_dis)),
+        Zo_mat[, 1L] ~ -1 + as.factor(max.col(w.is_dis)),
         family = poisson()
       )
       beta_init <- coef(starting.lm)
@@ -2127,12 +2127,12 @@ three_step <- function(
         mu <- 1 / (1 + exp(-logit_mu)) # length T
         # P(Z=z_i | X=t) = mu_t^z_i * (1-mu_t)^(1-z_i)
         # log P = z_i * log(mu_t) + (1-z_i) * log(1-mu_t)
-        z <- Z0_mat[, 1L] # N vector
+        z <- Zo_mat[, 1L] # N vector
         outer(z, log(mu), "*") + # N x T
           outer(1 - z, log(1 - mu), "*") # N x T, then exp
       }
       starting.lm <- glm(
-        Z0_mat[, 1L] ~ -1 + as.factor(max.col(w.is_dis)),
+        Zo_mat[, 1L] ~ -1 + as.factor(max.col(w.is_dis)),
         family = binomial()
       )
       beta_init <- coef(starting.lm) # already on logit scale
@@ -2140,10 +2140,10 @@ three_step <- function(
       #(family == "gaussian")
       p.zx <- function(params) {
         mu <- params[1:T]
-        resid <- outer(Z0_mat[, 1L], mu, "-")
+        resid <- outer(Zo_mat[, 1L], mu, "-")
         -0.5 * resid^2 - 0.5 * log(2 * pi)
       }
-      starting.lm <- lm(Z0_mat[, 1L] ~ -1 + as.factor(max.col(w.is_dis)))
+      starting.lm <- lm(Zo_mat[, 1L] ~ -1 + as.factor(max.col(w.is_dis)))
       beta_init <- coef(starting.lm)
     }
 
@@ -2168,7 +2168,7 @@ three_step <- function(
       em.maxIter = em.maxIter,
       pwx = res_adj$p.wx_mat,
       w.is_cc = res_adj$w.is,
-      Z0_cc = Z0_mat[, 1L],
+      Zo_cc = Zo_mat[, 1L],
       use.bch = use.bch,
       covariate.tol = covariate.tol,
       T = T,
@@ -2232,7 +2232,7 @@ three_step <- function(
     )
   }
 
-  if (!is.null(Z0_mat) && is.null(Z_mat)) {
+  if (!is.null(Zo_mat) && is.null(Z_mat)) {
     out <- s3.distal.list
     out$family <- family
     out$n_classes <- T
@@ -2242,7 +2242,7 @@ three_step <- function(
     class(out) <- c("tseLCA_distal", "tseLCA")
     return(out)
   }
-  if (!is.null(Z_mat) && is.null(Z0_mat)) {
+  if (!is.null(Z_mat) && is.null(Zo_mat)) {
     class(s3.covariate) <- c("tseLCA_covariate", "tseLCA")
     return(s3.covariate)
   }
