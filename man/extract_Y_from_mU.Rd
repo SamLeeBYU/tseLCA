@@ -7,32 +7,31 @@
 extract_Y_from_mU(fit0, ivItemcat = NULL)
 }
 \arguments{
-\item{fit0}{Raw multilevLCA fit object with \verb{$mU}, \verb{$mPhi}, \verb{$vPi}.}
+\item{fit0}{Raw multilevLCA fit object with \code{$mU}, \code{$mPhi},
+\code{$vPi}.}
 
 \item{ivItemcat}{Integer vector of category counts per item (length H).
-If \code{NULL}, inferred from the non-NA values in the Y columns of \verb{$mU}.}
+If \code{NULL}, inferred from \code{fit0$mPhi} dimensions.}
 }
 \value{
 A list with:
 \describe{
 \item{Y.exp}{N x K_total expanded one-hot matrix (NAs replaced with 0).}
-\item{mDesign}{N x K_total design/mask matrix. \code{NULL} if no missing data.}
+\item{mDesign}{N x K_total design/mask matrix. \code{NULL} if no missing.}
 \item{ivItemcat}{Integer vector of category counts per item.}
-\item{u_post}{N x T posterior class probability matrix from \code{fit0$mU}.}
+\item{u_post}{N x T posterior class probability matrix from \code{mU}.}
 }
 }
 \description{
-\code{fit0$mU} from \pkg{multilevLCA} stores both the observed response patterns
-and the posterior class memberships in a single N x (H + T) matrix, where
-the first H columns are the raw item responses (with \code{NA} for missing data)
-and the last T columns are the posterior class probabilities.
+\code{fit0$mU} from \pkg{multilevLCA} stores data already in one-hot expanded
+form: each item h occupies K_h consecutive columns (one per category),
+followed by T columns of posterior class probabilities.
 }
 \details{
-This function reconstructs the expanded one-hot \code{Y.exp}, the missing-data
-design matrix \code{mDesign}, and the posterior matrix \code{u_post} that
-\code{lca_indiv_varmat} expects, so that \code{Sigma.1} is always computed from the
-Step-1 sample regardless of which sample is used for structural estimation.
-Extracting posteriors directly from \code{mU} also avoids a redundant call to
-\code{compute_posteriors}.
+For dichotomous items (K_h=2) the two columns are stored. For polytomous
+items (K_h>2) all K_h columns are stored. This function first compresses
+the expanded Y back to integer codes via \code{compress_Y}, then re-expands
+consistently via \code{expand_Y} so downstream functions receive the correct
+N x K_total matrix.
 }
 \keyword{internal}

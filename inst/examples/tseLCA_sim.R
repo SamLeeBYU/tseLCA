@@ -530,16 +530,21 @@ sim.cond <- function(
 
       # ── modal BCH ───────────────────────────────────────────────────────
       fit <- tryCatch(
-        three_step(
-          data = dat.s,
-          Y.names = paste0("Y", 1:6),
-          Zo.name = "Zo",
-          n_classes = 3,
-          step1 = m.s,
-          family = "gaussian",
-          use.modal.assignment = TRUE,
-          use.bch = TRUE
-        ),
+        {
+          if (cond[2] != "low") {
+            three_step(
+              data = dat.s,
+              Y.names = paste0("Y", 1:6),
+              Zo.name = "Zo",
+              n_classes = 3,
+              step1 = m.s,
+              use.bch = TRUE,
+              em.maxIter = 500L
+            )
+          } else {
+            NULL
+          }
+        },
         error = function(e) {
           #cli::cli_alert_warning("rep {s} modal.bch: {conditionMessage(e)}")
           NULL
@@ -576,16 +581,22 @@ sim.cond <- function(
 
       # ── proportional BCH ─────────────────────────────────────────────────
       fit <- tryCatch(
-        three_step(
-          data = dat.s,
-          Y.names = paste0("Y", 1:6),
-          Zo.name = "Zo",
-          n_classes = 3,
-          step1 = m.s,
-          family = "gaussian",
-          use.modal.assignment = FALSE,
-          use.bch = TRUE
-        ),
+        {
+          if (cond[2] != "low") {
+            three_step(
+              data = dat.s,
+              Y.names = paste0("Y", 1:6),
+              Zo.name = "Zo",
+              n_classes = 3,
+              step1 = m.s,
+              use.modal.assignment = FALSE,
+              use.bch = TRUE,
+              em.maxIter = 500L
+            )
+          } else {
+            NULL
+          }
+        },
         error = function(e) {
           #cli::cli_alert_warning("rep {s} prop.bch: {conditionMessage(e)}")
           NULL
@@ -804,6 +815,3 @@ sim.results <- run_simulation(
   out_path = "tseLCA_output/simulation/sim-results.rds",
   n_cores = 1
 )
-
-
-sim.cond(datasets, measurement_models, cond = c("distal", "high", "1000"))

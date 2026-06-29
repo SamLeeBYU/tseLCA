@@ -405,58 +405,151 @@ permute_fit0_classes <- function(fit0, ref_idx) {
   fit0
 }
 
+#' Compress a one-hot expanded Y matrix back to integer codes
+#'
+#' Inverse of \code{expand_Y}. Takes a one-hot expanded matrix where each
+#' item occupies \code{K_h} consecutive columns (one per category, 0-based)
+#' and returns an N x H integer matrix of category codes (0, 1, ..., K_h-1).
+#'
+#' Rows where all K_h columns for an item are \code{NA} are returned as
+#' \code{NA} for that item.
+#'
+#' @param mY_exp   N x sum(K_h) one-hot matrix (as stored in \code{fit0$mU}).
+#' @param ivItemcat Integer vector of category counts per item (length H).
+#' @return N x H integer matrix of category codes.
+#' @keywords internal
+compress_Y <- function(mY_exp, ivItemcat) {
+  N <- nrow(mY_exp)
+  H <- length(ivItemcat)
+  out <- matrix(NA_integer_, N, H)
+  col_start <- 1L
+
+  for (h in seq_len(H)) {
+    K_h <- ivItemcat[h]
+    block <- mY_exp[, col_start:(col_start + K_h - 1L), drop = FALSE]
+
+    # Rows where all cols are NA -> NA (missing item response)
+    all_na <- rowSums(!is.na(block)) == 0L
+
+    # which.max returns the column index of the first 1 (0-based: subtract 1)
+    # For NA rows, which.max on NAs returns 1L but we override with NA
+    codes <- apply(block, 1L, \(row) {
+      if (all(is.na(row))) {
+        NA_integer_
+      } else {
+        which.max(row) - 1L
+      }
+    })
+
+    out[, h] <- as.integer(codes)
+    col_start <- col_start + K_h
+  }
+
+  out
+}
+
 #' Extract Y.exp, mDesign, posteriors from a multilevLCA mU matrix
 #'
-#' `fit0$mU` from \pkg{multilevLCA} stores both the observed response patterns
-#' and the posterior class memberships in a single N x (H + T) matrix, where
-#' the first H columns are the raw item responses (with `NA` for missing data)
-#' and the last T columns are the posterior class probabilities.
+#' `fit0$mU` from \pkg{multilevLCA} stores data already in one-hot expanded
+#' form: each item h occupies K_h consecutive columns (one per category),
+#' followed by T columns of posterior class probabilities.
 #'
-#' This function reconstructs the expanded one-hot `Y.exp`, the missing-data
-#' design matrix `mDesign`, and the posterior matrix `u_post` that
-#' `lca_indiv_varmat` expects, so that `Sigma.1` is always computed from the
-#' Step-1 sample regardless of which sample is used for structural estimation.
-#' Extracting posteriors directly from `mU` also avoids a redundant call to
-#' `compute_posteriors`.
+#' For dichotomous items (K_h=2) the two columns are stored. For polytomous
+#' items (K_h>2) all K_h columns are stored. This function first compresses
+#' the expanded Y back to integer codes via \code{compress_Y}, then re-expands
+#' consistently via \code{expand_Y} so downstream functions receive the correct
+#' N x K_total matrix.
 #'
-#' @param fit0       Raw multilevLCA fit object with `$mU`, `$mPhi`, `$vPi`.
+#' @param fit0       Raw multilevLCA fit object with \code{$mU}, \code{$mPhi},
+#'   \code{$vPi}.
 #' @param ivItemcat  Integer vector of category counts per item (length H).
-#'   If `NULL`, inferred from the non-NA values in the Y columns of `$mU`.
+#'   If \code{NULL}, inferred from \code{fit0$mPhi} dimensions.
 #'
 #' @return A list with:
 #' \describe{
 #'   \item{Y.exp}{N x K_total expanded one-hot matrix (NAs replaced with 0).}
-#'   \item{mDesign}{N x K_total design/mask matrix. `NULL` if no missing data.}
+#'   \item{mDesign}{N x K_total design/mask matrix. \code{NULL} if no missing.}
 #'   \item{ivItemcat}{Integer vector of category counts per item.}
-#'   \item{u_post}{N x T posterior class probability matrix from `fit0$mU`.}
+#'   \item{u_post}{N x T posterior class probability matrix from \code{mU}.}
 #' }
 #' @keywords internal
 extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
   mU <- fit0$mU
   if (is.null(mU)) {
     stop(
-      "fit0$mU is NULL -- multilevLCA must be run with mU stored. ",
-      "Re-estimate the measurement model.",
+      "fit0$mU is NULL -- multilevLCA must be run with mU stored.",
       call. = FALSE
     )
   }
 
   T <- length(fit0$vPi)
-  H <- ncol(mU) - T
-  mY <- apply(mU[, seq_len(H), drop = FALSE], 2L, as.integer)
-  u_post <- mU[, (H + 1L):(H + T), drop = FALSE]
-  mode(u_post) <- "double"
 
+  # ---- Infer ivItemcat from column names if not supplied ---------------------
+  # mU column structure:
+  #   Dichotomous item (K=2) : 1 column  (raw 0/1)
+  #   Polytomous item (K>2)  : K columns (one-hot, suffixed .0/.1/.../.K-1)
+  # followed by T posterior columns (C1, C2, ...).
   if (is.null(ivItemcat)) {
-    ivItemcat <- apply(mY, 2L, \(x) length(na.omit(unique(x))))
+    cn <- colnames(mU)
+    if (is.null(cn)) {
+      stop(
+        "ivItemcat must be supplied when fit0$mU has no column names.",
+        call. = FALSE
+      )
+    }
+    # Y columns are everything except the last T columns
+    y_names <- cn[seq_len(ncol(mU) - T)]
+    # Polytomous columns end in ".0", ".1", etc.; dichotomous do not
+    has_suffix <- grepl("\\.[0-9]+$", y_names)
+    item_base <- ifelse(has_suffix, sub("\\.[0-9]+$", "", y_names), y_names)
+    # Count columns per unique item (preserving order)
+    unique_items <- unique(item_base)
+    ivItemcat <- vapply(
+      unique_items,
+      \(nm) {
+        n <- sum(item_base == nm)
+        if (n == 1L) 2L else as.integer(n) # 1 col -> dichotomous (K=2)
+      },
+      integer(1L)
+    )
   }
 
-  if (anyNA(mY)) {
-    Y_exp <- expand_Y(mY, ivItemcat)
+  # Number of Y columns in mU (dichotomous = 1 col, polytomous = K cols)
+  n_mU_Y_cols <- sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))
+  mY_raw <- mU[, seq_len(n_mU_Y_cols), drop = FALSE]
+  u_post <- mU[, (n_mU_Y_cols + 1L):(n_mU_Y_cols + T), drop = FALSE]
+  mode(u_post) <- "double"
+
+  # ---- Compress to N x H integer matrix --------------------------------------
+  # Walk items; dichotomous columns are already 0/1 integer codes.
+  # Polytomous columns are one-hot blocks -> compress to 0-based integer code.
+  H <- length(ivItemcat)
+  mY_int <- matrix(NA_integer_, nrow(mY_raw), H)
+  col <- 1L
+
+  for (h in seq_len(H)) {
+    K_h <- ivItemcat[h]
+    if (K_h == 2L) {
+      # Single column, already 0/1
+      mY_int[, h] <- as.integer(mY_raw[, col])
+      col <- col + 1L
+    } else {
+      # K_h one-hot columns
+      block <- mY_raw[, col:(col + K_h - 1L), drop = FALSE]
+      mY_int[, h] <- apply(block, 1L, \(row) {
+        if (all(is.na(row))) NA_integer_ else which.max(row) - 1L
+      })
+      col <- col + K_h
+    }
+  }
+
+  # ---- Re-expand to one-hot with mDesign -------------------------------------
+  if (anyNA(mY_int)) {
+    Y_exp <- expand_Y(mY_int, ivItemcat)
     mDesign <- (!is.na(Y_exp)) * 1L
     Y_exp[is.na(Y_exp)] <- 0L
   } else {
-    Y_exp <- expand_Y(mY, ivItemcat)
+    Y_exp <- expand_Y(mY_int, ivItemcat)
     mDesign <- NULL
   }
 
