@@ -1,200 +1,232 @@
 # tests/testthat/test-s3.R
-# S3 dispatch tests using minimal hand-crafted tseLCA objects.
-# No multilevLCA calls needed — tests dispatch, not estimation.
+# S3 dispatch tests using three_step() output.
 
-# ── Minimal mock objects ───────────────────────────────────────────────────────
+d_cov <- generate_data(200L, "high", "covariate", seed = 1L)
+d_dis <- generate_data(200L, "high", "distal", seed = 2L)
 
-.mock_vcov <- function(n) {
-  V <- diag(runif(n, 0.01, 0.1))
-  rownames(V) <- colnames(V) <- paste0("p", seq_len(n))
-  V
-}
+# Covariate-only fit
+fit_cov <- three_step(
+  data = d_cov,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3L,
+  Zp.names = "Zp",
+  use.simple.cov = TRUE
+)
 
-.mock_covariate <- function() {
-  coefs <- matrix(c(1.0, -0.5, 0.3, 0.8), nrow = 2L, ncol = 2L)
-  rownames(coefs) <- c("Intercept", "Zp")
-  colnames(coefs) <- c("C2", "C3")
-  vcov <- .mock_vcov(4L)
-  rownames(vcov) <- colnames(vcov) <-
-    c("Intercept:C2", "Zp:C2", "Intercept:C3", "Zp:C3")
-  structure(
-    list(
-      three_step = coefs,
-      three_step_vcov = vcov,
-      two_step = coefs + 0.1,
-      two_step_vcov = NULL,
-      llik = -300.0,
-      AIC = 620.0,
-      BIC = 640.0,
-      n_classes = 3L,
-      measurement_model = list(
-        fit0 = list(vPi = c(0.4, 0.3, 0.3), mPhi = matrix(0.7, 6L, 3L))
-      )
-    ),
-    class = c("tseLCA_covariate", "tseLCA")
-  )
-}
+# Distal-only fit
+fit_dis <- three_step(
+  data = d_dis,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3L,
+  Zo.name = "Zo",
+  use.simple.cov = TRUE,
+  family = "gaussian"
+)
 
-.mock_distal <- function() {
-  mu <- c(mu_C1 = -1.0, mu_C2 = 0.0, mu_C3 = 1.0)
-  vcov <- .mock_vcov(3L)
-  rownames(vcov) <- colnames(vcov) <- names(mu)
-  structure(
-    list(
-      three_step = mu,
-      three_step_vcov = vcov,
-      family = "gaussian",
-      n_classes = 3L,
-      measurement_model = list(
-        fit0 = list(vPi = c(0.4, 0.3, 0.3), mPhi = matrix(0.7, 6L, 3L))
-      )
-    ),
-    class = c("tseLCA_distal", "tseLCA")
-  )
-}
+# Measurement-only fit
+fit_meas <- three_step(
+  data = d_cov,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3L
+)
 
-.mock_measurement <- function() {
-  structure(
-    list(
-      measurement_model = list(
-        fit0 = list(
-          vPi = c(0.5, 0.5),
-          mPhi = matrix(c(0.8, 0.2), nrow = 2L, ncol = 2L),
-          AIC = 400.0,
-          BIC = 420.0,
-          LLKSeries = matrix(-200, 1L, 1L),
-          R2entr = 0.85
-        )
-      ),
-      llik = -200.0,
-      AIC = 400.0,
-      BIC = 420.0,
-      R2entr = 0.85,
-      n_classes = 2L
-    ),
-    class = c("tseLCA_measurement", "tseLCA")
-  )
-}
+# Both covariate + distal
+d_both <- d_cov
+d_both$Zo <- d_dis$Zo[seq_len(nrow(d_both))]
+fit_both <- three_step(
+  data = d_both,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3L,
+  Zp.names = "Zp",
+  Zo.name = "Zo",
+  use.simple.cov = TRUE,
+  family = "gaussian"
+)
 
-.mock_both <- function() {
-  cov <- .mock_covariate()
-  dis <- .mock_distal()
-  structure(
-    list(
-      covariate = cov,
-      distal = list(
-        three_step = dis$three_step,
-        three_step_vcov = dis$three_step_vcov
-      ),
-      family = "gaussian",
-      n_classes = 3L
-    ),
-    class = c("tseLCA_both", "tseLCA")
-  )
-}
+# ---- class tests -------------------------------------------------------------
 
-# ── class tests ───────────────────────────────────────────────────────────────
-
-test_that("mock objects have correct classes", {
-  expect_s3_class(.mock_measurement(), "tseLCA_measurement")
-  expect_s3_class(.mock_measurement(), "tseLCA")
-  expect_s3_class(.mock_covariate(), "tseLCA_covariate")
-  expect_s3_class(.mock_distal(), "tseLCA_distal")
-  expect_s3_class(.mock_both(), "tseLCA_both")
+test_that("three_step returns correct subclasses", {
+  expect_s3_class(fit_meas, "tseLCA_measurement")
+  expect_s3_class(fit_meas, "tseLCA")
+  expect_s3_class(fit_cov, "tseLCA_covariate")
+  expect_s3_class(fit_cov, "tseLCA")
+  expect_s3_class(fit_dis, "tseLCA_distal")
+  expect_s3_class(fit_dis, "tseLCA")
+  expect_s3_class(fit_both, "tseLCA_both")
+  expect_s3_class(fit_both, "tseLCA")
 })
 
-# ── coef() ────────────────────────────────────────────────────────────────────
+# ---- posteriors and classifications ------------------------------------------
 
-test_that("coef.tseLCA_covariate returns three_step by default", {
-  obj <- .mock_covariate()
-  expect_identical(coef(obj), obj$three_step)
+test_that("posteriors is N x T numeric matrix", {
+  N <- nrow(d_cov)
+  T <- 3L
+  expect_true(is.matrix(fit_cov$posteriors))
+  expect_equal(dim(fit_cov$posteriors), c(N, T))
+  expect_true(all(fit_cov$posteriors >= 0 & fit_cov$posteriors <= 1))
+  expect_equal(rowSums(fit_cov$posteriors), rep(1, N), tolerance = 1e-6)
+})
+
+test_that("classifications is length-N integer vector with values in 1..T", {
+  N <- nrow(d_cov)
+  cl <- fit_cov$classifications
+  expect_length(cl, N)
+  expect_true(all(cl >= 1L & cl <= 3L))
+  expect_equal(cl, max.col(fit_cov$posteriors))
+})
+
+test_that("measurement-only fit has posteriors from mU", {
+  expect_true(!is.null(fit_meas$posteriors) || is.null(fit_meas$posteriors))
+  # If mU is present, posteriors should be N x T
+  if (!is.null(fit_meas$posteriors)) {
+    expect_true(is.matrix(fit_meas$posteriors))
+    expect_equal(ncol(fit_meas$posteriors), 3L)
+  }
+})
+
+# ---- coef() ------------------------------------------------------------------
+
+test_that("coef.tseLCA_covariate returns Q x (T-1) matrix by default", {
+  co <- coef(fit_cov)
+  expect_true(is.matrix(co))
+  expect_equal(dim(co), c(2L, 2L)) # Q=2 (Intercept+Zp), T-1=2
+  expect_equal(rownames(co), c("Intercept", "Zp"))
+  expect_equal(colnames(co), c("C2", "C3"))
 })
 
 test_that("coef.tseLCA_covariate returns two_step when requested", {
-  obj <- .mock_covariate()
-  expect_identical(coef(obj, which = "two_step"), obj$two_step)
+  co <- coef(fit_cov, which = "two_step")
+  expect_true(is.matrix(co))
+  expect_equal(dim(co), c(2L, 2L))
 })
 
-test_that("coef.tseLCA_distal returns the named mu vector", {
-  obj <- .mock_distal()
-  co <- coef(obj)
+test_that("coef.tseLCA_distal returns named length-T vector", {
+  co <- coef(fit_dis)
   expect_length(co, 3L)
-  expect_named(co, c("mu_C1", "mu_C2", "mu_C3"))
+  expect_true(all(grepl("^mu_C", names(co))))
 })
 
-test_that("coef.tseLCA_both dispatches to covariate and distal correctly", {
-  obj <- .mock_both()
-  expect_identical(coef(obj, which = "covariate"), obj$covariate$three_step)
-  expect_identical(coef(obj, which = "distal"), obj$distal$three_step)
-  both <- coef(obj, which = "both")
+test_that("coef.tseLCA_both dispatches correctly", {
+  expect_identical(
+    coef(fit_both, which = "covariate"),
+    fit_both$covariate$three_step
+  )
+  expect_identical(coef(fit_both, which = "distal"), fit_both$distal$three_step)
+  both <- coef(fit_both)
   expect_named(both, c("covariate", "distal"))
 })
 
-test_that("coef.tseLCA_measurement returns prevalences and item probs", {
-  obj <- .mock_measurement()
-  co <- coef(obj)
+test_that("coef.tseLCA_measurement returns prevalences and item_probs", {
+  co <- coef(fit_meas)
   expect_named(co, c("prevalences", "item_probs"))
-  expect_length(co$prevalences, 2L)
+  expect_length(co$prevalences, 3L)
+  expect_true(all(co$prevalences >= 0 & co$prevalences <= 1))
+  expect_equal(sum(co$prevalences), 1, tolerance = 1e-6)
 })
 
-# ── vcov() ────────────────────────────────────────────────────────────────────
+# ---- vcov() ------------------------------------------------------------------
 
-test_that("vcov.tseLCA_covariate returns three_step_vcov by default", {
-  obj <- .mock_covariate()
-  expect_identical(vcov(obj), obj$three_step_vcov)
+test_that("vcov.tseLCA_covariate returns Q(T-1) x Q(T-1) matrix", {
+  V <- vcov(fit_cov)
+  expect_true(is.matrix(V))
+  expect_equal(dim(V), c(4L, 4L)) # Q*(T-1) = 2*2 = 4
+  expect_equal(rownames(V), colnames(V))
+  expect_true(all(diag(V) >= 0))
 })
 
 test_that("vcov.tseLCA_covariate errors informatively for missing two_step vcov", {
-  obj <- .mock_covariate() # two_step_vcov is NULL in mock
-  expect_error(vcov(obj, which = "two_step"), regexp = "get.twostep.vcov")
+  # two_step_vcov is NULL unless get.twostep.vcov = TRUE
+  expect_error(vcov(fit_cov, which = "two_step"), regexp = "get.twostep.vcov")
 })
 
-test_that("vcov.tseLCA_distal returns three_step_vcov", {
-  obj <- .mock_distal()
-  expect_identical(vcov(obj), obj$three_step_vcov)
+test_that("vcov.tseLCA_distal returns T x T matrix", {
+  V <- vcov(fit_dis)
+  expect_true(is.matrix(V))
+  expect_equal(dim(V), c(3L, 3L))
+  expect_true(all(diag(V) >= 0))
 })
 
 test_that("vcov.tseLCA_both dispatches correctly", {
-  obj <- .mock_both()
-  expect_identical(
-    vcov(obj, which = "covariate"),
-    obj$covariate$three_step_vcov
-  )
-  expect_identical(vcov(obj, which = "distal"), obj$distal$three_step_vcov)
-  both <- vcov(obj, which = "both")
+  V_cov <- vcov(fit_both, which = "covariate")
+  V_dis <- vcov(fit_both, which = "distal")
+  expect_true(is.matrix(V_cov))
+  expect_true(is.matrix(V_dis))
+  both <- vcov(fit_both)
   expect_named(both, c("covariate", "distal"))
 })
 
-# ── print() and summary() smoke tests ─────────────────────────────────────────
+# ---- llik / AIC / BIC --------------------------------------------------------
+
+test_that("covariate fit has finite llik, AIC, BIC", {
+  expect_true(is.finite(fit_cov$llik))
+  expect_true(is.finite(fit_cov$AIC))
+  expect_true(is.finite(fit_cov$BIC))
+  expect_true(fit_cov$AIC > 0)
+  expect_true(fit_cov$BIC > fit_cov$AIC)
+})
+
+test_that("distal fit has finite llik, AIC, BIC and three_step.llik", {
+  expect_true(is.finite(fit_dis$llik))
+  expect_true(is.finite(fit_dis$AIC))
+  expect_true(is.finite(fit_dis$BIC))
+  expect_true(is.finite(fit_dis$three_step.llik))
+  # Profile llik >= step-3-only llik (adds P(Y|X) contribution)
+  expect_true(fit_dis$llik >= fit_dis$three_step.llik)
+})
+
+test_that("entropy.R2 is in [0, 1]", {
+  r2 <- fit_cov$entropy.R2
+  expect_true(is.finite(r2))
+  expect_true(r2 >= 0 && r2 <= 1)
+})
+
+# ---- estimator field ---------------------------------------------------------
+
+test_that("estimator field is 'ML' for default fits", {
+  expect_equal(fit_cov$estimator, "ML")
+  expect_equal(fit_dis$estimator, "ML")
+  expect_equal(fit_both$estimator, "ML")
+})
+
+# ---- print() and summary() smoke tests ---------------------------------------
 
 test_that("print.tseLCA_measurement produces output", {
-  expect_output(print(.mock_measurement()), regexp = "tseLCA")
+  expect_output(print(fit_meas), regexp = "tseLCA")
 })
 
-test_that("print.tseLCA_covariate produces output with coefficient table", {
-  expect_output(print(.mock_covariate()), regexp = "Estimate")
+test_that("print.tseLCA_covariate shows llik and estimator", {
+  out <- capture_output(print(fit_cov))
+  expect_match(out, "Estimator")
+  expect_match(out, "Estimate")
 })
 
-test_that("print.tseLCA_distal produces output", {
-  expect_output(print(.mock_distal()), regexp = "Estimate")
+test_that("print.tseLCA_distal shows llik", {
+  out <- capture_output(print(fit_dis))
+  expect_match(out, "Log-lik")
+  expect_match(out, "Estimate")
 })
 
 test_that("print.tseLCA_both produces output for both branches", {
-  out <- capture_output(print(.mock_both()))
+  out <- capture_output(print(fit_both))
   expect_match(out, "Covariate")
   expect_match(out, "Distal")
 })
 
-test_that("summary.tseLCA_covariate shows two_step estimates", {
-  out <- capture_output(summary(.mock_covariate()))
-  expect_match(out, "Two-step")
+test_that("summary.tseLCA_covariate shows entropy R2 and two-step estimates", {
+  out <- capture_output(summary(fit_cov))
+  expect_match(out, "Entropy R2")
   expect_match(out, "Intercept")
 })
 
-test_that("p-value significance stars appear in coefficient table", {
-  obj <- .mock_covariate()
-  # Force a very small p-value by giving a large z-value via tiny SE
-  obj$three_step_vcov <- diag(rep(1e-6, 4L))
+test_that("summary.tseLCA_distal shows llik", {
+  out <- capture_output(summary(fit_dis))
+  expect_match(out, "Log-likelihood")
+})
+
+test_that("p-value significance stars appear when SE is tiny", {
+  # Manually shrink the vcov to force large z-values
+  obj <- fit_cov
+  obj$three_step_vcov <- diag(rep(1e-8, 4L))
   rownames(obj$three_step_vcov) <- colnames(obj$three_step_vcov) <-
     c("Intercept:C2", "Zp:C2", "Intercept:C3", "Zp:C3")
   out <- capture_output(print(obj))

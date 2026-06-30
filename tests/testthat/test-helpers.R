@@ -1,5 +1,5 @@
 # tests/testthat/test-helpers.R
-# Pure math helpers — no external deps, all run on CRAN.
+# Math helpers -- no external deps, all run on CRAN.
 
 test_that("expand_Y one-hot encodes binary items correctly", {
   mY <- matrix(c(0L, 1L, 0L, 1L, 1L, 0L, 1L, 0L), ncol = 2L)
@@ -8,10 +8,10 @@ test_that("expand_Y one-hot encodes binary items correctly", {
 
   expect_equal(dim(out), c(4L, 4L))
   expect_true(all(out %in% c(0L, 1L)))
-  # Each item block (pair of columns) sums to 1 per row
+  #Each item block (pair of columns) sums to 1 per row
   expect_true(all(rowSums(out[, 1:2]) == 1L))
   expect_true(all(rowSums(out[, 3:4]) == 1L))
-  # Y=0 column is complement of Y=1 column
+  #Y=0 column is complement of Y=1 column
   expect_equal(out[, 1L], 1L - out[, 2L])
   expect_equal(out[, 3L], 1L - out[, 4L])
 })
@@ -46,12 +46,12 @@ test_that("expand_Phi (three_step internal) expands n_free x T to K x T", {
   out <- tseLCA:::expand_Phi(phi_free, ivItem)
 
   expect_equal(dim(out), c(4L, 2L))
-  # Rows 1-2: item 1; rows 3-4: item 2
+
   expect_equal(out[1L, ], 1 - phi_free[1L, ]) # P(Y1=0)
   expect_equal(out[2L, ], phi_free[1L, ]) # P(Y1=1)
   expect_equal(out[3L, ], 1 - phi_free[2L, ]) # P(Y2=0)
   expect_equal(out[4L, ], phi_free[2L, ]) # P(Y2=1)
-  # Each item's two rows sum to 1
+  #Each item's two rows sum to 1
   expect_equal(out[1L, ] + out[2L, ], c(1, 1))
   expect_equal(out[3L, ] + out[4L, ], c(1, 1))
 })
@@ -83,15 +83,16 @@ test_that("log_lik_matrix with mDesign reduces log-likelihood", {
 
   mDes_full <- matrix(1L, N, K)
   mDes_partial <- mDes_full
-  mDes_partial[, 3:4] <- 0L # mask last two columns
+  #mask last two columns
+  mDes_partial[, 3:4] <- 0L
 
   out_full <- tseLCA:::log_lik_matrix(Y, mPhi, mDes_full)
   out_partial <- tseLCA:::log_lik_matrix(Y, mPhi, mDes_partial)
   out_2col <- tseLCA:::log_lik_matrix(Y[, 1:2], mPhi[1:2, ])
 
-  # Masking columns reduces (makes less negative) the log-likelihood
+  #Masking columns reduces log-likelihood
   expect_true(all(out_partial >= out_full - 1e-12))
-  # Masked result should equal log_lik on just the first 2 columns
+  #Masked result should equal log_lik on just the first 2 columns
   expect_equal(out_partial, out_2col, tolerance = 1e-12)
 })
 
@@ -142,12 +143,12 @@ test_that("compute_pwx_adj returns valid p.wx_mat", {
     use.modal.assignment = TRUE
   )
 
-  # p.wx_mat is T x T and each column sums to 1
+  #p.wx_mat is T x T and each column sums to 1
   expect_equal(dim(res$p.wx_mat), c(2L, 2L))
   expect_equal(colSums(res$p.wx_mat), c(1, 1), tolerance = 1e-12)
-  # w.is rows sum to 1 (hard assignment: one-hot per row)
+  #w.is rows sum to 1 (hard assignment: one-hot per row)
   expect_equal(dim(res$w.is), c(6L, 2L))
   expect_equal(rowSums(res$w.is), rep(1L, 6L))
-  # All values are 0 or 1 for hard assignment
+  #All values are 0 or 1 for hard assignment
   expect_true(all(res$w.is %in% c(0L, 1L)))
 })
