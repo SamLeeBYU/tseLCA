@@ -110,7 +110,7 @@ joint_log_lik <- function(Y, Z, mPhi, gamma.coefs, mDesign = NULL) {
 
 #' Joint log-likelihood for the distal outcome model
 #'
-#' Computes `sum_i log[ sum_t P(X=t|Zp_i) * P(Zo_i|X=t) * P(Y_i|X=t) ]`
+#' Computes sum_i log[ sum_t P(X=t|Zp_i) * P(Zo_i|X=t) * P(Y_i|X=t) ]
 #' When Zp is absent, P(X=t|Zp) = vPi (flat prevalences).
 #'
 #' @param Y       N x K_total expanded one-hot response matrix.
@@ -2883,7 +2883,7 @@ coef.tseLCA_distal <- function(object, ...) {
 #' @export
 coef.tseLCA_both <- function(
   object,
-  which = c("covariate", "distal", "both"),
+  which = c("both", "covariate", "distal"),
   step = c("three_step", "two_step"),
   ...
 ) {
@@ -3087,7 +3087,7 @@ vcov.tseLCA_distal <- function(object, ...) {
 #' @export
 vcov.tseLCA_both <- function(
   object,
-  which = c("covariate", "distal", "both"),
+  which = c("both", "covariate", "distal"),
   step = c("three_step", "two_step"),
   ...
 ) {

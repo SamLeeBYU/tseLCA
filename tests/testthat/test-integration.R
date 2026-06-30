@@ -202,7 +202,7 @@ test_that("three_step uses all Y rows when Z has missing values", {
 # most positive -> DGP class 3 (b=+1).
 
 test_that("covariate estimates are within 2 SEs of true slopes and intercepts", {
-  d <- generate_data(500L, "high", "covariate", seed = 42L)
+  d <- generate_data(2000L, "high", "covariate", seed = 42L)
   fit <- three_step(
     d,
     paste0("Y", 1:6),

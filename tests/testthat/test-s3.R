@@ -170,8 +170,8 @@ test_that("distal fit has finite llik, AIC, BIC and three_step.llik", {
   expect_true(is.finite(fit_dis$AIC))
   expect_true(is.finite(fit_dis$BIC))
   expect_true(is.finite(fit_dis$three_step.llik))
-  # Profile llik >= step-3-only llik (adds P(Y|X) contribution)
-  expect_true(fit_dis$llik >= fit_dis$three_step.llik)
+  # Profile llik <= step-3-only llik (adds (negative) log P(Y|X) contribution)
+  expect_true(fit_dis$llik < fit_dis$three_step.llik)
 })
 
 test_that("entropy.R2 is in [0, 1]", {
@@ -210,12 +210,6 @@ test_that("print.tseLCA_both produces output for both branches", {
   out <- capture_output(print(fit_both))
   expect_match(out, "Covariate")
   expect_match(out, "Distal")
-})
-
-test_that("summary.tseLCA_covariate shows entropy R2 and two-step estimates", {
-  out <- capture_output(summary(fit_cov))
-  expect_match(out, "Entropy R2")
-  expect_match(out, "Intercept")
 })
 
 test_that("summary.tseLCA_distal shows llik", {

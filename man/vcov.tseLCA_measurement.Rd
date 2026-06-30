@@ -15,7 +15,7 @@
 
 \method{vcov}{tseLCA_both}(
   object,
-  which = c("covariate", "distal", "both"),
+  which = c("both", "covariate", "distal"),
   step = c("three_step", "two_step"),
   ...
 )
