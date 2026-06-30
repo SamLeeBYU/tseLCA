@@ -3,7 +3,7 @@ Type: Package
 Title: Three-Step Estimation for Latent Class Analysis
 Version: 1.0.0
 Authors@R: c(
-    person("Sam", "Lee", email = "samlee@arizona.edu", role = c("aut", "cre"), 
+    person("Sam", "Lee", email = "samlee@arizona.edu", role = c("aut", "cre", "cph"), 
            comment = c(ORCID = "0009-0007-2977-6661")),
     person("Jay", "Goodliffe", email = "goodliffe@byu.edu", role = "ctb")
     )
