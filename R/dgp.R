@@ -153,7 +153,7 @@ mnl_probs <- function(Zp, params) {
 #' draw_classes(100, c(1/3, 1/3, 1/3))
 #' @export
 draw_classes <- function(n, pi_) {
-  sample(seq_along(pi_), size = n, replace = TRUE, prob = pi)
+  sample(seq_along(pi_), size = n, replace = TRUE, prob = pi_)
 }
 
 
@@ -206,9 +206,9 @@ draw_Zp <- function(n) {
 #' @export
 draw_classes_given_Zp <- function(Zp, params) {
   probs <- mnl_probs(Zp, params) # n x T
-  cdf <- t(apply(probs, 1L, cumsum))
+  cum_probs <- probs %*% upper.tri(diag(ncol(probs)), diag = TRUE)
   u <- runif(nrow(probs))
-  .rowSums(u < cdf, nrow(cdf), ncol(cdf)) + 1L # first class where U < CDF
+  rowSums(u > cum_probs) + 1L
 }
 
 #' Draw a continuous distal outcome given true class memberships (scenario "distal")
