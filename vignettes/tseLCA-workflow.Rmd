@@ -570,7 +570,7 @@ summary(d.distal.three_step.bch)
 
 ---
 
-## Three-step estimation with both covariates ($Z_p$) and distal outcomes ($Z_o$)
+## Three-step estimation with both covariates (Zp) and distal outcomes (Zo)
 
 Consistent with how most research in the social sciences construct the relationships between $Z_p$ and $X$, and $X$ and $Z_o$, the relationship between $Z_p$ and $X$ is estimated **first**, followed by estimation between $X$ and $Z_o$, adjusting for the covariate-adjusted posteriors in the estimation procedures for the distal outcome model in step 3.
 

@@ -12,3 +12,5 @@ There are no downstream dependencies for this package.
 * This is a new release.
 
 The single NOTE regarding "Possibly misspelled words in DESCRIPTION" is a false positive. The flagged words (Bakk, Kuha, Lyrvall, Oberski, Tekle, Vermunt) are the proper names of the cited researchers, and "et al" is a standard academic abbreviation.
+
+DISCLAIMER: Some documentation built with roxygen was generated with Claude Code (Sonnet 4.6). All code and documentation was reviewed and edited by a human (Sam Lee).
