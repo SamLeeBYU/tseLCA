@@ -22,7 +22,7 @@ vcov(object, ...)
 # S3 method for class 'tseLCA_both'
 vcov(
   object,
-  which = c("covariate", "distal", "both"),
+  which = c("both", "covariate", "distal"),
   step = c("three_step", "two_step"),
   ...
 )

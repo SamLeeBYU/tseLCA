@@ -17,7 +17,7 @@ coef(object, ...)
 # S3 method for class 'tseLCA_both'
 coef(
   object,
-  which = c("covariate", "distal", "both"),
+  which = c("both", "covariate", "distal"),
   step = c("three_step", "two_step"),
   ...
 )
