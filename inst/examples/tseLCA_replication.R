@@ -25,6 +25,7 @@ r_opts <- options(
 )
 
 # Loading libraries and installing if unavailable
+
 # Install the development version from GitHub
 if (!require("tseLCA")) {
   if (!require("pak")) {
@@ -32,6 +33,7 @@ if (!require("tseLCA")) {
   }
   pak::pak("SamLeeBYU/tseLCA")
 }
+
 
 #For access to the polytomous data 'election'
 if (!require("poLCA")) {
@@ -100,6 +102,7 @@ d.low.measurement <- three_step(
   data = d.low,
   Y.names = paste0("Y", 1:6),
   n_classes = 3,
+  maxIter.measurement = 5000, #Run for a bit longer to get convergence
   iter.measurement = 10, #How many models we want to try
   R2.threshold = 0.9 #If R^2 entropy is below this value => trigger iter.measurement # of restarts
 )
@@ -212,7 +215,7 @@ bch.fail <- three_step(
   n_classes = 3,
   Zp.names = "Zp",
   use.bch = TRUE,
-  maxIter.measurement = 2000,
+  maxIter.measurement = 5000,
   iter.measurement = 10
 )
 #Do not trust the estimates from the BCH model if the hessian is not proper
