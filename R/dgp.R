@@ -22,10 +22,6 @@
 #' functions.  All elements correspond to the values stated in the paper
 #' (Section 3, p. 879).
 #'
-#' @format A named list with four elements: \code{class_props},
-#'   \code{separation_levels}, \code{covariate_params}, \code{distal_params}.
-#'   See Details.
-#'
 #' \describe{
 #'   \item{`class_props`}{Length-3 vector of equal class proportions (1/3 each).}
 #'   \item{`separation_levels`}{Named vector mapping `"low"`, `"mid"`, `"high"`
@@ -35,6 +31,18 @@
 #'     set so that marginal class sizes average to 1/3 when Zp ~ Uniform\{1..5\}.}
 #'   \item{`distal_params`}{List with `$mu` (class means, c(-1, 1, 0)) and
 #'     `$sigma` (residual SD = 1) for the distal outcome model.}
+#' }
+#'
+#' @return A named list with four elements:
+#' \describe{
+#'   \item{\code{class_props}}{Length-3 numeric vector of equal class
+#'     proportions (1/3 each).}
+#'   \item{\code{separation_levels}}{Named numeric vector mapping
+#'     \code{"low"}, \code{"mid"}, \code{"high"} to 0.70, 0.80, 0.90.}
+#'   \item{\code{covariate_params}}{List with \code{$b0} (intercepts) and
+#'     \code{$b} (slopes) for the multinomial logit P(X=t|Zp).}
+#'   \item{\code{distal_params}}{List with \code{$mu} (class means) and
+#'     \code{$sigma} (residual SD).}
 #' }
 #'
 #' @examples

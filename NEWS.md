@@ -28,3 +28,15 @@
 
 -   Included standard S3 methods for `tseLCA` objects: `summary()`, `coef()`, `vcov()`, and `plot()` (which delegates to 'multilevLCA' for item-profile visualization).
 -   Built a data-generating process (`generate_data()`) that replicates the Bakk & Kuha (2018) simulation study design for both covariates and distal outcomes under varying separation conditions.
+
+# tseLCA 1.0.1
+
+## CRAN resubmission
+- Removed single quotes around acronyms in DESCRIPTION; added explanations
+  of BCH, ML, and LCA.
+- Replaced `T`/`F` with `TRUE`/`FALSE` throughout internal codebase
+- Added `\value` tags to all exported functions missing them, including `bk2018_params`.
+- `inst/examples`: examples now write to `tempdir()` instead of the home
+  filespace.
+- `inst/examples`: commented out `rm(list = ls())` calls.
+- `inst/examples`: commented out `install.packages()` calls.
