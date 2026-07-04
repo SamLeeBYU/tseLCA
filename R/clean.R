@@ -177,16 +177,16 @@ clean_data <- function(
 #' Parse and validate the rebase argument
 #'
 #' @param rebase Character like "C2" or integer class index.
-#' @param T      Total number of classes.
+#' @param iT      Total number of classes.
 #' @return Integer class index (1-based) to use as reference.
 #' @keywords internal
-parse_rebase <- function(rebase, T) {
+parse_rebase <- function(rebase, iT) {
   if (is.character(rebase)) {
     if (!grepl("^C[0-9]+$", rebase)) {
       stop(
         sprintf(
           '`rebase` must be "C1", "C2", ... "C%d" or an integer. Got: "%s".',
-          T,
+          iT,
           rebase
         ),
         call. = FALSE
@@ -196,11 +196,11 @@ parse_rebase <- function(rebase, T) {
   } else {
     idx <- as.integer(rebase)
   }
-  if (idx < 1L || idx > T) {
+  if (idx < 1L || idx > iT) {
     stop(
       sprintf(
         "`rebase` must be between 1 and %d. Got: %d.",
-        T,
+        iT,
         idx
       ),
       call. = FALSE
@@ -292,7 +292,7 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
 
   mGamma <- fitZ$mGamma # Q x (T-1): cols = non-ref classes (C2..CT)
   Q <- nrow(mGamma)
-  T <- ncol(mGamma) + 1L # total number of classes
+  iT <- ncol(mGamma) + 1L # total number of classes
 
   if (ref_idx == 1L) {
     return(fitZ)
@@ -306,7 +306,7 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
   gamma_rebased <- gamma_full - as.vector(new_ref_col) # Q x T, col ref_idx = 0
 
   # Drop the new reference column and keep remaining classes in ascending order
-  keep_cols <- seq_len(T)[-ref_idx] # T-1 indices
+  keep_cols <- seq_len(iT)[-ref_idx] # T-1 indices
   gamma_new <- gamma_rebased[, keep_cols, drop = FALSE]
   colnames(gamma_new) <- paste0("C", keep_cols)
   rownames(gamma_new) <- rownames(mGamma)
@@ -340,18 +340,18 @@ permute_fitZ_classes <- function(fitZ, ref_idx) {
 
     # Build (T-1) x (T-1) column-space contrast matrix A
     # Original columns are indexed 1..(T-1) corresponding to classes C2..CT
-    old_non_ref <- seq_len(T - 1L) # 1..(T-1) indexing into mGamma columns
+    old_non_ref <- seq_len(iT - 1L) # 1..(T-1) indexing into mGamma columns
     # keep_cols are class indices (1-based), need to map to mGamma col indices
     keep_mGamma_cols <- keep_cols - 1L # subtract 1 because C1 is not in mGamma
     ref_mGamma_col <- ref_idx - 1L # column of the new ref in old mGamma
 
-    A <- matrix(0, T - 1L, T - 1L)
-    for (i in seq_len(T - 1L)) {
+    A <- matrix(0, iT - 1L, iT - 1L)
+    for (i in seq_len(iT - 1L)) {
       j_direct <- keep_mGamma_cols[i]
-      if (j_direct >= 1L && j_direct <= T - 1L) {
+      if (j_direct >= 1L && j_direct <= iT - 1L) {
         A[i, j_direct] <- 1
       }
-      if (ref_mGamma_col >= 1L && ref_mGamma_col <= T - 1L) {
+      if (ref_mGamma_col >= 1L && ref_mGamma_col <= iT - 1L) {
         A[i, ref_mGamma_col] <- A[i, ref_mGamma_col] - 1
       }
     }
@@ -395,8 +395,8 @@ permute_fit0_classes <- function(fit0, ref_idx) {
   if (ref_idx == 1L) {
     return(fit0)
   }
-  T <- ncol(fit0$mPhi)
-  ord <- c(ref_idx, seq_len(T)[-ref_idx])
+  iT <- ncol(fit0$mPhi)
+  ord <- c(ref_idx, seq_len(iT)[-ref_idx])
   fit0$mPhi <- fit0$mPhi[, ord, drop = FALSE]
   fit0$vPi <- fit0$vPi[ord]
   fit0
@@ -478,7 +478,7 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
     )
   }
 
-  T <- length(fit0$vPi)
+  iT <- length(fit0$vPi)
 
   # ---- Infer ivItemcat from column names if not supplied ---------------------
   # mU column structure:
@@ -493,7 +493,7 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
         call. = FALSE
       )
     }
-    y_names <- cn[seq_len(ncol(mU) - T)]
+    y_names <- cn[seq_len(ncol(mU) - iT)]
     # Polytomous columns end in ".0", ".1", etc.; dichotomous do not
     has_suffix <- grepl("\\.[0-9]+$", y_names)
     item_base <- ifelse(has_suffix, sub("\\.[0-9]+$", "", y_names), y_names)
@@ -512,7 +512,7 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
   # Number of Y columns in mU (dichotomous = 1 col, polytomous = K cols)
   n_mU_Y_cols <- sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))
   mY_raw <- mU[, seq_len(n_mU_Y_cols), drop = FALSE]
-  u_post <- mU[, (n_mU_Y_cols + 1L):(n_mU_Y_cols + T), drop = FALSE]
+  u_post <- mU[, (n_mU_Y_cols + 1L):(n_mU_Y_cols + iT), drop = FALSE]
   mode(u_post) <- "double"
 
   # ---- Compress to N x H integer matrix --------------------------------------

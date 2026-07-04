@@ -164,11 +164,15 @@ joint_log_lik_distal <- function(
 #' `c(vPi[-1], phi_free)` used internally by lca_step2, then returns the
 #' N x T soft posterior matrix P(X=t|Y_i).
 #' @noRd
-compute_posteriors <- function(Y, mDesign, theta1, ivItemcat, T) {
-  vPi_free <- theta1[1:(T - 1L)]
+compute_posteriors <- function(Y, mDesign, theta1, ivItemcat, iT) {
+  vPi_free <- theta1[1:(iT - 1L)]
   vPi <- c(1 - sum(vPi_free), vPi_free)
   n_free <- sum(ifelse(ivItemcat == 2L, 1L, ivItemcat - 1L))
-  phi_free <- matrix(theta1[T:(T + n_free * T - 1L)], nrow = n_free, ncol = T)
+  phi_free <- matrix(
+    theta1[iT:(iT + n_free * iT - 1L)],
+    nrow = n_free,
+    ncol = iT
+  )
 
   mPhi <- expand_Phi(expand_Phi_free(phi_free, ivItemcat), ivItemcat)
 
@@ -194,7 +198,7 @@ compute_pwx_adj <- function(
   pi_adj = NULL # N x T covariate-adjusted class probs, or NULL for flat vPi
 ) {
   N <- nrow(Y.obs)
-  T <- ncol(fit0$mPhi)
+  iT <- ncol(fit0$mPhi)
 
   mPhi_exp <- expand_Phi(fit0$mPhi, ivItemcat)
   phi_clamped <- pmax(pmin(mPhi_exp, 1 - 1e-10), 1e-10)
@@ -209,7 +213,7 @@ compute_pwx_adj <- function(
   if (!is.null(pi_adj)) {
     log_prior <- log(pi_adj) # N x T, person-specific
   } else {
-    log_prior <- matrix(log(fit0$vPi), nrow = N, ncol = T, byrow = TRUE)
+    log_prior <- matrix(log(fit0$vPi), nrow = N, ncol = iT, byrow = TRUE)
   }
 
   log_joint <- log_p_it + log_prior # N x T
@@ -217,7 +221,7 @@ compute_pwx_adj <- function(
   post <- exp(log_joint - row_max - log(rowSums(exp(log_joint - row_max)))) # N x T posteriors
 
   w.is <- if (use.modal.assignment) {
-    w <- matrix(0L, N, T)
+    w <- matrix(0L, N, iT)
     w[cbind(seq_len(N), max.col(post))] <- 1L
     w
   } else {
@@ -260,7 +264,7 @@ lca_step2 <- function(
   }
 
   N <- nrow(Y.obs)
-  T <- n_classes
+  iT <- n_classes
   K <- ncol(Y.obs) #sum(K_h)
 
   # Number of free rows per item in mPhi
@@ -281,16 +285,16 @@ lca_step2 <- function(
   phi_free <- fit0$mPhi[free_idx, ]
 
   theta1 <- c(
-    fit0$vPi[2:T],
+    fit0$vPi[2:iT],
     phi_free
   )
 
-  p.xy <- compute_posteriors(Y.obs, mDesign, theta1, ivItemcat, T)
+  p.xy <- compute_posteriors(Y.obs, mDesign, theta1, ivItemcat, iT)
   assignment <- max.col(p.xy)
 
   make_w <- function(posteriors) {
     if (use.modal.assignment) {
-      w <- matrix(0L, nrow = N, ncol = T)
+      w <- matrix(0L, nrow = N, ncol = iT)
       w[cbind(seq_len(N), max.col(posteriors))] <- 1L
       w
     } else {
@@ -301,15 +305,15 @@ lca_step2 <- function(
   w.is <- make_w(p.xy)
 
   compute_pwx <- function(t1) {
-    post <- compute_posteriors(Y.obs, mDesign, t1, ivItemcat, T)
+    post <- compute_posteriors(Y.obs, mDesign, t1, ivItemcat, iT)
     w_local <- make_w(post)
     p.wx_joint <- (t(w_local) %*% post) / N
     sweep(p.wx_joint, 2, colSums(p.wx_joint), "/")
   }
 
   theta2_from_theta1 <- function(th1) {
-    # rho <- c(1 - sum(th1[1:(T - 1)]), th1[1:(T - 1)])
-    # phi <- matrix(th1[T:length(th1)], nrow = K, ncol = T)
+    # rho <- c(1 - sum(th1[1:(iT - 1)]), th1[1:(iT - 1)])
+    # phi <- matrix(th1[iT:length(th1)], nrow = K, ncol = iT)
     p.wx_mat <- compute_pwx(th1)
     log_ref <- log(diag(p.wx_mat))
     gamma_mat <- sweep(log(p.wx_mat), 2, log_ref, "-")
@@ -317,7 +321,7 @@ lca_step2 <- function(
   }
 
   gamma_vec_to_pwx <- function(gamma_vec) {
-    gamma_mat <- matrix(0, nrow = T, ncol = T)
+    gamma_mat <- matrix(0, nrow = iT, ncol = iT)
     gamma_mat[row(gamma_mat) != col(gamma_mat)] <- gamma_vec
     exp_mat <- exp(gamma_mat)
     sweep(exp_mat, 2, colSums(exp_mat), "/")
@@ -458,7 +462,7 @@ ml_hessian_distal <- function(
   pwx,
   Zo_cc,
   w.is_cc,
-  T,
+  iT,
   family,
   sigma2 = 1
 ) {
@@ -471,15 +475,15 @@ ml_hessian_distal <- function(
   if (family == "gaussian") {
     mu <- beta
     g_it <- outer(Zo_cc, mu, "-") / sigma2 # N x T
-    h_t <- rep(-1 / sigma2, T)
+    h_t <- rep(-1 / sigma2, iT)
   } else if (family == "poisson") {
     mu <- exp(beta)
-    g_it <- outer(Zo_cc, rep(1, T)) -
+    g_it <- outer(Zo_cc, rep(1, iT)) -
       outer(rep(1, N), mu) # N x T: z_i - mu_t
     h_t <- -mu
   } else if (family == "binomial") {
     mu <- 1 / (1 + exp(-beta))
-    g_it <- outer(Zo_cc, rep(1, T)) -
+    g_it <- outer(Zo_cc, rep(1, iT)) -
       outer(rep(1, N), mu) # N x T: z_i - mu_t
     h_t <- -mu * (1 - mu)
   }
@@ -505,7 +509,7 @@ ml_hessian_distal <- function(
 lca_step3.distal <- function(
   neg.ll,
   beta_init,
-  T,
+  iT,
   covariate.tol,
   use.bch = FALSE,
   Zo_cc = NULL,
@@ -523,7 +527,7 @@ lca_step3.distal <- function(
   pi_s <- if (!is.null(pi_mat)) {
     pi_mat
   } else {
-    matrix(vPi, ncol = T, nrow = N, byrow = TRUE)
+    matrix(vPi, ncol = iT, nrow = N, byrow = TRUE)
   }
 
   if (use.bch) {
@@ -536,10 +540,10 @@ lca_step3.distal <- function(
         w.it * resid
       } else if (family == "poisson") {
         mu_val <- exp(mu)
-        w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+        w.it * (outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val))
       } else if (family == "binomial") {
         mu_val <- 1 / (1 + exp(-mu))
-        w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+        w.it * (outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val))
       }
     }
 
@@ -559,7 +563,7 @@ lca_step3.distal <- function(
       sigma2 <- sum(w.it * resid^2) / sum(w.it)
 
       three_step.score <- function(params) {
-        mu <- params[1:T]
+        mu <- params[1:iT]
         resid <- outer(Zo_cc, mu, "-")
         w.it * resid / sigma2
       }
@@ -615,16 +619,16 @@ lca_step3.distal <- function(
       sigma2 <- sum(w.it * resid^2) / sum(w.it)
 
       three_step.score <- function(params) {
-        mu <- params[1:T]
+        mu <- params[1:iT]
         if (family == "gaussian") {
           resid <- outer(Zo_cc, mu, "-")
           w.it * resid
         } else if (family == "poisson") {
           mu_val <- exp(mu)
-          w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+          w.it * (outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val))
         } else if (family == "binomial") {
           mu_val <- 1 / (1 + exp(-mu))
-          w.it * (outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val))
+          w.it * (outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val))
         }
       }
 
@@ -632,7 +636,7 @@ lca_step3.distal <- function(
         diag(sigma2 / w_colsums),
         error = function(e) {
           warning("Hessian inversion failed. SEs will be NA.")
-          matrix(NA_real_, T, T)
+          matrix(NA_real_, iT, iT)
         }
       )
       res <- list(
@@ -657,18 +661,18 @@ lca_step3.distal <- function(
         pi_s * pzx * assignment_errors * resid / (q_i * sigma2)
       } else if (family == "poisson") {
         mu_val <- exp(mu)
-        score <- outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val)
+        score <- outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val)
         pi_s * pzx * assignment_errors * score / q_i
       } else if (family == "binomial") {
         mu_val <- 1 / (1 + exp(-mu))
-        score <- outer(Zo_cc, rep(1, T)) - outer(rep(1, N), mu_val)
+        score <- outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val)
         pi_s * pzx * assignment_errors * score / q_i
       }
     }
 
     beta <- beta_init
-    Z_long <- rep(Zo_cc, T)
-    X_long <- factor(rep(seq_len(T), each = N))
+    Z_long <- rep(Zo_cc, iT)
+    X_long <- factor(rep(seq_len(iT), each = N))
 
     for (iter in seq_len(em.maxIter)) {
       pzx <- exp(pmax(p.zx(beta), -500))
@@ -701,7 +705,7 @@ lca_step3.distal <- function(
     }
 
     three_step.score <- function(params) {
-      mu <- params[1:T]
+      mu <- params[1:iT]
       pzx <- exp(pmax(p.zx(params), -500))
       score_nt_ml(mu, pzx, sigma2 = 1)
     }
@@ -714,12 +718,12 @@ lca_step3.distal <- function(
         pwx,
         Zo_cc,
         w.is_cc,
-        T,
+        iT,
         family
       )),
       error = function(e) {
         warning("Hessian inversion failed. SEs will be NA.")
-        matrix(NA_real_, T, T)
+        matrix(NA_real_, iT, iT)
       }
     )
     res <- list(
@@ -748,7 +752,7 @@ lca_step3 <- function(
   neg.ll,
   gamma_init,
   Q,
-  T,
+  iT,
   covariate.tol,
   use.bch = FALSE,
   gradient = NULL,
@@ -761,7 +765,7 @@ lca_step3 <- function(
   correct.spec = FALSE
 ) {
   N <- nrow(Z_mat_cc)
-  beta <- matrix(gamma_init, nrow = Q, ncol = T - 1)
+  beta <- matrix(gamma_init, nrow = Q, ncol = iT - 1)
   ll_prev <- -neg.ll(c(beta))
   H <- NULL
   # print(ll_prev)
@@ -775,10 +779,10 @@ lca_step3 <- function(
       # print(-neg.ll(c(beta)))
       grad_vec <- -gradient(c(beta)) # gradient of pos. ll: Q*(T-1) vector
 
-      H <- matrix(0, Q * (T - 1), Q * (T - 1))
+      H <- matrix(0, Q * (iT - 1), Q * (iT - 1))
       pi_ <- p.xz(beta)
-      for (k in seq_len(T - 1)) {
-        for (l in k:(T - 1)) {
+      for (k in seq_len(iT - 1)) {
+        for (l in k:(iT - 1)) {
           w_kl <- w.it_plus * pi_[, k + 1L] * ((k == l) - pi_[, l + 1L])
           idx_k <- ((k - 1) * Q + 1):(k * Q)
           idx_l <- ((l - 1) * Q + 1):(l * Q)
@@ -808,7 +812,7 @@ lca_step3 <- function(
 
       direction <- tryCatch(
         qr.solve(-H, grad_vec),
-        error = function(e) rep(0, Q * (T - 1))
+        error = function(e) rep(0, Q * (iT - 1))
       )
 
       alpha <- 1
@@ -827,7 +831,7 @@ lca_step3 <- function(
 
       delta <- alpha * direction
       #print(max(abs(delta)))
-      beta <- beta + matrix(delta, nrow = Q, ncol = T - 1)
+      beta <- beta + matrix(delta, nrow = Q, ncol = iT - 1)
       if (max(abs(delta)) < covariate.tol) {
         if (verbose) {
           message(sprintf("BCH NR converged in %d iterations.", nr))
@@ -847,8 +851,8 @@ lca_step3 <- function(
 
       q <- p %*% t(pwx)
 
-      gamma <- matrix(0, nrow = N, ncol = T)
-      for (t in seq_len(T)) {
+      gamma <- matrix(0, nrow = N, ncol = iT)
+      for (t in seq_len(iT)) {
         gamma[, t] <- p[, t] * rowSums(w.is_cc * outer(rep(1, N), pwx[, t]) / q)
       }
       ###############################################################################
@@ -863,9 +867,9 @@ lca_step3 <- function(
 
         grad <- t(Z_mat_cc) %*% (Gamma_nr - p_nr1 * gamma_plus)
 
-        H <- matrix(0, Q * (T - 1), Q * (T - 1))
-        for (k in seq_len(T - 1)) {
-          for (l in k:(T - 1)) {
+        H <- matrix(0, Q * (iT - 1), Q * (iT - 1))
+        for (k in seq_len(iT - 1)) {
+          for (l in k:(iT - 1)) {
             w_kl <- gamma_plus * p_nr1[, k] * ((k == l) - p_nr1[, l])
             idx_k <- ((k - 1) * Q + 1):(k * Q)
             idx_l <- ((l - 1) * Q + 1):(l * Q)
@@ -878,9 +882,9 @@ lca_step3 <- function(
 
         delta <- tryCatch(
           qr.solve(-H, as.vector(grad)),
-          error = function(e) rep(0, Q * (T - 1))
+          error = function(e) rep(0, Q * (iT - 1))
         )
-        beta <- beta + matrix(delta, nrow = Q, ncol = T - 1)
+        beta <- beta + matrix(delta, nrow = Q, ncol = iT - 1)
         if (max(abs(delta)) < covariate.tol) break
       }
       if (nr == 10L && max(abs(delta)) >= covariate.tol) {
@@ -891,8 +895,8 @@ lca_step3 <- function(
       }
 
       #Alternatively, fit a multinomial logistic regression model ##########################
-      # class_exp <- rep(seq_len(T), each = N)
-      # Z_exp <- Z_mat_cc[rep(seq_len(N), T), , drop = FALSE]
+      # class_exp <- rep(seq_len(iT), each = N)
+      # Z_exp <- Z_mat_cc[rep(seq_len(N), iT), , drop = FALSE]
       # w_exp <- as.vector(gamma)
 
       # fit <- nnet::multinom(
@@ -925,7 +929,7 @@ lca_step3 <- function(
     {
       if (!use.bch) {
         if (correct.spec) {
-          matrix(NA_real_, Q * (T - 1), Q * (T - 1))
+          matrix(NA_real_, Q * (iT - 1), Q * (iT - 1))
         } else {
           # -- Analytic observed-data Hessian of neg.ll (checked with sympy)--------------------------
           # neg.ll = -sum_i sum_s w_{is} * log(q_{is})
@@ -945,16 +949,16 @@ lca_step3 <- function(
           r_mat <- w.is_cc / q_mat # N x T: r[i,s]
 
           # F_k for each non-reference class k (N x (T-1))
-          F_mat <- matrix(0, N, T - 1L)
-          for (k in seq_len(T - 1L)) {
+          F_mat <- matrix(0, N, iT - 1L)
+          for (k in seq_len(iT - 1L)) {
             F_mat[, k] <- rowSums(r_mat * pwx[, k + 1L][col(r_mat)]) -
               rowSums(w.is_cc)
           }
 
           # G_{kl} for each pair (k,l)
-          H_obs <- matrix(0, Q * (T - 1L), Q * (T - 1L))
-          for (k in seq_len(T - 1L)) {
-            for (l in k:(T - 1L)) {
+          H_obs <- matrix(0, Q * (iT - 1L), Q * (iT - 1L))
+          for (k in seq_len(iT - 1L)) {
+            for (l in k:(iT - 1L)) {
               idx_k <- ((k - 1L) * Q + 1L):(k * Q)
               idx_l <- ((l - 1L) * Q + 1L):(l * Q)
               tA <- p_[, k + 1L] * ((k == l) - p_[, l + 1L]) * F_mat[, k]
@@ -984,12 +988,12 @@ lca_step3 <- function(
         warning(
           "Exact Hessian inversion failed. Falling back to Hessian estimated from the cross-product of the case-wise log-likelihood gradients. This assumes a correct third-stage model specification."
         )
-        matrix(NA_real_, Q * (T - 1), Q * (T - 1))
+        matrix(NA_real_, Q * (iT - 1), Q * (iT - 1))
       } else {
         warning(
           "Hessian inversion failed after BCH. Try again with use.bch = FALSE."
         )
-        matrix(NA_real_, Q * (T - 1), Q * (T - 1))
+        matrix(NA_real_, Q * (iT - 1), Q * (iT - 1))
       }
     }
   )
@@ -1042,7 +1046,7 @@ lca_step3 <- function(
 #' @return A list with the following elements:
 #'   \describe{
 #'     \item{`Infomat`}{Square BHHH information matrix of dimension p x p,
-#'       where p = (T-1) + sum(ivItemcat - 1) * T is the total number of free
+#'       where p = (iT-1) + sum(ivItemcat - 1) * iT is the total number of free
 #'       parameters. Boundary parameters have zero rows and columns.}
 #'     \item{`Varmat`}{Inverse of \code{Infomat} divided by N, giving the
 #'       asymptotic variance-covariance matrix on the same scale as
@@ -1066,7 +1070,7 @@ lca_indiv_varmat <- function(
 ) {
   pi_ <- fit0$vPi
   phi <- fit0$mPhi
-  T <- length(pi_)
+  iT <- length(pi_)
   N <- nrow(Y.exp)
 
   if (is.null(mDesign.exp)) {
@@ -1098,7 +1102,7 @@ lca_indiv_varmat <- function(
   # otherwise compute them from theta1.
   if (is.null(u_post)) {
     theta1 <- c(pi_[-1L], phi_free)
-    u_post <- compute_posteriors(Y.exp, mDesign.exp, theta1, ivItemcat, T)
+    u_post <- compute_posteriors(Y.exp, mDesign.exp, theta1, ivItemcat, iT)
   }
 
   # ---- Expand phi for residual computation -----------------------------------
@@ -1145,9 +1149,9 @@ lca_indiv_varmat <- function(
   Y_free <- Y.exp[, free_cols, drop = FALSE]
   D_free <- mDesign.exp[, free_cols, drop = FALSE]
 
-  s_u_phi <- matrix(0, N, n_free_phi * T)
+  s_u_phi <- matrix(0, N, n_free_phi * iT)
 
-  for (t in seq_len(T)) {
+  for (t in seq_len(iT)) {
     idx <- ((t - 1L) * n_free_phi + 1L):(t * n_free_phi)
     resid <- Y_free -
       D_free *
@@ -1343,7 +1347,7 @@ lca_vcov_distal <- function(
   s3.par = NULL,
   p.xz.cov = NULL,
   Z_mat_cov = NULL,
-  T,
+  iT,
   use.simple.cov,
   use.bch
 ) {
@@ -1352,7 +1356,7 @@ lca_vcov_distal <- function(
 
   if (use.bch || use.simple.cov) {
     result <- H.3.inv %*% meat %*% H.3.inv
-    class_names <- paste0("mu_C", seq_len(T))
+    class_names <- paste0("mu_C", seq_len(iT))
     rownames(result) <- class_names
     colnames(result) <- class_names
     return(result)
@@ -1379,12 +1383,12 @@ lca_vcov_distal <- function(
   # t!=t0: dr_{i,t}  = -r_{i,t} * r_{i,t0} * c_i
   # C1[t, col] = sum_i dr_{it} * g_{it}
 
-  n_theta2 <- T * (T - 1L)
-  C1_mat <- matrix(0, T, n_theta2)
+  n_theta2 <- iT * (iT - 1L)
+  C1_mat <- matrix(0, iT, n_theta2)
   col_idx <- 0L
 
-  for (t0 in seq_len(T)) {
-    for (s0 in seq_len(T)) {
+  for (t0 in seq_len(iT)) {
+    for (s0 in seq_len(iT)) {
       if (s0 == t0) {
         next
       }
@@ -1392,7 +1396,7 @@ lca_vcov_distal <- function(
       v <- pwx[s0, t0]
       dae <- v * (w.is[, s0] - ae[, t0]) # N
       c_i <- dae / pmax(ae[, t0], 1e-300) # N
-      for (t in seq_len(T)) {
+      for (t in seq_len(iT)) {
         dr <- if (t == t0) {
           r_it[, t0] * c_i * (1 - r_it[, t0])
         } else {
@@ -1416,19 +1420,19 @@ lca_vcov_distal <- function(
   # d r_{it}/d gamma_{q,l} = z_{iq} * [m_{it}*pi_{it}*(I(t==l+1)-pi_{i,l+1}) - r_{it}*A_{il}]
   # C_mat[t, l*Q+q] = sum_i score_mu[it] * z_{iq} * (above)
 
-  step2.uncertainty <- matrix(0, T, T)
+  step2.uncertainty <- matrix(0, iT, iT)
 
   if (!is.null(s3.par) && !is.null(p.xz.cov) && !is.null(Z_mat_cov)) {
     Q_cov <- ncol(Z_mat_cov)
-    C_mat <- matrix(0, T, (T - 1L) * Q_cov)
+    C_mat <- matrix(0, iT, (iT - 1L) * Q_cov)
 
     m_it <- pzx_mat * ae / q_i # N x T
-    pi_cov <- p.xz.cov(matrix(s3.par, ncol = T - 1L)) # N x T
+    pi_cov <- p.xz.cov(matrix(s3.par, ncol = iT - 1L)) # N x T
     m_pi_sum <- rowSums(m_it * pi_cov) # N: sum_t m_{it}*pi_{it}
 
-    for (l in seq_len(T - 1L)) {
+    for (l in seq_len(iT - 1L)) {
       A_il <- pi_cov[, l + 1L] * (m_it[, l + 1L] - m_pi_sum) # N
-      for (t in seq_len(T)) {
+      for (t in seq_len(iT)) {
         delta_tl <- as.integer(t == l + 1L)
         inner_t <- m_it[, t] *
           pi_cov[, t] *
@@ -1445,7 +1449,7 @@ lca_vcov_distal <- function(
   result <- H.3.inv %*%
     (meat + step1.uncertainty + step2.uncertainty) %*%
     H.3.inv
-  class_names <- paste0("mu_C", seq_len(T))
+  class_names <- paste0("mu_C", seq_len(iT))
   rownames(result) <- class_names
   colnames(result) <- class_names
   result
@@ -1818,7 +1822,7 @@ three_step <- function(
   )
 
   Q <- if (!is.null(Z_mat)) ncol(Z_mat) else 0L
-  T <- n_classes
+  iT <- n_classes
 
   # Subset s2 outputs to the rows used in each Step 3 model.
   # s2 was estimated on all keep_Y rows; Step 3 models only use complete-Z rows.
@@ -1837,7 +1841,7 @@ three_step <- function(
         mDes_cov,
         s2$theta1,
         ivItemcat,
-        T
+        iT
       )
     } else {
       NULL
@@ -1876,7 +1880,7 @@ three_step <- function(
         mDes_dis,
         s2$theta1,
         ivItemcat,
-        T
+        iT
       )
     } else {
       NULL
@@ -1927,17 +1931,17 @@ three_step <- function(
       w.it <- s2_for_cov$w.is %*% D
 
       .ll_bch <- function(params, pwx = NULL) {
-        beta.cur <- matrix(params, ncol = T - 1)
+        beta.cur <- matrix(params, ncol = iT - 1)
         rowSums(w.it * log(p.xz(beta.cur)))
       }
 
       neg.ll <- function(params) {
-        beta.cur <- matrix(params, ncol = T - 1)
+        beta.cur <- matrix(params, ncol = iT - 1)
         -sum(w.it * log(pmax(p.xz(beta.cur), 1e-6)))
       }
 
       .grad_bch <- function(params) {
-        beta.cur <- matrix(params, ncol = T - 1)
+        beta.cur <- matrix(params, ncol = iT - 1)
         pi_ <- p.xz(beta.cur)
         resid <- w.it[, -1L, drop = FALSE] -
           pi_[, -1L, drop = FALSE] * rowSums(w.it)
@@ -1945,12 +1949,12 @@ three_step <- function(
       }
 
       .score_bch <- function(params) {
-        beta.cur <- matrix(params, ncol = T - 1)
+        beta.cur <- matrix(params, ncol = iT - 1)
         pi_ <- p.xz(beta.cur)
         resid <- w.it[, -1L, drop = FALSE] -
           pi_[, -1L, drop = FALSE] * rowSums(w.it)
-        resid[, rep(seq_len(T - 1L), each = Q)] *
-          Z_mat[, rep(seq_len(Q), T - 1L)]
+        resid[, rep(seq_len(iT - 1L), each = Q)] *
+          Z_mat[, rep(seq_len(Q), iT - 1L)]
       }
 
       three_step.ll <- .ll_bch
@@ -1958,17 +1962,17 @@ three_step <- function(
       three_step.score <- .score_bch
     } else {
       .ll_ml <- function(params, pwx = s2_for_cov$p.wx_mat) {
-        probs <- p.xz(matrix(params, ncol = T - 1))
+        probs <- p.xz(matrix(params, ncol = iT - 1))
         rowSums(s2_for_cov$w.is * log(probs %*% t(pwx)))
       }
 
       .grad_ml <- function(params, pwx = s2_for_cov$p.wx_mat) {
-        beta <- matrix(params, ncol = T - 1)
+        beta <- matrix(params, ncol = iT - 1)
         p <- p.xz(beta)
         q <- p %*% t(pwx)
         r <- s2_for_cov$w.is / q
-        grad <- matrix(0, nrow = T - 1, ncol = Q)
-        for (k in seq_len(T - 1L)) {
+        grad <- matrix(0, nrow = iT - 1, ncol = Q)
+        for (k in seq_len(iT - 1L)) {
           score_i <- p[, k + 1L] *
             (r %*% pwx[, k + 1L] - rowSums(s2_for_cov$w.is))
           grad[k, ] <- t(Z_mat) %*% score_i
@@ -1977,17 +1981,17 @@ three_step <- function(
       }
 
       .score_ml <- function(params, pwx = s2_for_cov$p.wx_mat) {
-        beta <- matrix(params, ncol = T - 1)
+        beta <- matrix(params, ncol = iT - 1)
         p <- p.xz(beta)
         q <- p %*% t(pwx)
         r <- s2_for_cov$w.is / q
-        score_ik <- matrix(0, nrow = nrow(Z_mat), ncol = T - 1)
-        for (k in seq_len(T - 1L)) {
+        score_ik <- matrix(0, nrow = nrow(Z_mat), ncol = iT - 1)
+        for (k in seq_len(iT - 1L)) {
           score_ik[, k] <- p[, k + 1L] *
             (r %*% pwx[, k + 1L] - rowSums(s2_for_cov$w.is))
         }
-        score_ik[, rep(seq_len(T - 1L), each = Q)] *
-          Z_mat[, rep(seq_len(Q), T - 1L)]
+        score_ik[, rep(seq_len(iT - 1L), each = Q)] *
+          Z_mat[, rep(seq_len(Q), iT - 1L)]
       }
 
       three_step.ll <- .ll_ml
@@ -1999,7 +2003,7 @@ three_step <- function(
     gamma_init <- if (!is.null(fitZ$mGamma) && use.two.step) {
       c(fitZ$mGamma)
     } else {
-      rep(0, Q * (T - 1))
+      rep(0, Q * (iT - 1))
     }
 
     # -- Step 3 ------------------------------------------------------------------
@@ -2007,7 +2011,7 @@ three_step <- function(
       neg.ll,
       gamma_init,
       Q,
-      T,
+      iT,
       covariate.tol,
       gradient = three_step.grad,
       use.bch = use.bch,
@@ -2027,9 +2031,9 @@ three_step <- function(
       s3$H.3.inv <- qr.solve(crossprod(three_step.score(s3$res$par)))
     }
 
-    coefs <- matrix(s3$res$par, ncol = T - 1)
-    ref_idx <- parse_rebase(rebase, T)
-    non_ref_classes <- seq_len(T)[-ref_idx]
+    coefs <- matrix(s3$res$par, ncol = iT - 1)
+    ref_idx <- parse_rebase(rebase, iT)
+    non_ref_classes <- seq_len(iT)[-ref_idx]
     colnames(coefs) <- paste0("C", non_ref_classes)
     rownames(coefs) <- c("Intercept", Zp.names)
 
@@ -2075,7 +2079,7 @@ three_step <- function(
       coefs,
       mDes_cc
     )
-    total.k <- (T * ncol(Y.obs)) + (Q * (T - 1))
+    total.k <- (iT * ncol(Y.obs)) + (Q * (iT - 1))
     total.AIC <- -2 * total.llik + 2 * total.k
     total.BIC <- -2 * total.llik + total.k * log(nrow(Y_cc))
 
@@ -2172,7 +2176,7 @@ three_step <- function(
       p <- p[p > sqrt(.Machine$double.eps)]
       -sum(p * log(p))
     }
-    pi_adj_cov <- p.xz(matrix(s3$res$par, ncol = T - 1L)) # N x T
+    pi_adj_cov <- p.xz(matrix(s3$res$par, ncol = iT - 1L)) # N x T
 
     error_prior <- mean(apply(pi_adj_cov, 1L, .h))
 
@@ -2204,7 +2208,7 @@ three_step <- function(
         llik = total.llik,
         AIC = total.AIC,
         BIC = total.BIC,
-        n_classes = T,
+        n_classes = iT,
         estimator = if (use.bch) "BCH" else "ML",
         entropy.R2 = entropy.R2,
         posteriors = s2$p.xy,
@@ -2236,19 +2240,19 @@ three_step <- function(
       }
 
       if (!is.null(Z_mat_dis)) {
-        pi_adj_full <- cbind(1, p.xz(matrix(s3$res$par, ncol = T - 1)))
+        pi_adj_full <- cbind(1, p.xz(matrix(s3$res$par, ncol = iT - 1)))
         p.xz_dis <- function(params) {
           eta_full <- cbind(0, Z_mat_dis %*% params)
           row_max <- apply(eta_full, 1L, max)
           exp_eta <- exp(eta_full - row_max)
           exp_eta / rowSums(exp_eta)
         }
-        pi_adj <- p.xz_dis(matrix(s3$res$par, ncol = T - 1))
+        pi_adj <- p.xz_dis(matrix(s3$res$par, ncol = iT - 1))
       } else {
         pi_adj <- matrix(
           fit0$vPi,
           nrow = length(keep_step3_Zo_in_Y),
-          ncol = T,
+          ncol = iT,
           byrow = TRUE
         )
       }
@@ -2269,7 +2273,7 @@ three_step <- function(
       pi_adj <- matrix(
         fit0$vPi,
         nrow = length(keep_step3_Zo_in_Y),
-        ncol = T,
+        ncol = iT,
         byrow = TRUE
       )
       res_adj <- list(
@@ -2284,7 +2288,7 @@ three_step <- function(
 
     if (family == "poisson") {
       p.zx <- function(params) {
-        log_mu <- params[1:T]
+        log_mu <- params[1:iT]
         mu <- exp(log_mu)
         z <- Zo_mat[, 1L]
         outer(z, log_mu, "*") - # N x T: z_i * log(mu_t)
@@ -2299,7 +2303,7 @@ three_step <- function(
     } else if (family == "binomial") {
       # params: logit(mu_t)
       p.zx <- function(params) {
-        logit_mu <- params[1:T]
+        logit_mu <- params[1:iT]
         mu <- 1 / (1 + exp(-logit_mu))
         z <- Zo_mat[, 1L]
         outer(z, log(mu), "*") + # N x T
@@ -2313,7 +2317,7 @@ three_step <- function(
     } else {
       #(family == "gaussian")
       p.zx <- function(params) {
-        mu <- params[1:T]
+        mu <- params[1:iT]
         resid <- outer(Zo_mat[, 1L], mu, "-")
         -0.5 * resid^2 - 0.5 * log(2 * pi)
       }
@@ -2345,7 +2349,7 @@ three_step <- function(
       Zo_cc = Zo_mat[, 1L],
       use.bch = use.bch,
       covariate.tol = covariate.tol,
-      T = T,
+      iT = iT,
       beta_init = beta_init,
       family = family,
       p.zx = p.zx,
@@ -2392,20 +2396,20 @@ three_step <- function(
       } else {
         NULL
       },
-      T = T,
+      iT = iT,
       use.simple.cov = use.simple.cov,
       use.bch = use.bch
     )
 
     distal_par <- s3.distal$res$par
-    names(distal_par) <- paste0("mu_C", seq_len(T))
+    names(distal_par) <- paste0("mu_C", seq_len(iT))
 
     # -- Distal log-likelihood, AIC, BIC ----------------------------------------
     # Step-3 llik: log P(Zo|X=t) weighted by class assignments (from optim).
     # Total joint llik: sum_i log[ sum_t P(X=t|Zp_i) P(Zo_i|X=t) P(Y_i|X=t) ]
     distal.llik <- -s3.distal$res$value
 
-    # log P(Zo_i | X=t) at converged mu_hat: N_dis x T
+    # log P(Zo_i | X=t) at converged mu_hat: N_dis x iT
     log_pZo_t <- p.zx(distal_par)
 
     Y_dis <- Y.obs[keep_step3_Zo_in_Y, , drop = FALSE]
@@ -2423,9 +2427,9 @@ three_step <- function(
       mDesign = mDes_dis
     )
 
-    n_meas_params <- (T - 1L) +
-      sum(ifelse(ivItemcat == 2L, 1L, ivItemcat - 1L)) * T
-    n_distal_params <- T
+    n_meas_params <- (iT - 1L) +
+      sum(ifelse(ivItemcat == 2L, 1L, ivItemcat - 1L)) * iT
+    n_distal_params <- iT
     total.k.dis <- n_meas_params + n_distal_params
     N_dis <- length(keep_step3_Zo)
 
@@ -2442,7 +2446,7 @@ three_step <- function(
   if (!is.null(Zo_mat) && is.null(Z_mat)) {
     out <- s3.distal.list
     out$family <- family
-    out$n_classes <- T
+    out$n_classes <- iT
     out$estimator <- if (use.bch) "BCH" else "ML"
     out$posteriors <- s2$p.xy
     out$classifications <- max.col(s2$p.xy)
@@ -2458,7 +2462,7 @@ three_step <- function(
     covariate = s3.covariate,
     distal = s3.distal.list,
     family = family,
-    n_classes = T,
+    n_classes = iT,
     estimator = if (use.bch) "BCH" else "ML",
     posteriors = s2$p.xy,
     classifications = max.col(s2$p.xy)
@@ -2993,9 +2997,9 @@ vcov.tseLCA_measurement <- function(object, boundary.tol = 1e-2, ...) {
   # Note: parameters are log-ratio transforms of the probability parameters,
   # NOT the probabilities themselves.
 
-  T <- length(fit0$vPi)
+  iT <- length(fit0$vPi)
   H <- length(ivItemcat)
-  classes <- paste0("C", seq_len(T))
+  classes <- paste0("C", seq_len(iT))
 
   # Pi names: log(pi_t/pi_1) for t=2..T
   pi_names <- paste0("log(pi_", classes[-1L], "/pi_", classes[1L], ")")
@@ -3004,7 +3008,7 @@ vcov.tseLCA_measurement <- function(object, boundary.tol = 1e-2, ...) {
   item_labels <- if (!is.null(Y.names)) Y.names else paste0("Y", seq_len(H))
 
   phi_names <- character(0L)
-  for (t in seq_len(T)) {
+  for (t in seq_len(iT)) {
     for (h in seq_len(H)) {
       K_h <- ivItemcat[h]
       for (k in seq_len(K_h - 1L)) {
