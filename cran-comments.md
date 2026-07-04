@@ -10,6 +10,18 @@
 ## Downstream dependencies
 There are no downstream dependencies for this package.
 
-* This is a new release.
+## Resubmission
 
-DISCLAIMER: Some documentation built with roxygen was generated with Claude Code (Sonnet 4.6). All code and documentation was reviewed and edited by a human (Sam Lee).
+This is a resubmission following reviewer feedback from Konstanze Lauseker.
+Changes made:
+
+- DESCRIPTION: Removed single quotes from acronyms (BCH, ML, LCA, etc.) and 
+  added explanations of all acronyms in the description text.
+- R/* : Replaced T/F with TRUE/FALSE throughout, including in 
+  man/parse_rebase.Rd example.
+- Added \value tags to all exported functions missing them, including 
+  bk2018_params.Rd.
+- inst/examples: Removed all default file writes to the home filespace; 
+  examples now write only to tempdir().
+- inst/examples: Removed rm(list = ls()) calls.
+- inst/examples: Removed any install.packages() calls.
