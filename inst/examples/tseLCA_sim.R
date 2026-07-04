@@ -831,3 +831,5 @@ sim.results <- run_simulation(
   #Just run sequentially
   n_cores = 1
 )
+
+print(sim.results)
