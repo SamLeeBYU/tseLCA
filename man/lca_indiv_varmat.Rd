@@ -39,7 +39,7 @@ Default \code{NULL}.}
 A list with the following elements:
 \describe{
 \item{\code{Infomat}}{Square BHHH information matrix of dimension p x p,
-where p = (T-1) + sum(ivItemcat - 1) * T is the total number of free
+where p = (iT-1) + sum(ivItemcat - 1) * iT is the total number of free
 parameters. Boundary parameters have zero rows and columns.}
 \item{\code{Varmat}}{Inverse of \code{Infomat} divided by N, giving the
 asymptotic variance-covariance matrix on the same scale as

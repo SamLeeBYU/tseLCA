@@ -4,12 +4,12 @@
 \alias{parse_rebase}
 \title{Parse and validate the rebase argument}
 \usage{
-parse_rebase(rebase, T)
+parse_rebase(rebase, iT)
 }
 \arguments{
 \item{rebase}{Character like "C2" or integer class index.}
 
-\item{T}{Total number of classes.}
+\item{iT}{Total number of classes.}
 }
 \value{
 Integer class index (1-based) to use as reference.

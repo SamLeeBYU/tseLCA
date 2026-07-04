@@ -22,6 +22,10 @@
 #' functions.  All elements correspond to the values stated in the paper
 #' (Section 3, p. 879).
 #'
+#' @format A named list with four elements: \code{class_props},
+#'   \code{separation_levels}, \code{covariate_params}, \code{distal_params}.
+#'   See Details.
+#'
 #' \describe{
 #'   \item{`class_props`}{Length-3 vector of equal class proportions (1/3 each).}
 #'   \item{`separation_levels`}{Named vector mapping `"low"`, `"mid"`, `"high"`

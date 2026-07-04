@@ -3,15 +3,11 @@
 \name{bk2018_params}
 \alias{bk2018_params}
 \title{Default population parameters for the Bakk & Kuha (2018) simulation}
-\usage{
-bk2018_params
-}
-\description{
-A list of pre-specified parameters used by \code{\link[=generate_data]{generate_data()}} and related
-functions.  All elements correspond to the values stated in the paper
-(Section 3, p. 879).
-}
-\details{
+\format{
+A named list with four elements: \code{class_props},
+\code{separation_levels}, \code{covariate_params}, \code{distal_params}.
+See Details.
+
 \describe{
 \item{\code{class_props}}{Length-3 vector of equal class proportions (1/3 each).}
 \item{\code{separation_levels}}{Named vector mapping \code{"low"}, \code{"mid"}, \code{"high"}
@@ -22,6 +18,14 @@ set so that marginal class sizes average to 1/3 when Zp ~ Uniform\{1..5\}.}
 \item{\code{distal_params}}{List with \verb{$mu} (class means, c(-1, 1, 0)) and
 \verb{$sigma} (residual SD = 1) for the distal outcome model.}
 }
+}
+\usage{
+bk2018_params
+}
+\description{
+A list of pre-specified parameters used by \code{\link[=generate_data]{generate_data()}} and related
+functions.  All elements correspond to the values stated in the paper
+(Section 3, p. 879).
 }
 \examples{
 # True item-response probabilities for high separation
