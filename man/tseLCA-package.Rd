@@ -4,7 +4,7 @@
 \name{tseLCA-package}
 \alias{tseLCA}
 \alias{tseLCA-package}
-\title{tseLCA: Three-Step Estimation for Latent Class Analysis}
+\title{tseLCA: Three-step Estimation for Latent Class Analysis}
 \description{
 \pkg{tseLCA} implements bias-adjusted three-step estimators for structural
 latent class models with covariates and distal outcomes. Building on the

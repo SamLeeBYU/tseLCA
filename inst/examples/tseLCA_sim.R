@@ -1,6 +1,6 @@
 #####################################################
 ### Simulation Script for the tseLCA package:
-### tseLCA: Three-Step Estimation for Latent Class Analysis
+### tseLCA: Three-step Estimation for Latent Class Analysis
 ### -------------------------------------------------
 ### By: Sam Lee
 ### E-Mail: samlee@arizona.edu
@@ -13,26 +13,26 @@
 ### preliminaries
 ###################################################
 
-rm(list = ls())
-gc()
-r_opts <- options(
-  prompt = "R> ",
-  continue = "+  ",
-  width = 77,
-  digits = 4,
-  useFancyQuotes = FALSE,
-  warn = 1
-)
+# rm(list = ls())
+# gc()
+# r_opts <- options(
+#   prompt = "R> ",
+#   continue = "+  ",
+#   width = 77,
+#   digits = 4,
+#   useFancyQuotes = FALSE,
+#   warn = 1
+# )
 
 # Loading libraries and installing if unavailable
 
 # Install the development version from GitHub
-if (!require("tseLCA")) {
-  if (!require("pak")) {
-    install.packages("pak")
-  }
-  pak::pak("SamLeeBYU/tseLCA")
-}
+# if (!require("tseLCA")) {
+#   if (!require("pak")) {
+#     install.packages("pak")
+#   }
+#   pak::pak("SamLeeBYU/tseLCA")
+# }
 
 library(tseLCA)
 
@@ -40,7 +40,7 @@ library(tseLCA)
 ### generate all simulation conditions
 ###################################################
 
-output.dir <- "tseLCA_output/simulation"
+output.dir <- tempdir() #"tseLCA_output/simulation"
 dataset_path <- file.path(output.dir, "sim_datasets.rds")
 
 if (!dir.exists(output.dir)) {
@@ -827,7 +827,7 @@ run_simulation <- function(
 sim.results <- run_simulation(
   datasets,
   measurement_models,
-  out_path = "tseLCA_output/simulation/sim-results.rds",
+  out_path = file.path(output.dir, "sim_results.rds"),
   #Just run sequentially
   n_cores = 1
 )

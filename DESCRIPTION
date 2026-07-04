@@ -1,6 +1,6 @@
 Package: tseLCA
 Type: Package
-Title: Three-Step Estimation for Latent Class Analysis
+Title: Three-step Estimation for Latent Class Analysis
 Version: 1.0.0
 Authors@R: c(
     person("Sam", "Lee", email = "samlee@arizona.edu", role = c("aut", "cre", "cph"), 

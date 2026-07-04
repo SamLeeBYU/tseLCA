@@ -5,7 +5,7 @@ citHeader(
 c(
   bibentry(
     bibtype = "Manual",
-    title = "{tseLCA}: Three-Step Estimation for Latent Class Analysis",
+    title = "{tseLCA}: Three-step Estimation for Latent Class Analysis",
     author = person("Sam", "Lee", email = "samlee@arizona.edu"),
     year = "2026",
     note = "R package version 1.0.0",
@@ -21,7 +21,7 @@ c(
       person("Fetene B.", "Tekle"),
       person("Jeroen K.", "Vermunt")
     ),
-    title = "Estimating the Association Between Latent Class Membership and External Variables Using Bias-Adjusted Three-Step Approaches",
+    title = "Estimating the Association Between Latent Class Membership and External Variables Using Bias-Adjusted Three-step Approaches",
     journal = "Sociological Methodology",
     year = 2013,
     volume = 43,

@@ -1,6 +1,6 @@
 #####################################################
 ### Replication Script for the tseLCA package:
-### tseLCA: Three-Step Estimation for Latent Class Analysis
+### tseLCA: Three-step Estimation for Latent Class Analysis
 ### -------------------------------------------------
 ### By: Sam Lee
 ### E-Mail: samlee@arizona.edu
@@ -13,33 +13,31 @@
 ### preliminaries
 ###################################################
 
-rm(list = ls())
-gc()
-r_opts <- options(
-  prompt = "R> ",
-  continue = "+  ",
-  width = 77,
-  digits = 4,
-  useFancyQuotes = FALSE,
-  warn = 1
-)
+# rm(list = ls())
+# gc()
+# r_opts <- options(
+#   prompt = "R> ",
+#   continue = "+  ",
+#   width = 77,
+#   digits = 4,
+#   useFancyQuotes = FALSE,
+#   warn = 1
+# )
 
 # Loading libraries and installing if unavailable
 
 # Install the development version from GitHub
-if (!require("tseLCA")) {
-  if (!require("pak")) {
-    install.packages("pak")
-  }
-  pak::pak("SamLeeBYU/tseLCA")
-}
+# if (!require("tseLCA")) {
+#   if (!require("pak")) {
+#     install.packages("pak")
+#   }
+#   pak::pak("SamLeeBYU/tseLCA")
+# }
 
-
-#For access to the polytomous data 'election'
-if (!require("poLCA")) {
-  install.packages("poLCA")
-}
-
+# #For access to the polytomous data 'election'
+# if (!require("poLCA")) {
+#   install.packages("poLCA")
+# }
 
 library(tseLCA)
 
@@ -558,9 +556,9 @@ summary(d.covariate.three_step)
 message(
   "\n---- Done ------------------------------------------------------------------------------------------------------------------------------"
 )
-options(r_opts)
-rm(list = ls())
-gc()
+# options(r_opts)
+# rm(list = ls())
+# gc()
 
 ###################################################
 ### Print Session Information

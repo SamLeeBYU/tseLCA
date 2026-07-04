@@ -2723,7 +2723,7 @@ summary.tseLCA_measurement <- function(object, ...) {
 #' @export
 summary.tseLCA_covariate <- function(object, digits = 4, ...) {
   est <- if (!is.null(object$estimator)) object$estimator else "ML"
-  cat("-- tseLCA Three-Step Covariate Model -----------------------\n")
+  cat("-- tseLCA Three-step Covariate Model -----------------------\n")
   cat(sprintf("Latent classes : %d\n", object$n_classes))
   cat(sprintf("Estimator      : %s\n", est))
   cat(sprintf("Log-likelihood : %.4f\n", object$llik))
@@ -2763,7 +2763,7 @@ summary.tseLCA_covariate <- function(object, digits = 4, ...) {
 summary.tseLCA_distal <- function(object, digits = 4, ...) {
   fam <- if (!is.null(object$family)) object$family else "gaussian"
   est <- if (!is.null(object$estimator)) object$estimator else "ML"
-  cat("-- tseLCA Three-Step Distal Outcome Model -------------------\n")
+  cat("-- tseLCA Three-step Distal Outcome Model -------------------\n")
   cat(sprintf("Latent classes : %d\n", object$n_classes))
   cat(sprintf("Estimator      : %s\n", est))
   cat(sprintf("Family         : %s\n", fam))
@@ -2782,7 +2782,7 @@ summary.tseLCA_distal <- function(object, digits = 4, ...) {
 summary.tseLCA_both <- function(object, digits = 4, ...) {
   fam <- if (!is.null(object$family)) object$family else "gaussian"
   est <- if (!is.null(object$estimator)) object$estimator else "ML"
-  cat("-- tseLCA Three-Step Model: Covariate + Distal Outcome -----\n")
+  cat("-- tseLCA Three-step Model: Covariate + Distal Outcome -----\n")
   cat(sprintf("Latent classes : %d\n", object$n_classes))
   cat(sprintf("Estimator      : %s\n", est))
   cat(sprintf("Family         : %s\n", fam))
