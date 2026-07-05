@@ -25,3 +25,5 @@ Changes made:
   examples now write only to tempdir().
 - inst/examples: Removed rm(list = ls()) calls.
 - inst/examples: Removed any install.packages() calls.
+- Title: corrected hyphenated compound capitalization to "Three-Step" per
+  reviewer (Uwe Ligges) request.

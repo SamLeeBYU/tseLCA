@@ -40,3 +40,9 @@
   filespace.
 - `inst/examples`: commented out `rm(list = ls())` calls.
 - `inst/examples`: commented out `install.packages()` calls.
+
+# tseLCA 1.0.2
+
+## CRAN resubmission
+- Title: corrected hyphenated compound capitalization to "Three-Step" per
+  reviewer request.

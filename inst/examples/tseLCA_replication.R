@@ -1,6 +1,6 @@
 #####################################################
 ### Replication Script for the tseLCA package:
-### tseLCA: Three-step Estimation for Latent Class Analysis
+### tseLCA: Three-Step Estimation for Latent Class Analysis
 ### -------------------------------------------------
 ### By: Sam Lee
 ### E-Mail: samlee@arizona.edu

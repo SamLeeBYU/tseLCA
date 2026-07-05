@@ -8,7 +8,7 @@
 
 ## Overview
 
-**tseLCA** (*Three-step Estimation for Latent Class Analysis*) introduces bias-adjusted three-step estimation for structural latent class models in R. The package provides a comprehensive framework for estimating latent class models with covariates and distal outcomes while preserving the measurement structure established during class formation.
+**tseLCA** (*Three-Step Estimation for Latent Class Analysis*) introduces bias-adjusted three-step estimation for structural latent class models in R. The package provides a comprehensive framework for estimating latent class models with covariates and distal outcomes while preserving the measurement structure established during class formation.
 
 Building upon the efficient measurement-model estimation procedures implemented in **multilevLCA**, **tseLCA** extends existing functionality through modern three-step estimators, classification-error corrections, and variance estimation procedures that appropriately account for uncertainty from the latent class measurement stage.
 

@@ -5,7 +5,7 @@ citHeader(
 c(
   bibentry(
     bibtype = "Manual",
-    title = "{tseLCA}: Three-step Estimation for Latent Class Analysis",
+    title = "{tseLCA}: Three-Step Estimation for Latent Class Analysis",
     author = person("Sam", "Lee", email = "samlee@arizona.edu"),
     year = "2026",
     note = "R package version 1.0.0",

@@ -145,7 +145,7 @@ d.low.fitZ$mGamma
 
 ---
 
-## Three-step estimation
+## Three-Step estimation
 
 ### ML estimator (default)
 

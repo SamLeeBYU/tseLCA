@@ -1,4 +1,4 @@
-#' tseLCA: Three-step Estimation for Latent Class Analysis
+#' tseLCA: Three-Step Estimation for Latent Class Analysis
 #'
 #' @description
 #' \pkg{tseLCA} implements bias-adjusted three-step estimators for structural
