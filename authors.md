@@ -10,7 +10,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/SamLeeBYU/tseLCA/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/SamLeeBYU/tseLCA/blob/v1.0.2/inst/CITATION)
 
 Lee S (2026). *tseLCA: Three-Step Estimation for Latent Class Analysis*.
 R package version 1.0.0, <https://github.com/SamLeeBYU/tseLCA>.
