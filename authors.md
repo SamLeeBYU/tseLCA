@@ -26,12 +26,12 @@ R package version 1.0.0, <https://github.com/SamLeeBYU/tseLCA>.
 
 Bakk Z, Tekle F, Vermunt J (2013). “Estimating the Association Between
 Latent Class Membership and External Variables Using Bias-Adjusted
-Three-Step Approaches.” *Sociological Methodology*, **43**(1), 272–311.
+Three-step Approaches.” *Sociological Methodology*, **43**(1), 272–311.
 [doi:10.1177/0081175012470644](https://doi.org/10.1177/0081175012470644).
 
     @Article{Bakk2013,
       author = {Zsuzsa Bakk and Fetene B. Tekle and Jeroen K. Vermunt},
-      title = {Estimating the Association Between Latent Class Membership and External Variables Using Bias-Adjusted Three-Step Approaches},
+      title = {Estimating the Association Between Latent Class Membership and External Variables Using Bias-Adjusted Three-step Approaches},
       journal = {Sociological Methodology},
       year = {2013},
       volume = {43},

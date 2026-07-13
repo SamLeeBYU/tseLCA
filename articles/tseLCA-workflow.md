@@ -214,7 +214,7 @@ d.low.fitZ$mGamma
 
 ------------------------------------------------------------------------
 
-## Three-step estimation
+## Three-Step estimation
 
 ### ML estimator (default)
 
@@ -232,7 +232,7 @@ d.three_step <- three_step(
   Zp.names = "Zp"
 )
 summary(d.three_step)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1339.0650
@@ -297,7 +297,7 @@ d.three_step.prop <- three_step(
   use.modal.assignment = FALSE
 )
 summary(d.three_step.prop)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1339.0617
@@ -337,7 +337,7 @@ d.three_step.simple <- three_step(
   use.simple.cov = TRUE
 )
 summary(d.three_step.simple)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1339.0650
@@ -378,7 +378,7 @@ d.three_step.bch <- three_step(
   use.bch = TRUE
 )
 summary(d.three_step.bch)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : BCH
 #> Log-likelihood : -1339.2863
@@ -430,7 +430,7 @@ d.low.three_step.prop <- three_step(
   use.modal.assignment = FALSE
 )
 summary(d.low.three_step.prop)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1979.3372
@@ -467,7 +467,7 @@ $`\log(\pi_t / \pi_j) = \log(\pi_t / \pi_1) - \log(\pi_j / \pi_1)`$.
 
 # Default: C1 as reference
 summary(d.three_step.simple)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1339.0650
@@ -501,7 +501,7 @@ d.three_step.simpleC2 <- three_step(
   rebase = "C2"
 )
 summary(d.three_step.simpleC2)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1339.0650
@@ -535,7 +535,7 @@ d.three_step.simpleC3 <- three_step(
   rebase = "C3"
 )
 summary(d.three_step.simpleC3)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1339.0650
@@ -586,7 +586,7 @@ d.three_step.prop2 <- three_step(
   step1 = d.measurement$measurement_model
 )
 summary(d.three_step.prop2)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1339.0617
@@ -636,7 +636,7 @@ d.low.three_step.prop2 <- three_step(
   get.twostep.vcov = TRUE
 )
 summary(d.low.three_step.prop2)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1983.8159
@@ -682,7 +682,7 @@ d.low.three_step.prop3 <- three_step(
   step1 = d.low.measurement2000$measurement_model
 )
 summary(d.low.three_step.prop3)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1983.8159
@@ -838,7 +838,7 @@ d.sparse.three_step <- three_step(
 sum(is.na(d.sparse$Zp))
 #> [1] 43
 summary(d.sparse.three_step)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1088.3344
@@ -880,7 +880,7 @@ d.sparse.three_step2 <- three_step(
 #> 43 row(s) excluded from covariate step (missing Z).
 #> EM converged in 8 iterations.
 summary(d.sparse.three_step2)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -1088.3344
@@ -946,7 +946,7 @@ elec.three_step <- three_step(
 #> Warning: lca_indiv_varmat: Infomat is singular even after removing boundary
 #> parameters; returning NA matrix. Check for near-empty classes.
 summary(elec.three_step)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -16278.0242
@@ -1046,7 +1046,7 @@ d.distal.three_step.bch <- three_step(
 )
 
 summary(d.distal.three_step.ml)
-#> -- tseLCA Three-Step Distal Outcome Model -------------------
+#> -- tseLCA Three-step Distal Outcome Model -------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Family         : gaussian
@@ -1062,7 +1062,7 @@ summary(d.distal.three_step.ml)
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 summary(d.distal.three_step.bch)
-#> -- tseLCA Three-Step Distal Outcome Model -------------------
+#> -- tseLCA Three-step Distal Outcome Model -------------------
 #> Latent classes : 3
 #> Estimator      : BCH
 #> Family         : gaussian
@@ -1117,7 +1117,7 @@ d.covariate.three_step <- three_step(
   use.modal.assignment = FALSE
 )
 summary(d.covariate.three_step)
-#> -- tseLCA Three-Step Model: Covariate + Distal Outcome -----
+#> -- tseLCA Three-step Model: Covariate + Distal Outcome -----
 #> Latent classes : 3
 #> Estimator      : ML
 #> Family         : gaussian
@@ -1223,24 +1223,24 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] tseLCA_1.0.0
+#> [1] tseLCA_1.0.2
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] sass_0.4.10        generics_0.1.4     tidyr_1.3.2        pracma_2.4.6      
 #>  [5] hms_1.1.4          digest_0.6.39      magrittr_2.0.5     RColorBrewer_1.1-3
 #>  [9] evaluate_1.0.5     iterators_1.0.14   fastmap_1.2.0      foreach_1.5.2     
-#> [13] jsonlite_2.0.0     combinat_0.0-8     promises_1.5.0     purrr_1.2.2       
-#> [17] codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4    cli_3.6.6         
-#> [21] shiny_1.14.0       labelled_2.16.0    rlang_1.2.0        cachem_1.1.0      
-#> [25] yaml_2.3.12        otel_0.2.0         klaR_1.7-4         parallel_4.6.1    
-#> [29] tools_4.6.1        dplyr_1.2.1        httpuv_1.6.17      forcats_1.0.1     
-#> [33] vctrs_0.7.3        R6_2.6.1           mime_0.13          lifecycle_1.0.5   
-#> [37] multilevLCA_2.1.4  tictoc_1.2.1       fs_2.1.0           MASS_7.3-65       
-#> [41] miniUI_0.1.2       cluster_2.1.8.2    ragg_1.5.2         pkgconfig_2.0.3   
-#> [45] desc_1.4.3         pkgdown_2.2.0      bslib_0.11.0       pillar_1.11.1     
-#> [49] later_1.4.8        glue_1.8.1         Rcpp_1.1.1-1.1     systemfonts_1.3.2 
-#> [53] haven_2.5.5        xfun_0.59          tibble_3.3.1       tidyselect_1.2.1  
-#> [57] highr_0.12         rstudioapi_0.19.0  knitr_1.51         xtable_1.8-8      
-#> [61] htmltools_0.5.9    rmarkdown_2.31     clustMixType_0.5-1 compiler_4.6.1    
-#> [65] questionr_0.8.2
+#> [13] jsonlite_2.0.0     mclust_6.1.3       combinat_0.0-8     promises_1.5.0    
+#> [17] purrr_1.2.2        codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4   
+#> [21] cli_3.6.6          shiny_1.14.0       labelled_2.16.0    rlang_1.3.0       
+#> [25] cachem_1.1.0       yaml_2.3.12        otel_0.2.0         klaR_1.7-4        
+#> [29] parallel_4.6.1     tools_4.6.1        dplyr_1.2.1        httpuv_1.6.17     
+#> [33] forcats_1.0.1      vctrs_0.7.3        R6_2.6.1           mime_0.13         
+#> [37] lifecycle_1.0.5    multilevLCA_2.1.4  tictoc_1.2.1       fs_2.1.0          
+#> [41] MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2    ragg_1.5.2        
+#> [45] pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1      bslib_0.11.0      
+#> [49] pillar_1.11.1      later_1.4.8        glue_1.8.1         Rcpp_1.1.2        
+#> [53] systemfonts_1.3.2  haven_2.5.5        xfun_0.60          tibble_3.3.1      
+#> [57] tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0  knitr_1.51        
+#> [61] xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.31     clustMixType_0.5-2
+#> [65] compiler_4.6.1     questionr_0.8.2
 ```

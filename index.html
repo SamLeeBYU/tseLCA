@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Three-Step Estimation for Latent Class Analysis">
-<meta name="description" content="Implements BCH (Bolck, Croon &amp; Hagenaars, 2004) &lt;doi:10.1093/pan/mph001&gt; and ML (Vermunt, 2010) &lt;doi:10.1093/pan/mpq025&gt; three-step estimators for latent class analysis (LCA) with covariates and distal outcomes, following Bakk, Tekle &amp; Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, Bakk, Oberski &amp; Vermunt (2014) &lt;https://www.jstor.org/stable/24573086&gt;, and Bakk &amp; Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;. Built on multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt; for Step-1 measurement model estimation, this package extends it with support for Gaussian, Poisson, and binomial distal outcome families. Unlike poLCA, which relies on one-step estimation and cannot accommodate a measurement model from a different sample, this package uses a stepwise approach to prevent the structural model from influencing latent class formation. Implements correct sandwich variance estimation that propagates measurement uncertainty from the first-step LCA through classification-error correction in the final step (Bakk, Oberski &amp; Vermunt, 2014). Supports polytomous items and missing data in the measurement model with FIML. A data-generating process replicating the Bakk &amp; Kuha (2018) simulation study is included.">
-<meta property="og:description" content="Implements BCH (Bolck, Croon &amp; Hagenaars, 2004) &lt;doi:10.1093/pan/mph001&gt; and ML (Vermunt, 2010) &lt;doi:10.1093/pan/mpq025&gt; three-step estimators for latent class analysis (LCA) with covariates and distal outcomes, following Bakk, Tekle &amp; Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, Bakk, Oberski &amp; Vermunt (2014) &lt;https://www.jstor.org/stable/24573086&gt;, and Bakk &amp; Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;. Built on multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt; for Step-1 measurement model estimation, this package extends it with support for Gaussian, Poisson, and binomial distal outcome families. Unlike poLCA, which relies on one-step estimation and cannot accommodate a measurement model from a different sample, this package uses a stepwise approach to prevent the structural model from influencing latent class formation. Implements correct sandwich variance estimation that propagates measurement uncertainty from the first-step LCA through classification-error correction in the final step (Bakk, Oberski &amp; Vermunt, 2014). Supports polytomous items and missing data in the measurement model with FIML. A data-generating process replicating the Bakk &amp; Kuha (2018) simulation study is included.">
+<meta name="description" content="Implements BCH (Bolck-Croon-Hagenaars) &lt;doi:10.1093/pan/mph001&gt; and ML (Vermunts maximum likelihood) &lt;doi:10.1093/pan/mpq025&gt; approaches for three-step estimation of latent class models with covariates and distal outcomes, following Bakk, Tekle &amp; Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, Bakk, Oberski &amp; Vermunt (2014) &lt;https://www.jstor.org/stable/24573086&gt;, and Bakk &amp; Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;. Built on multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt; for Step-1 measurement model estimation, this package extends it with support for Gaussian, Poisson, and binomial distal outcome families. Unlike poLCA', which relies on one-step estimation and cannot accommodate a measurement model from a different sample, this package uses a stepwise approach to prevent the structural model from influencing latent class formation. Implements correct sandwich variance estimation that propagates measurement uncertainty from the first-step through classification-error correction in the final step (Bakk, Oberski &amp; Vermunt, 2014). Supports polytomous items and missing data in the measurement model with full information maximum likelihood. A data-generating process replicating the Bakk &amp; Kuha (2018) simulation study is included.">
+<meta property="og:description" content="Implements BCH (Bolck-Croon-Hagenaars) &lt;doi:10.1093/pan/mph001&gt; and ML (Vermunts maximum likelihood) &lt;doi:10.1093/pan/mpq025&gt; approaches for three-step estimation of latent class models with covariates and distal outcomes, following Bakk, Tekle &amp; Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, Bakk, Oberski &amp; Vermunt (2014) &lt;https://www.jstor.org/stable/24573086&gt;, and Bakk &amp; Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;. Built on multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt; for Step-1 measurement model estimation, this package extends it with support for Gaussian, Poisson, and binomial distal outcome families. Unlike poLCA', which relies on one-step estimation and cannot accommodate a measurement model from a different sample, this package uses a stepwise approach to prevent the structural model from influencing latent class formation. Implements correct sandwich variance estimation that propagates measurement uncertainty from the first-step through classification-error correction in the final step (Bakk, Oberski &amp; Vermunt, 2014). Supports polytomous items and missing data in the measurement model with full information maximum likelihood. A data-generating process replicating the Bakk &amp; Kuha (2018) simulation study is included.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +68,7 @@
 <h2 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
 </h2>
 <div class="section level3">
-<h3 id="bias-adjusted-three-step-estimation">Bias-Adjusted Three-Step Estimation<a class="anchor" aria-label="anchor" href="#bias-adjusted-three-step-estimation"></a>
+<h3 id="bias-adjusted-three-step-estimation">Bias-Adjusted Three-step Estimation<a class="anchor" aria-label="anchor" href="#bias-adjusted-three-step-estimation"></a>
 </h3>
 <p><strong>tseLCA</strong> is the first R package to provide a unified implementation of modern bias-adjusted three-step estimators for latent class analysis. In contrast to traditional one-step approaches (implemented by the popular package, <strong>poLCA</strong>), where the inclusion of covariates may alter the underlying latent class definitions, three-step methods preserve the measurement model estimated in the first stage and subsequently adjust for classification error when estimating structural relationships.</p>
 <p>The package implements both BCH- and ML-based three-step estimators with sandwich variance estimators that propagate uncertainty from the measurement model through the classification-error correction process.</p>
@@ -150,6 +150,7 @@
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=tseLCA" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/SamLeeBYU/tseLCA/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/SamLeeBYU/tseLCA/issues" class="external-link">Report a bug</a></li>
 </ul>
@@ -194,7 +195,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

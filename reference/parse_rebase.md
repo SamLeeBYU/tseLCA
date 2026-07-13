@@ -5,7 +5,7 @@ Parse and validate the rebase argument
 ## Usage
 
 ``` r
-parse_rebase(rebase, T)
+parse_rebase(rebase, iT)
 ```
 
 ## Arguments
@@ -14,7 +14,7 @@ parse_rebase(rebase, T)
 
   Character like "C2" or integer class index.
 
-- T:
+- iT:
 
   Total number of classes.
 

@@ -11,7 +11,7 @@ functions.  All elements correspond to the values stated in the paper
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,6 +52,26 @@ functions.  All elements correspond to the values stated in the paper
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="va">bk2018_params</span></span></code></pre></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    <p>A named list with four elements:</p><dl><dt><code>class_props</code></dt>
+<dd><p>Length-3 numeric vector of equal class
+proportions (1/3 each).</p></dd>
+
+<dt><code>separation_levels</code></dt>
+<dd><p>Named numeric vector mapping
+<code>"low"</code>, <code>"mid"</code>, <code>"high"</code> to 0.70, 0.80, 0.90.</p></dd>
+
+<dt><code>covariate_params</code></dt>
+<dd><p>List with <code>$b0</code> (intercepts) and
+<code>$b</code> (slopes) for the multinomial logit P(X=t|Zp).</p></dd>
+
+<dt><code>distal_params</code></dt>
+<dd><p>List with <code>$mu</code> (class means) and
+<code>$sigma</code> (residual SD).</p></dd>
+
+
+</dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
@@ -108,7 +128,7 @@ set so that marginal class sizes average to 1/3 when Zp ~ Uniform{1..5}.</p></dd
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

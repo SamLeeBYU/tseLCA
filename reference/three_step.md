@@ -396,7 +396,7 @@ summary(fit_m)
 fit <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                   Zp.names = "Zp", use.simple.cov = TRUE)
 summary(fit)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -548.6403
@@ -433,7 +433,7 @@ fit_cor <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                       Zp.names = "Zp", use.simple.cov = FALSE,
                       use.modal.assignment = FALSE)
 summary(fit_cor)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -548.4895
@@ -460,7 +460,7 @@ fit_bch <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                       Zp.names = "Zp", use.bch = TRUE,
                       use.simple.cov = TRUE)
 summary(fit_bch)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : BCH
 #> Log-likelihood : -548.8676
@@ -487,7 +487,7 @@ fit_c2 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                      Zp.names = "Zp", use.simple.cov = TRUE,
                      rebase = "C2")
 summary(fit_c2)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -548.6403
@@ -515,7 +515,7 @@ fit_dis <- three_step(d2, Y.names = paste0("Y", 1:6), n_classes = 3,
                       Zo.name = "Zo", family = "gaussian",
                       use.simple.cov = TRUE)
 summary(fit_dis)
-#> -- tseLCA Three-Step Distal Outcome Model -------------------
+#> -- tseLCA Three-step Distal Outcome Model -------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Family         : gaussian
@@ -537,7 +537,7 @@ fit2 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                    Zp.names = "Zp", step1 = fit_step1,
                    use.simple.cov = TRUE)
 summary(fit2)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -548.6403

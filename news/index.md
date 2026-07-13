@@ -60,3 +60,29 @@
   that replicates the Bakk & Kuha (2018) simulation study design for
   both covariates and distal outcomes under varying separation
   conditions.
+
+## tseLCA 1.0.1
+
+### CRAN resubmission
+
+- Removed single quotes around acronyms in DESCRIPTION; added
+  explanations of BCH, ML, and LCA.
+- Replaced `T`/`F` with `TRUE`/`FALSE` throughout internal codebase
+- Added `\value` tags to all exported functions missing them, including
+  `bk2018_params`.
+- `inst/examples`: examples now write to
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html) instead of the
+  home filespace.
+- `inst/examples`: commented out `rm(list = ls())` calls.
+- `inst/examples`: commented out
+  [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  calls.
+
+## tseLCA 1.0.2
+
+CRAN release: 2026-07-11
+
+### CRAN resubmission
+
+- Title: corrected hyphenated compound capitalization to “Three-Step”
+  per reviewer request.

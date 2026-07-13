@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -261,7 +261,7 @@ low-separation fit to help it converge.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="three-step-estimation">Three-step estimation<a class="anchor" aria-label="anchor" href="#three-step-estimation"></a>
+<h2 id="three-step-estimation">Three-Step estimation<a class="anchor" aria-label="anchor" href="#three-step-estimation"></a>
 </h2>
 <div class="section level3">
 <h3 id="ml-estimator-default">ML estimator (default)<a class="anchor" aria-label="anchor" href="#ml-estimator-default"></a>
@@ -277,7 +277,7 @@ assignment.</p>
 <span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
@@ -337,7 +337,7 @@ separation is high.</p>
 <span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.prop</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.0617</span></span>
@@ -375,7 +375,7 @@ so this is a useful computational shortcut for large samples.</p>
 <span>  use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simple</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
@@ -414,7 +414,7 @@ semi-definite), in which case the ML estimator is preferred.</p>
 <span>  use.bch <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.bch</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : BCH</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.2863</span></span>
@@ -459,7 +459,7 @@ more reliable in this setting.</p>
 <span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.low.three_step.prop</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1979.3372</span></span>
@@ -495,7 +495,7 @@ transitivity relation
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default: C1 as reference</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simple</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
@@ -526,7 +526,7 @@ transitivity relation
 <span>  rebase <span class="op">=</span> <span class="st">"C2"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simpleC2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
@@ -557,7 +557,7 @@ transitivity relation
 <span>  rebase <span class="op">=</span> <span class="st">"C3"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simpleC3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
@@ -605,7 +605,7 @@ it to a smaller analysis sample.</li>
 <span>  step1 <span class="op">=</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">measurement_model</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.prop2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1339.0617</span></span>
@@ -652,7 +652,7 @@ it to a smaller analysis sample.</li>
 <span>  get.twostep.vcov <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.low.three_step.prop2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1983.8159</span></span>
@@ -693,7 +693,7 @@ them before calling <code><a href="../reference/three_step.html">three_step()</a
 <span>  step1 <span class="op">=</span> <span class="va">d.low.measurement2000</span><span class="op">$</span><span class="va">measurement_model</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.low.three_step.prop3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1983.8159</span></span>
@@ -836,7 +836,7 @@ Steps 1 and 2.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">d.sparse</span><span class="op">$</span><span class="va">Zp</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 43</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.sparse.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1088.3344</span></span>
@@ -874,7 +874,7 @@ covariate step on the same sparse data.</p>
 <span><span class="co">#&gt; 43 row(s) excluded from covariate step (missing Z).</span></span>
 <span><span class="co">#&gt; EM converged in 8 iterations.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.sparse.three_step2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -1088.3344</span></span>
@@ -934,7 +934,7 @@ package.</p>
 <span><span class="co">#&gt; Warning: lca_indiv_varmat: Infomat is singular even after removing boundary</span></span>
 <span><span class="co">#&gt; parameters; returning NA matrix. Check for near-empty classes.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">elec.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Log-likelihood : -16278.0242</span></span>
@@ -1026,7 +1026,7 @@ estimators are available.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.distal.three_step.ml</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Distal Outcome Model -------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Distal Outcome Model -------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Family         : gaussian</span></span>
@@ -1042,7 +1042,7 @@ estimators are available.</p>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.distal.three_step.bch</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Distal Outcome Model -------------------</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Distal Outcome Model -------------------</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : BCH</span></span>
 <span><span class="co">#&gt; Family         : gaussian</span></span>
@@ -1108,7 +1108,7 @@ procedures for the distal outcome model in step 3.</p>
 <span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.covariate.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-Step Model: Covariate + Distal Outcome -----</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Model: Covariate + Distal Outcome -----</span></span>
 <span><span class="co">#&gt; Latent classes : 3</span></span>
 <span><span class="co">#&gt; Estimator      : ML</span></span>
 <span><span class="co">#&gt; Family         : gaussian</span></span>
@@ -1200,26 +1200,26 @@ improved three-step approaches. <em>Political Analysis</em>, 18(4),
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] tseLCA_1.0.0</span></span>
+<span><span class="co">#&gt; [1] tseLCA_1.0.2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;  [1] sass_0.4.10        generics_0.1.4     tidyr_1.3.2        pracma_2.4.6      </span></span>
 <span><span class="co">#&gt;  [5] hms_1.1.4          digest_0.6.39      magrittr_2.0.5     RColorBrewer_1.1-3</span></span>
 <span><span class="co">#&gt;  [9] evaluate_1.0.5     iterators_1.0.14   fastmap_1.2.0      foreach_1.5.2     </span></span>
-<span><span class="co">#&gt; [13] jsonlite_2.0.0     combinat_0.0-8     promises_1.5.0     purrr_1.2.2       </span></span>
-<span><span class="co">#&gt; [17] codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4    cli_3.6.6         </span></span>
-<span><span class="co">#&gt; [21] shiny_1.14.0       labelled_2.16.0    rlang_1.2.0        cachem_1.1.0      </span></span>
-<span><span class="co">#&gt; [25] yaml_2.3.12        otel_0.2.0         klaR_1.7-4         parallel_4.6.1    </span></span>
-<span><span class="co">#&gt; [29] tools_4.6.1        dplyr_1.2.1        httpuv_1.6.17      forcats_1.0.1     </span></span>
-<span><span class="co">#&gt; [33] vctrs_0.7.3        R6_2.6.1           mime_0.13          lifecycle_1.0.5   </span></span>
-<span><span class="co">#&gt; [37] multilevLCA_2.1.4  tictoc_1.2.1       fs_2.1.0           MASS_7.3-65       </span></span>
-<span><span class="co">#&gt; [41] miniUI_0.1.2       cluster_2.1.8.2    ragg_1.5.2         pkgconfig_2.0.3   </span></span>
-<span><span class="co">#&gt; [45] desc_1.4.3         pkgdown_2.2.0      bslib_0.11.0       pillar_1.11.1     </span></span>
-<span><span class="co">#&gt; [49] later_1.4.8        glue_1.8.1         Rcpp_1.1.1-1.1     systemfonts_1.3.2 </span></span>
-<span><span class="co">#&gt; [53] haven_2.5.5        xfun_0.59          tibble_3.3.1       tidyselect_1.2.1  </span></span>
-<span><span class="co">#&gt; [57] highr_0.12         rstudioapi_0.19.0  knitr_1.51         xtable_1.8-8      </span></span>
-<span><span class="co">#&gt; [61] htmltools_0.5.9    rmarkdown_2.31     clustMixType_0.5-1 compiler_4.6.1    </span></span>
-<span><span class="co">#&gt; [65] questionr_0.8.2</span></span></code></pre></div>
+<span><span class="co">#&gt; [13] jsonlite_2.0.0     mclust_6.1.3       combinat_0.0-8     promises_1.5.0    </span></span>
+<span><span class="co">#&gt; [17] purrr_1.2.2        codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4   </span></span>
+<span><span class="co">#&gt; [21] cli_3.6.6          shiny_1.14.0       labelled_2.16.0    rlang_1.3.0       </span></span>
+<span><span class="co">#&gt; [25] cachem_1.1.0       yaml_2.3.12        otel_0.2.0         klaR_1.7-4        </span></span>
+<span><span class="co">#&gt; [29] parallel_4.6.1     tools_4.6.1        dplyr_1.2.1        httpuv_1.6.17     </span></span>
+<span><span class="co">#&gt; [33] forcats_1.0.1      vctrs_0.7.3        R6_2.6.1           mime_0.13         </span></span>
+<span><span class="co">#&gt; [37] lifecycle_1.0.5    multilevLCA_2.1.4  tictoc_1.2.1       fs_2.1.0          </span></span>
+<span><span class="co">#&gt; [41] MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2    ragg_1.5.2        </span></span>
+<span><span class="co">#&gt; [45] pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1      bslib_0.11.0      </span></span>
+<span><span class="co">#&gt; [49] pillar_1.11.1      later_1.4.8        glue_1.8.1         Rcpp_1.1.2        </span></span>
+<span><span class="co">#&gt; [53] systemfonts_1.3.2  haven_2.5.5        xfun_0.60          tibble_3.3.1      </span></span>
+<span><span class="co">#&gt; [57] tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0  knitr_1.51        </span></span>
+<span><span class="co">#&gt; [61] xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.31     clustMixType_0.5-2</span></span>
+<span><span class="co">#&gt; [65] compiler_4.6.1     questionr_0.8.2</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -1232,7 +1232,7 @@ improved three-step approaches. <em>Political Analysis</em>, 18(4),
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

@@ -58,8 +58,8 @@ A list with the following elements:
 
 - `Infomat`:
 
-  Square BHHH information matrix of dimension p x p, where p = (T-1) +
-  sum(ivItemcat - 1) \* T is the total number of free parameters.
+  Square BHHH information matrix of dimension p x p, where p = (iT-1) +
+  sum(ivItemcat - 1) \* iT is the total number of free parameters.
   Boundary parameters have zero rows and columns.
 
 - `Varmat`:

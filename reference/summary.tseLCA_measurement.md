@@ -72,7 +72,7 @@ d   <- generate_data(200, "high", "covariate", seed = 1)
 fit <- three_step(d, paste0("Y", 1:6), n_classes = 3,
                   Zp.names = "Zp", use.simple.cov = TRUE)
 summary(fit)
-#> -- tseLCA Three-Step Covariate Model -----------------------
+#> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Log-likelihood : -548.6403
@@ -99,7 +99,7 @@ d   <- generate_data(200, "high", "distal", seed = 2)
 fit <- three_step(d, paste0("Y", 1:6), n_classes = 3,
                   Zo.name = "Zo", use.simple.cov = TRUE)
 summary(fit)
-#> -- tseLCA Three-Step Distal Outcome Model -------------------
+#> -- tseLCA Three-step Distal Outcome Model -------------------
 #> Latent classes : 3
 #> Estimator      : ML
 #> Family         : gaussian

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,6 +67,28 @@
 <li>Built a data-generating process (<code><a href="../reference/generate_data.html">generate_data()</a></code>) that replicates the Bakk &amp; Kuha (2018) simulation study design for both covariates and distal outcomes under varying separation conditions.</li>
 </ul></div>
 </div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.0.1" id="tselca-101">tseLCA 1.0.1<a class="anchor" aria-label="anchor" href="#tselca-101"></a></h2>
+<div class="section level3">
+<h3 id="cran-resubmission-1-0-1">CRAN resubmission<a class="anchor" aria-label="anchor" href="#cran-resubmission-1-0-1"></a></h3>
+<ul><li>Removed single quotes around acronyms in DESCRIPTION; added explanations of BCH, ML, and LCA.</li>
+<li>Replaced <code>T</code>/<code>F</code> with <code>TRUE</code>/<code>FALSE</code> throughout internal codebase</li>
+<li>Added <code>\value</code> tags to all exported functions missing them, including <code>bk2018_params</code>.</li>
+<li>
+<code>inst/examples</code>: examples now write to <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code> instead of the home filespace.</li>
+<li>
+<code>inst/examples</code>: commented out <code>rm(list = ls())</code> calls.</li>
+<li>
+<code>inst/examples</code>: commented out <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> calls.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.0.2" id="tselca-102">tseLCA 1.0.2<a class="anchor" aria-label="anchor" href="#tselca-102"></a></h2><p class="text-muted">CRAN release: 2026-07-11</p>
+<div class="section level3">
+<h3 id="cran-resubmission-1-0-2">CRAN resubmission<a class="anchor" aria-label="anchor" href="#cran-resubmission-1-0-2"></a></h3>
+<ul><li>Title: corrected hyphenated compound capitalization to “Three-Step” per reviewer request.</li>
+</ul></div>
+</div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
@@ -76,7 +98,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

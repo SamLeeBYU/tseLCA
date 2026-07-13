@@ -11,6 +11,28 @@ the paper (Section 3, p. 879).
 bk2018_params
 ```
 
+## Value
+
+A named list with four elements:
+
+- `class_props`:
+
+  Length-3 numeric vector of equal class proportions (1/3 each).
+
+- `separation_levels`:
+
+  Named numeric vector mapping `"low"`, `"mid"`, `"high"` to 0.70, 0.80,
+  0.90.
+
+- `covariate_params`:
+
+  List with `$b0` (intercepts) and `$b` (slopes) for the multinomial
+  logit P(X=t\|Zp).
+
+- `distal_params`:
+
+  List with `$mu` (class means) and `$sigma` (residual SD).
+
 ## Details
 
 - `class_props`:

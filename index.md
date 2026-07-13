@@ -16,7 +16,7 @@ account for uncertainty from the latent class measurement stage.
 
 ## Key Features
 
-### Bias-Adjusted Three-Step Estimation
+### Bias-Adjusted Three-step Estimation
 
 **tseLCA** is the first R package to provide a unified implementation of
 modern bias-adjusted three-step estimators for latent class analysis. In
