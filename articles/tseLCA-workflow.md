@@ -139,24 +139,24 @@ summary(d.low.measurement)
 #> Log-likelihood : -2019.2458
 #> AIC            : 4078.4916
 #> BIC            : 4162.7837
-#> Entropy R²     : 0.3327
+#> Entropy R²     : 0.3328
 #> 
 #> Class prevalences:
 #>             
-#> P(C1) 0.2753
-#> P(C2) 0.4551
-#> P(C3) 0.2696
+#> P(C1) 0.2744
+#> P(C2) 0.4561
+#> P(C3) 0.2695
 #> attr(,"names")
 #> [1] "C1" "C2" "C3"
 #> 
 #> Item-response probabilities (P(Y=1|class)):
 #>             C1     C2     C3
-#> P(Y1|C) 0.7328 0.6418 0.3345
-#> P(Y2|C) 0.5723 0.7549 0.3223
-#> P(Y3|C) 0.6937 0.7101 0.3036
-#> P(Y4|C) 0.6846 0.4588 0.2105
-#> P(Y5|C) 0.6947 0.4058 0.3787
-#> P(Y6|C) 0.8651 0.3551 0.2456
+#> P(Y1|C) 0.7330 0.6418 0.3345
+#> P(Y2|C) 0.5721 0.7545 0.3224
+#> P(Y3|C) 0.6937 0.7101 0.3035
+#> P(Y4|C) 0.6849 0.4590 0.2104
+#> P(Y5|C) 0.6952 0.4060 0.3787
+#> P(Y6|C) 0.8659 0.3556 0.2457
 ```
 
 The [`plot()`](https://rdrr.io/r/graphics/plot.default.html) S3 method
@@ -208,8 +208,8 @@ d.low.fitZ <- fitZ_from_fit0(
 )
 d.low.fitZ$mGamma
 #>                   C2         C3
-#> Intercept  3.0446368 -3.6948005
-#> Zp        -0.9832597  0.9487391
+#> Intercept  3.0476417 -3.6909745
+#> Zp        -0.9816197  0.9483004
 ```
 
 ------------------------------------------------------------------------
@@ -433,22 +433,22 @@ summary(d.low.three_step.prop)
 #> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : ML
-#> Log-likelihood : -1979.3372
-#> AIC            : 4038.6744
-#> BIC            : 4207.2588
-#> Entropy R²     : 0.3518  (covariate-adjusted)
+#> Log-likelihood : -1979.3512
+#> AIC            : 4038.7025
+#> BIC            : 4207.2868
+#> Entropy R²     : 0.3520  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
-#> Intercept  3.0267 -3.6919
-#> Zp        -0.9767  0.9482
+#> Intercept  3.0301 -3.6881
+#> Zp        -0.9752  0.9477
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   3.2034    2.2929  1.3971 0.1624     
-#> Zp:C2         -1.0761    1.9088 -0.5638 0.5729     
-#> Intercept:C3  -3.8431    2.9955 -1.2830 0.1995     
-#> Zp:C3          0.9554    0.6034  1.5832 0.1134     
+#> Intercept:C2   3.2062    2.2801  1.4062 0.1597     
+#> Zp:C2         -1.0742    1.8972 -0.5662 0.5713     
+#> Intercept:C3  -3.8414    3.0021 -1.2796 0.2007     
+#> Zp:C3          0.9554    0.6046  1.5802 0.1141     
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -1121,9 +1121,9 @@ summary(d.covariate.three_step)
 #> Latent classes : 3
 #> Estimator      : ML
 #> Family         : gaussian
-#> Log-likelihood : -1315.6596
+#> Log-likelihood : -1315.6597
 #> AIC            : 2711.3193
-#> BIC            : 2879.9036
+#> BIC            : 2879.9037
 #> 
 #> Covariate -- two-step (starting) estimates:
 #>                C2      C3
@@ -1133,7 +1133,7 @@ summary(d.covariate.three_step)
 #> Covariate -- three-step estimates:
 #>              Estimate Std.Error z.value     p.value
 #> Intercept:C2   2.6602    0.3998  6.6538 < 0.001 ***
-#> Zp:C2         -1.0790    0.1632 -6.6134 < 0.001 ***
+#> Zp:C2         -1.0790    0.1632 -6.6133 < 0.001 ***
 #> Intercept:C3  -4.6917    0.7070 -6.6365 < 0.001 ***
 #> Zp:C3          1.2278    0.1735  7.0773 < 0.001 ***
 #> ---
@@ -1166,7 +1166,7 @@ three_step(
   diag() |>
   sqrt()
 #>      mu_C1      mu_C2      mu_C3 
-#> 0.08302639 0.08922331 0.07595896
+#> 0.08302642 0.08922329 0.07595898
 ```
 
 ------------------------------------------------------------------------
