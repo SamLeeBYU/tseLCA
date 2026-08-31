@@ -230,8 +230,8 @@ falls below <code>R2.threshold</code>.</p>
 <p><code><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0()</a></code> fixes the measurement parameters at
 their Step-1 values and estimates multinomial logit coefficients
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-via EM. These two-step estimates serve as starting values for Step 3 and
-are generally close to the final three-step estimates.</p>
+with EM. These two-step estimates serve as starting values for Step 3
+and are generally close to the final three-step estimates.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.fitZ</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0</a></span><span class="op">(</span></span>
 <span>  fit0 <span class="op">=</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">measurement_model</span><span class="op">$</span><span class="va">fit0</span>,</span>
@@ -401,7 +401,7 @@ so this is a useful computational shortcut for large samples.</p>
 <h3 id="bch-estimator">BCH estimator<a class="anchor" aria-label="anchor" href="#bch-estimator"></a>
 </h3>
 <p>The BCH correction of Bolck, Croon &amp; Hagenaars (2004) is
-available via <code>use.bch = TRUE</code>. It works well with high
+available with <code>use.bch = TRUE</code>. It works well with high
 separation but can produce an ill-conditioned Hessian when separation is
 low (resulting in a covariance matrix that is not positive
 semi-definite), in which case the ML estimator is preferred.</p>
@@ -591,7 +591,7 @@ transitivity relation
 models.</li>
 <li>Estimate the measurement model on a large reference sample and apply
 it to a smaller analysis sample.</li>
-<li>Inject custom two-step starting values computed via
+<li>Inject custom two-step starting values computed with
 <code><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0()</a></code>.</li>
 </ul>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
@@ -717,12 +717,97 @@ them before calling <code><a href="../reference/three_step.html">three_step()</a
 <hr>
 </div>
 <div class="section level2">
+<h2 id="fixed-step-1-initialization">Fixed Step-1 initialization<a class="anchor" aria-label="anchor" href="#fixed-step-1-initialization"></a>
+</h2>
+<p><code><a href="https://rdrr.io/pkg/multilevLCA/man/multiLCA.html" class="external-link">multilevLCA::multiLCA()</a></code>’s default initialization
+(k-means on principal components) is deterministic given the data, and
+on some datasets can converge to a local rather than global optimum of
+the Step-1 log-likelihood. The <code>startval</code> argument anchors
+Step 1 to a fixed starting classification instead, bypassing k-means
+entirely (<code>kmea = FALSE</code> under the hood).</p>
+<p><code>startval</code> accepts an integer classification vector (one
+predicted class per row)…</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">startval.vec</span> <span class="op">&lt;-</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">classifications</span></span>
+<span><span class="va">d.three_step.startval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
+<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
+<span>  startval <span class="op">=</span> <span class="va">startval.vec</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.startval</span><span class="op">)</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; Latent classes : 3</span></span>
+<span><span class="co">#&gt; Estimator      : ML</span></span>
+<span><span class="co">#&gt; Log-likelihood : -1339.0651</span></span>
+<span><span class="co">#&gt; AIC            : 2758.1302</span></span>
+<span><span class="co">#&gt; BIC            : 2926.7145</span></span>
+<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
+<span><span class="co">#&gt;                C2      C3</span></span>
+<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
+<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Three-step estimates:</span></span>
+<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
+<span><span class="co">#&gt; Intercept:C2   2.0411    0.3237  6.3049 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -0.8821    0.1406 -6.2730 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -3.4836    0.5913 -5.8913 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          0.8985    0.1435  6.2606 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<p>…or a
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>×</mo><mi>C</mi></mrow><annotation encoding="application/x-tex">T \times C</annotation></semantics></math>
+conditional item-response probability matrix – e.g. from an external
+solver such as <code>poLCA</code>, or, as here, a first-pass tseLCA
+fit’s own <code>mPhi</code> expanded to both categories per item.</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">phi.compact</span> <span class="op">&lt;-</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">measurement_model</span><span class="op">$</span><span class="va">fit0</span><span class="op">$</span><span class="va">mPhi</span> <span class="co"># 6 binary items x 3 classes</span></span>
+<span><span class="va">phi.full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span></span>
+<span>  <span class="va">rbind</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, \<span class="op">(</span><span class="va">h</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">phi.compact</span><span class="op">[</span><span class="va">h</span>, <span class="op">]</span>, <span class="va">phi.compact</span><span class="op">[</span><span class="va">h</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">d.three_step.startval.phi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
+<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
+<span>  startval <span class="op">=</span> <span class="va">phi.full</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co"># Same solution as startval.vec above (both anchor Step 1 to the same fit)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.startval.phi</span><span class="op">)</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
+<span><span class="co">#&gt; Latent classes : 3</span></span>
+<span><span class="co">#&gt; Estimator      : ML</span></span>
+<span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
+<span><span class="co">#&gt; AIC            : 2758.1299</span></span>
+<span><span class="co">#&gt; BIC            : 2926.7142</span></span>
+<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
+<span><span class="co">#&gt;                C2      C3</span></span>
+<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
+<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Three-step estimates:</span></span>
+<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
+<span><span class="co">#&gt; Intercept:C2   2.0411    0.3237  6.3050 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C2         -0.8821    0.1406 -6.2730 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Intercept:C3  -3.4836    0.5913 -5.8913 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Zp:C3          0.8985    0.1435  6.2606 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level2">
 <h2 id="missing-data">Missing data<a class="anchor" aria-label="anchor" href="#missing-data"></a>
 </h2>
 <p><code>tseLCA</code> uses a two-pass row-filtering strategy that
 matches <code>multilevLCA</code>’s approach for the measurement model
 while allowing more observations into Steps 1 and 2 than Step 3.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">d.new</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span><span class="fl">500</span>, separation <span class="op">=</span> <span class="st">"high"</span>, seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">sparsity</span> <span class="op">&lt;-</span> <span class="fl">0.1</span></span>
@@ -745,7 +830,7 @@ while allowing more observations into Steps 1 and 2 than Step 3.</p>
 <p>With <code>incomplete = FALSE</code> (the default), any row with a
 missing indicator is dropped before the measurement model is
 estimated.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.sparse.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
 <span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
@@ -782,9 +867,9 @@ estimated.</p>
 <span><span class="co">#&gt; P(Y5|C) 0.9349 0.1517 0.0795</span></span>
 <span><span class="co">#&gt; P(Y6|C) 0.9331 0.1555 0.0762</span></span></code></pre></div>
 <p>With <code>incomplete = TRUE</code>, only fully-missing rows are
-dropped; partially observed rows contribute to the measurement model via
-FIML.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+dropped; partially observed rows contribute to the measurement model
+through FIML.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.sparse.measurement2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
 <span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
@@ -819,7 +904,7 @@ FIML.</p>
 <p>Regardless of <code>incomplete</code>, Step 3 drops any row with a
 missing covariate. The rows used in Step 3 are a subset of those used in
 Steps 1 and 2.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.sparse.three_step</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
 <span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
@@ -859,7 +944,7 @@ Steps 1 and 2.</p>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <p>A FIML measurement model can be passed in and then reused for the
 covariate step on the same sparse data.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.sparse.three_step2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
 <span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
@@ -905,14 +990,14 @@ covariate step on the same sparse data.</p>
 consecutive integers starting at 0.</p>
 <p>Here we reproduce the example from the <code>poLCA</code>
 package.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">election</span>, package <span class="op">=</span> <span class="st">"poLCA"</span><span class="op">)</span></span>
 <span><span class="va">elec</span> <span class="op">&lt;-</span> <span class="va">election</span></span>
 <span><span class="va">elec.items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">election</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span></span>
 <span></span>
 <span><span class="co"># Recode to 0-based integers as required by multilevLCA</span></span>
 <span><span class="va">elec</span><span class="op">[</span>, <span class="va">elec.items</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">elec</span><span class="op">[</span>, <span class="va">elec.items</span><span class="op">]</span>, \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">elec.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">elec</span>,</span>
 <span>  Y.names <span class="op">=</span> <span class="va">elec.items</span>,</span>
@@ -955,7 +1040,7 @@ package.</p>
 <span><span class="co">#&gt; PARTY:C2      -0.6727        NA      NA      NA</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">party.x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span>from <span class="op">=</span> <span class="fl">1</span>, to <span class="op">=</span> <span class="fl">7</span>, length.out <span class="op">=</span> <span class="fl">101</span><span class="op">)</span></span>
 <span><span class="va">pidmat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">party.x</span><span class="op">)</span></span>
@@ -985,9 +1070,10 @@ package.</p>
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Z</mi><mi>o</mi></msub><mo>←</mo><mi>X</mi><mo>→</mo><mi>Y</mi></mrow><annotation encoding="application/x-tex">Z_o \leftarrow X \rightarrow Y</annotation></semantics></math>),
 supply <code>Zo.name</code> and a <code>family</code> argument. The
 available families are <code>"gaussian"</code> (default),
-<code>"poisson"</code>, and <code>"binomial"</code>. Both ML and BCH
-estimators are available.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code>"poisson"</code>, <code>"binomial"</code>, and
+<code>"multinomial"</code> (for a nominal categorical outcome; see
+below). Both ML and BCH estimators are available.</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.distal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
 <span>  n <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>  separation <span class="op">=</span> <span class="st">"high"</span>,</span>
@@ -995,7 +1081,7 @@ estimators are available.</p>
 <span>  seed <span class="op">=</span> <span class="fl">4</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co"># True class means: mu = (0, 1, -1) for C1, C2, C3</span></span></code></pre></div>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.distal.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">d.distal</span>,</span>
 <span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
@@ -1060,6 +1146,113 @@ estimators are available.</p>
 <hr>
 </div>
 <div class="section level2">
+<h2 id="categorical-distal-outcomes">Categorical distal outcomes<a class="anchor" aria-label="anchor" href="#categorical-distal-outcomes"></a>
+</h2>
+<p>For a nominal <code>Zo</code> with two or more categories and no
+natural ordering, <code>family = "multinomial"</code> estimates a
+saturated model: the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>×</mo><mi>C</mi></mrow><annotation encoding="application/x-tex">T \times C</annotation></semantics></math>
+matrix of class-conditional category probabilities
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>π</mi><mo accent="true">̂</mo></mover><mrow><mi>t</mi><mi>c</mi></mrow></msub><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>Z</mi><mi>o</mi></msub><mo>=</mo><mi>c</mi><mo>∣</mo><mi>X</mi><mo>=</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat\pi_{tc} = P(Z_o = c \mid X = t)</annotation></semantics></math>,
+together with its
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mi>C</mi><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mi>C</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(TC) \times (TC)</annotation></semantics></math>
+sandwich covariance.</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cat.probs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.7</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.7</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.7</span><span class="op">)</span>, <span class="fl">3</span>, <span class="fl">3</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">d.distal</span><span class="op">$</span><span class="va">Zcat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span></span>
+<span>  <span class="va">cat.probs</span><span class="op">[</span><span class="va">d.distal</span><span class="op">$</span><span class="va">X</span>, <span class="op">]</span>,</span>
+<span>  <span class="fl">1</span>,</span>
+<span>  \<span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"mid"</span>, <span class="st">"high"</span><span class="op">)</span>, <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">p</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">d.distal.three_step.multi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">d.distal</span>,</span>
+<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
+<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  Zo.name <span class="op">=</span> <span class="st">"Zcat"</span>,</span>
+<span>  step1 <span class="op">=</span> <span class="va">d.distal.measurement</span><span class="op">$</span><span class="va">measurement_model</span>,</span>
+<span>  family <span class="op">=</span> <span class="st">"multinomial"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co"># coef() returns a T x C matrix of category probabilities (rows sum to 1)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">d.distal.three_step.multi</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         high       low       mid</span></span>
+<span><span class="co">#&gt; C1 0.1386734 0.7121485 0.1491781</span></span>
+<span><span class="co">#&gt; C2 0.1428699 0.1274120 0.7297182</span></span>
+<span><span class="co">#&gt; C3 0.6892212 0.2019472 0.1088316</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.distal.three_step.multi</span><span class="op">)</span></span>
+<span><span class="co">#&gt; -- tseLCA Three-step Distal Outcome Model -------------------</span></span>
+<span><span class="co">#&gt; Latent classes : 3</span></span>
+<span><span class="co">#&gt; Estimator      : ML</span></span>
+<span><span class="co">#&gt; Family         : multinomial</span></span>
+<span><span class="co">#&gt; Log-likelihood : -1855.2387</span></span>
+<span><span class="co">#&gt; AIC            : 3762.4774</span></span>
+<span><span class="co">#&gt; BIC            : 3872.0572</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Distal outcome estimates by class:</span></span>
+<span><span class="co">#&gt;                       Estimate Std.Error z.value     p.value</span></span>
+<span><span class="co">#&gt; C1:high (probability)   0.1387    0.0289  4.7948 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C2:high (probability)   0.1429    0.0310  4.6101 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C3:high (probability)   0.6892    0.0366 18.8429 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C1:low (probability)    0.7121    0.0360 19.7800 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C2:low (probability)    0.1274    0.0303  4.2019 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C3:low (probability)    0.2019    0.0327  6.1707 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C1:mid (probability)    0.1492    0.0332  4.4890 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C2:mid (probability)    0.7297    0.0344 21.1863 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; C3:mid (probability)    0.1088    0.0276  3.9392 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span><span class="co">#&gt; Note: Std.Error above is on the probability scale; the per-cell z/p-value</span></span>
+<span><span class="co">#&gt; tests each probability against 0 (rarely of interest), and a symmetric</span></span>
+<span><span class="co">#&gt; CI can fall outside [0, 1] near a boundary. See omnibus_test() for a</span></span>
+<span><span class="co">#&gt; test of whether the distribution differs across classes.</span></span></code></pre></div>
+<p>Unlike <code>"binomial"</code>, whose
+<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>/<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> are on the logit scale,
+<code>"multinomial"</code> reports both directly on the probability
+scale, so <code>Std.Error</code> is directly interpretable without a
+delta-method back-transform – but a symmetric interval
+<code>Estimate ± 1.96 * Std.Error</code> can fall outside the unit
+interval for a probability near a boundary, the same familiar limitation
+as a naive Wald interval for a sample proportion. The per-cell
+<code>z.value</code>/<code>p.value</code> above (testing each
+probability against zero) are rarely the question of interest; the
+omnibus test below gives a boundary-safe test of whether the outcome’s
+distribution differs across classes.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="omnibus-test-of-class-equality">Omnibus test of class equality<a class="anchor" aria-label="anchor" href="#omnibus-test-of-class-equality"></a>
+</h2>
+<p><code><a href="../reference/omnibus_test.html">omnibus_test()</a></code> runs a generalized Wald test of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo>:</mo><msub><mi>θ</mi><mn>1</mn></msub><mo>=</mo><msub><mi>θ</mi><mn>2</mn></msub><mo>=</mo><mi>⋯</mi><mo>=</mo><msub><mi>θ</mi><mi>T</mi></msub></mrow><annotation encoding="application/x-tex">H_0: \theta_1 = \theta_2 = \cdots = \theta_T</annotation></semantics></math>
+– whether the distal outcome’s distribution is the same for every class
+– for any <code>tseLCA_distal</code> or <code>tseLCA_both</code> object,
+regardless of family. It uses a Moore-Penrose pseudo-inverse of the
+contrast covariance, so it stays valid when that covariance is singular,
+as it always is for <code>family = "multinomial"</code> (each class’s
+category probabilities sum to 1). The resulting degrees of freedom
+recover the textbook
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">(</mo><mi>C</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(T-1)(C-1)</annotation></semantics></math>
+for a
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>×</mo><mi>C</mi></mrow><annotation encoding="application/x-tex">T \times C</annotation></semantics></math>
+chi-squared test of homogeneity in that case, and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">T-1</annotation></semantics></math>
+for the scalar-parameter families.</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/omnibus_test.html">omnibus_test</a></span><span class="op">(</span><span class="va">d.distal.three_step.ml</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Omnibus Wald test of class equality (distal outcome)</span></span>
+<span><span class="co">#&gt;   Family: gaussian   Classes: 3</span></span>
+<span><span class="co">#&gt;   W(2) = 347.5847, p &lt; 0.001</span></span>
+<span><span class="fu"><a href="../reference/omnibus_test.html">omnibus_test</a></span><span class="op">(</span><span class="va">d.distal.three_step.multi</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Omnibus Wald test of class equality (distal outcome)</span></span>
+<span><span class="co">#&gt;   Family: multinomial   Classes: 3</span></span>
+<span><span class="co">#&gt;   W(4) = 299.5837, p &lt; 0.001</span></span></code></pre></div>
+<p>A significant result only says <em>some</em> class differs from some
+other on this outcome, not which – pairwise post-hoc comparisons with
+multiplicity correction are a natural next step and are not yet
+implemented in tseLCA.</p>
+<hr>
+</div>
+<div class="section level2">
 <h2 id="three-step-estimation-with-both-covariates-zp-and-distal-outcomes-zo">Three-step estimation with both covariates (Zp) and distal outcomes
 (Zo)<a class="anchor" aria-label="anchor" href="#three-step-estimation-with-both-covariates-zp-and-distal-outcomes-zo"></a>
 </h2>
@@ -1082,7 +1275,7 @@ and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>o</mi></msub><annotation encoding="application/x-tex">Z_o</annotation></semantics></math>,
 adjusting for the covariate-adjusted posteriors in the estimation
 procedures for the distal outcome model in step 3.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d.covariate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
 <span>  n <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>  separation <span class="op">=</span> <span class="st">"high"</span>,</span>
@@ -1141,7 +1334,7 @@ procedures for the distal outcome model in step 3.</p>
 standard errors above should, on average, by systematically smaller for
 distal outcome estimation than if there were no covariates in the model
 (see below).</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">d.covariate</span>,</span>
 <span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
@@ -1177,7 +1370,7 @@ Behavioral Research</em>, 60(4), 731–747. <a href="https://doi.org/10.1080/002
 improved three-step approaches. <em>Political Analysis</em>, 18(4),
 450–469. <a href="https://doi.org/10.1093/pan/mpq025" class="external-link uri">https://doi.org/10.1093/pan/mpq025</a></p>
 <hr>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
 <span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
@@ -1209,17 +1402,17 @@ improved three-step approaches. <em>Political Analysis</em>, 18(4),
 <span><span class="co">#&gt; [13] jsonlite_2.0.0     mclust_6.1.3       combinat_0.0-8     promises_1.5.0    </span></span>
 <span><span class="co">#&gt; [17] purrr_1.2.2        codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4   </span></span>
 <span><span class="co">#&gt; [21] cli_3.6.6          shiny_1.14.0       labelled_2.16.1    rlang_1.3.0       </span></span>
-<span><span class="co">#&gt; [25] cachem_1.1.0       yaml_2.3.12        otel_0.2.0         klaR_1.7-4        </span></span>
-<span><span class="co">#&gt; [29] parallel_4.6.1     tools_4.6.1        dplyr_1.2.1        httpuv_1.6.17     </span></span>
-<span><span class="co">#&gt; [33] forcats_1.0.1      vctrs_0.7.3        R6_2.6.1           mime_0.13         </span></span>
-<span><span class="co">#&gt; [37] lifecycle_1.0.5    multilevLCA_2.1.5  tictoc_1.2.1       fs_2.1.0          </span></span>
-<span><span class="co">#&gt; [41] MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2    ragg_1.5.2        </span></span>
-<span><span class="co">#&gt; [45] pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1      bslib_0.12.0      </span></span>
-<span><span class="co">#&gt; [49] pillar_1.11.1      later_1.4.8        glue_1.8.1         Rcpp_1.1.2        </span></span>
-<span><span class="co">#&gt; [53] systemfonts_1.3.2  haven_2.5.5        xfun_0.60          tibble_3.3.1      </span></span>
-<span><span class="co">#&gt; [57] tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0  knitr_1.51        </span></span>
-<span><span class="co">#&gt; [61] xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.31     clustMixType_0.5-2</span></span>
-<span><span class="co">#&gt; [65] compiler_4.6.1     questionr_0.8.2</span></span></code></pre></div>
+<span><span class="co">#&gt; [25] withr_3.0.3        cachem_1.1.0       yaml_2.3.12        otel_0.2.0        </span></span>
+<span><span class="co">#&gt; [29] klaR_1.7-4         parallel_4.6.1     tools_4.6.1        dplyr_1.2.1       </span></span>
+<span><span class="co">#&gt; [33] httpuv_1.6.17      forcats_1.0.1      vctrs_0.7.3        R6_2.6.1          </span></span>
+<span><span class="co">#&gt; [37] mime_0.13          lifecycle_1.0.5    multilevLCA_2.1.5  tictoc_1.2.1      </span></span>
+<span><span class="co">#&gt; [41] fs_2.1.0           MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2   </span></span>
+<span><span class="co">#&gt; [45] ragg_1.5.2         pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1     </span></span>
+<span><span class="co">#&gt; [49] bslib_0.12.0       pillar_1.11.1      later_1.4.8        glue_1.8.1        </span></span>
+<span><span class="co">#&gt; [53] Rcpp_1.1.2         systemfonts_1.3.2  haven_2.5.5        xfun_0.60         </span></span>
+<span><span class="co">#&gt; [57] tibble_3.3.1       tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0 </span></span>
+<span><span class="co">#&gt; [61] knitr_1.51         xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.31    </span></span>
+<span><span class="co">#&gt; [65] clustMixType_0.5-2 compiler_4.6.1     questionr_0.8.2</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

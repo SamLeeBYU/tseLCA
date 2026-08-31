@@ -1,7 +1,7 @@
 # Estimate covariate effects with measurement parameters fixed (two-step EM)
 
 Fixes `mPhi` at `fit0$mPhi` and estimates multinomial logit coefficients
-`mGamma` (Q x (T-1)) via an EM algorithm with a BFGS M-step.
+`mGamma` (Q x (T-1)) with an EM algorithm using a BFGS M-step.
 
 ## Usage
 

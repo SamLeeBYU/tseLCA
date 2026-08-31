@@ -7,9 +7,9 @@ This involves:
 1.  Rebasing `$mGamma`: reconstructing the full T-column log-ratio
     matrix, subtracting the new reference column, and dropping it.
 
-2.  Propagating through `$Varmat_cor` via the delta method: the rebasing
-    transformation is linear (`gamma_new = A * gamma_old`) so the vcov
-    transforms exactly as `A %*% V %*% t(A)`.
+2.  Propagating through `$Varmat_cor` with the delta method: the
+    rebasing transformation is linear (`gamma_new = A * gamma_old`) so
+    the vcov transforms exactly as `A %*% V %*% t(A)`.
 
 3.  Updating all column names.
 

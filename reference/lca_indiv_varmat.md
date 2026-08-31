@@ -49,7 +49,7 @@ lca_indiv_varmat(
 - u_post:
 
   Optional N x T matrix of posterior class probabilities. When supplied
-  (e.g. extracted from `fit0$mU` via `extract_Y_from_mU`),
+  (e.g. extracted from `fit0$mU` with `extract_Y_from_mU`),
   `compute_posteriors` is skipped. Default `NULL`.
 
 ## Value

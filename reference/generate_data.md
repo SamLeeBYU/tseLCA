@@ -31,11 +31,11 @@ generate_data(
 
   `"covariate"`
 
-  :   Zp (discrete, 1-5) predicts latent X via multinomial logit.
+  :   Zp (discrete, 1-5) predicts latent X with multinomial logit.
 
   `"distal"`
 
-  :   Latent X predicts continuous Zo via linear regression.
+  :   Latent X predicts continuous Zo with linear regression.
 
 - params:
 

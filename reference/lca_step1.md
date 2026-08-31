@@ -111,7 +111,7 @@ lca_step1(
   from which a classification is derived. See
   [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
   for the full description of both forms. When supplied, `lca_step1()`
-  fits the measurement model via
+  fits the measurement model with
   [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
   instead of multilevLCA's default k-means-on-principal-components
   initialization, and `estimate.one.step`, `iter.measurement`, and
@@ -123,14 +123,15 @@ lca_step1(
 
   Optional positive integer. If supplied, fits the measurement model
   `n_init` times from independent uniform-random classifications (each
-  via `startval`-style injection with `kmea = FALSE`, not multilevLCA's
-  k-means-on-PCA path) and keeps the fit with the highest log-likelihood
-  – the unconditional multi-start analog of `n_init` in StepMix or
-  `nrep` in poLCA. Unlike `iter.measurement` (which reruns multilevLCA's
-  own k-means initialization, and only when entropy R\\^2\\ is low), all
-  `n_init` fits are always run. `estimate.one.step`, `iter.measurement`,
-  and `R2.threshold` are ignored when `n_init` is supplied. Mutually
-  exclusive with `startval`. Default `NULL`.
+  through `startval`-style injection with `kmea = FALSE`, not
+  multilevLCA's k-means-on-PCA path) and keeps the fit with the highest
+  log-likelihood – the unconditional multi-start analog of `n_init` in
+  StepMix or `nrep` in poLCA. Unlike `iter.measurement` (which reruns
+  multilevLCA's own k-means initialization, and only when entropy
+  R\\^2\\ is low), all `n_init` fits are always run.
+  `estimate.one.step`, `iter.measurement`, and `R2.threshold` are
+  ignored when `n_init` is supplied. Mutually exclusive with `startval`.
+  Default `NULL`.
 
 - verbose:
 

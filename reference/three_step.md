@@ -183,7 +183,7 @@ three_step(
 
   Logical. If `TRUE`, obtain multilevLCA's bias-corrected
   variance-covariance matrix for the two-step gamma estimates and store
-  it in `$two_step_vcov`. If the `fitZ` object passed via `step1`
+  it in `$two_step_vcov`. If the `fitZ` object passed through `step1`
   already contains a `Varmat_cor` (from a prior
   [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md)
   or plain `multiLCA` call), it is attached automatically even when
@@ -199,8 +199,38 @@ three_step(
 - family:
 
   Character. Distal outcome family: one of `"gaussian"` (class means),
-  `"poisson"` (log-rates), or `"binomial"` (logits). Default
-  `"gaussian"`.
+  `"poisson"` (log-rates), `"binomial"` (logits), or `"multinomial"` (a
+  saturated model for a nominal categorical outcome with 2 or more
+  categories – `Zo.name` may be a factor, character, or integer column;
+  categories are taken from `sort(unique(data[[Zo.name]]))` with
+  [`factor()`](https://rdrr.io/r/base/factor.html)). For
+  `"multinomial"`, [`coef()`](https://rdrr.io/r/stats/coef.html) returns
+  a `T x C` matrix of class-conditional category probabilities
+  \\\hat\pi\_{tc} = P(Zo = c \mid X = t)\\ (rows sum to 1) instead of a
+  length-`T` vector, and [`vcov()`](https://rdrr.io/r/stats/vcov.html)
+  returns its `(T*C) x (T*C)` sandwich covariance (necessarily singular,
+  since each class's row sums to 1 – see
+  [`omnibus_test()`](https://samleebyu.github.io/tseLCA/reference/omnibus_test.md)
+  for a Wald test that accounts for this). Unlike `"binomial"`, whose
+  [`coef()`](https://rdrr.io/r/stats/coef.html)/[`vcov()`](https://rdrr.io/r/stats/vcov.html)
+  are on the logit scale, `"multinomial"` reports
+  [`coef()`](https://rdrr.io/r/stats/coef.html)/[`vcov()`](https://rdrr.io/r/stats/vcov.html)
+  directly on the probability scale, so `Std.Error` is directly
+  interpretable without a delta-method back-transform – but a symmetric
+  interval `Estimate +/- 1.96*Std.Error` can fall outside \\\[0, 1\]\\
+  for a probability near a boundary, the same well-known limitation as a
+  naive Wald interval for any sample proportion. The `z.value`/`p.value`
+  columns
+  [`summary()`](https://rdrr.io/r/base/summary.html)/[`print()`](https://rdrr.io/r/base/print.html)
+  show for this family test each probability against 0, which is rarely
+  the question of interest;
+  [`omnibus_test()`](https://samleebyu.github.io/tseLCA/reference/omnibus_test.md)
+  is the intended, boundary-safe test of whether the outcome's
+  distribution differs across classes. Combining
+  `family = "multinomial"` with both `Zp.names` and `Zo.name` fully
+  propagates both Step-1 measurement and Step-3 covariate uncertainty
+  under `use.simple.cov = FALSE`, the same as the other families.
+  Default `"gaussian"`.
 
 - correct.spec:
 
@@ -298,12 +328,16 @@ were estimated:
   `three_step`
 
   :   Named length-T vector of Step-3 distal outcome parameters (means,
-      log-rates, or logits depending on `family`).
+      log-rates, or logits depending on `family`) – or, for
+      `family = "multinomial"`, a `T x C` matrix of class-conditional
+      category probabilities (rows sum to 1).
 
   `three_step_vcov`
 
   :   T x T variance-covariance matrix for `three_step`, named `mu_C1`
-      through `mu_CT`.
+      through `mu_CT` – or, for `family = "multinomial"`, a
+      `(T*C) x (T*C)` (necessarily rank-deficient) matrix named
+      `"C{t}:{category}"`.
 
   `three_step.llik`
 
@@ -386,7 +420,7 @@ Behavioral Research*.
 `vignette("tseLCA", package = "tseLCA")` for a full worked example;
 [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
 for standalone Step-1 estimation (including from an externally supplied
-starting classification, via its own `startval` argument);
+starting classification, with its own `startval` argument);
 [`fitZ_from_fit0()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md)
 and
 [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md)
@@ -563,6 +597,24 @@ summary(fit_dis)
 #> mu_C3 (mean)   0.0492    0.1531  0.3212 0.7480     
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Nominal categorical distal outcome (3+ categories): coef() returns a
+# T x C matrix of class-conditional category probabilities; omnibus_test()
+# gives a single Wald test of whether the category distribution differs
+# across classes at all.
+d2$Zcat <- factor(sample(c("low", "mid", "high"), nrow(d2), replace = TRUE))
+fit_cat <- three_step(d2, Y.names = paste0("Y", 1:6), n_classes = 3,
+                      Zo.name = "Zcat", family = "multinomial",
+                      use.simple.cov = TRUE)
+coef(fit_cat)
+#>         high       low       mid
+#> C1 0.2973475 0.3543067 0.3483458
+#> C2 0.4450948 0.2178582 0.3370470
+#> C3 0.3628017 0.2689451 0.3682532
+omnibus_test(fit_cat)
+#> Omnibus Wald test of class equality (distal outcome)
+#>   Family: multinomial   Classes: 3
+#>   W(4) = 3.6188, p = 0.4600
 
 # Pass a pre-fitted measurement model to skip Step 1
 fit_step1 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3)

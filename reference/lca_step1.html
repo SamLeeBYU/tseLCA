@@ -145,7 +145,7 @@ measurement model: either an integer vector of length <code>nrow(data)</code>
 (<code>1..n_classes</code> per row) or a numeric matrix of conditional
 item-response probabilities from which a classification is derived. See
 <code><a href="lca_step1_startval.html">lca_step1_startval()</a></code> for the full description of both forms. When
-supplied, <code>lca_step1()</code> fits the measurement model via
+supplied, <code>lca_step1()</code> fits the measurement model with
 <code><a href="lca_step1_startval.html">lca_step1_startval()</a></code> instead of multilevLCA's default
 k-means-on-principal-components initialization, and <code>estimate.one.step</code>,
 <code>iter.measurement</code>, and <code>R2.threshold</code> (which govern the default
@@ -156,7 +156,7 @@ restart-on-low-entropy behavior) are ignored. Mutually exclusive with
 <dt id="arg-n-init">n_init<a class="anchor" aria-label="anchor" href="#arg-n-init"></a></dt>
 <dd><p>Optional positive integer. If supplied, fits the
 measurement model <code>n_init</code> times from independent uniform-random
-classifications (each via <code>startval</code>-style injection with
+classifications (each through <code>startval</code>-style injection with
 <code>kmea = FALSE</code>, not multilevLCA's k-means-on-PCA path) and keeps the
 fit with the highest log-likelihood – the unconditional multi-start
 analog of <code>n_init</code> in <span class="pkg">StepMix</span> or <code>nrep</code> in <span class="pkg">poLCA</span>. Unlike

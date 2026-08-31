@@ -87,7 +87,11 @@
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>The coefficient matrix (covariate models), named numeric vector
-(distal models), or a named list of both (measurement or both models).</p>
+(distal models – or, for <code>family = "multinomial"</code>, a <code>T x C</code> matrix of
+category probabilities on the probability scale, not logit; see
+<code><a href="three_step.html">three_step()</a></code>'s <code>family</code> argument for the boundary/inference
+caveat that comes with that), or a named list of both (measurement or
+both models).</p>
     </div>
 
     <div class="section level2">

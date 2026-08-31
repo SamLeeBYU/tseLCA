@@ -114,7 +114,10 @@ parameterization. Row/column names identify each parameter as
 <code>"parameterization"</code> is attached as a reminder. Returns <code>NULL</code>
 invisibly if <code>fit0$mU</code> is not available. For structural models,
 returns the Step-3 vcov matrix; the two-step vcov is only available
-when <code>get.twostep.vcov = TRUE</code>.</p>
+when <code>get.twostep.vcov = TRUE</code>. For distal models with
+<code>family = "multinomial"</code>, this is instead on the probability scale
+(see <code><a href="three_step.html">three_step()</a></code>'s <code>family</code> argument for the caveat that
+comes with that).</p>
     </div>
 
     <div class="section level2">

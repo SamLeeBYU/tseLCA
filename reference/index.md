@@ -25,7 +25,7 @@
   : Estimate covariate effects with measurement parameters fixed
   (two-step EM)
 - [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md)
-  : Estimate two-step covariate model via multilevLCA (optional
+  : Estimate two-step covariate model with multilevLCA (optional
   reference path)
 - [`generate_all_conditions()`](https://samleebyu.github.io/tseLCA/reference/generate_all_conditions.md)
   : Generate datasets for all 18 conditions in the simulation design
@@ -38,6 +38,9 @@
   : Build the item-response probability matrix for the simulation
 - [`mnl_probs()`](https://samleebyu.github.io/tseLCA/reference/mnl_probs.md)
   : Compute multinomial logistic class probabilities given covariates
+- [`omnibus_test()`](https://samleebyu.github.io/tseLCA/reference/omnibus_test.md)
+  [`print(`*`<tseLCA_omnibus>`*`)`](https://samleebyu.github.io/tseLCA/reference/omnibus_test.md)
+  : Omnibus Wald test of class equality for a distal outcome
 - [`plot(`*`<tseLCA_measurement>`*`)`](https://samleebyu.github.io/tseLCA/reference/plot.tseLCA_measurement.md)
   [`plot(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/plot.tseLCA_measurement.md)
   [`plot(`*`<tseLCA_distal>`*`)`](https://samleebyu.github.io/tseLCA/reference/plot.tseLCA_measurement.md)

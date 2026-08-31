@@ -251,7 +251,7 @@ or distal outcome model. Default <code>200L</code>.</p></dd>
 <dd><p>Logical. If <code>TRUE</code>, obtain <span class="pkg">multilevLCA</span>'s
 bias-corrected variance-covariance matrix for the two-step gamma estimates
 and store it in <code>$two_step_vcov</code>. If the <code>fitZ</code> object passed
-via <code>step1</code> already contains a <code>Varmat_cor</code> (from a prior
+through <code>step1</code> already contains a <code>Varmat_cor</code> (from a prior
 <code><a href="fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code> or plain <code>multiLCA</code> call), it is attached
 automatically even when <code>get.twostep.vcov = FALSE</code>. Default
 <code>FALSE</code>.</p></dd>
@@ -266,8 +266,34 @@ column 1 before any structural estimation. Default <code>"C1"</code>.</p></dd>
 
 <dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
 <dd><p>Character. Distal outcome family: one of <code>"gaussian"</code>
-(class means), <code>"poisson"</code> (log-rates), or <code>"binomial"</code>
-(logits). Default <code>"gaussian"</code>.</p></dd>
+(class means), <code>"poisson"</code> (log-rates), <code>"binomial"</code>
+(logits), or <code>"multinomial"</code> (a saturated model for a nominal
+categorical outcome with 2 or more categories – <code>Zo.name</code> may be
+a factor, character, or integer column; categories are taken from
+<code>sort(unique(data[[Zo.name]]))</code> with <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor()</a></code>). For
+<code>"multinomial"</code>, <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> returns a <code>T x C</code> matrix of
+class-conditional category probabilities
+\(\hat\pi_{tc} = P(Zo = c \mid X = t)\) (rows sum to 1) instead of a
+length-<code>T</code> vector, and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> returns its
+<code>(T*C) x (T*C)</code> sandwich covariance (necessarily singular, since
+each class's row sums to 1 – see <code><a href="omnibus_test.html">omnibus_test()</a></code> for a
+Wald test that accounts for this). Unlike <code>"binomial"</code>, whose
+<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>/<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> are on the logit scale, <code>"multinomial"</code>
+reports <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>/<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> directly on the probability scale,
+so <code>Std.Error</code> is directly interpretable without a delta-method
+back-transform – but a symmetric interval
+<code>Estimate +/- 1.96*Std.Error</code> can fall outside \([0, 1]\) for a
+probability near a boundary, the same well-known limitation as a naive
+Wald interval for any sample proportion. The <code>z.value</code>/<code>p.value</code>
+columns <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>/<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> show for this family test each
+probability against 0, which is rarely the question of interest;
+<code><a href="omnibus_test.html">omnibus_test()</a></code> is the intended, boundary-safe test of
+whether the outcome's distribution differs across classes. Combining
+<code>family = "multinomial"</code> with both <code>Zp.names</code> and
+<code>Zo.name</code> fully
+propagates both Step-1 measurement and Step-3 covariate uncertainty
+under <code>use.simple.cov = FALSE</code>, the same as the other families.
+Default <code>"gaussian"</code>.</p></dd>
 
 
 <dt id="arg-correct-spec">correct.spec<a class="anchor" aria-label="anchor" href="#arg-correct-spec"></a></dt>
@@ -347,11 +373,16 @@ smaller than the equivalent one-step MLE likelihood.</p></dd>
 <dd><p>Returned when <code>Zo.name</code> is supplied and
 <code>Zp.names</code> is <code>NULL</code>. Contains:</p><dl><dt><code>three_step</code></dt>
 <dd><p>Named length-T vector of Step-3 distal outcome
-parameters (means, log-rates, or logits depending on <code>family</code>).</p></dd>
+parameters (means, log-rates, or logits depending on
+<code>family</code>) – or, for <code>family = "multinomial"</code>, a
+<code>T x C</code> matrix of class-conditional category probabilities
+(rows sum to 1).</p></dd>
 
 <dt><code>three_step_vcov</code></dt>
 <dd><p>T x T variance-covariance matrix for
-<code>three_step</code>, named <code>mu_C1</code> through <code>mu_CT</code>.</p></dd>
+<code>three_step</code>, named <code>mu_C1</code> through <code>mu_CT</code> –
+or, for <code>family = "multinomial"</code>, a <code>(T*C) x (T*C)</code>
+(necessarily rank-deficient) matrix named <code>"C{t}:{category}"</code>.</p></dd>
 
 <dt><code>three_step.llik</code></dt>
 <dd><p>Step-3 distal log-likelihood
@@ -426,7 +457,7 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code>vignette("tseLCA", package = "tseLCA")</code> for a full worked
 example; <code><a href="lca_step1.html">lca_step1()</a></code> for standalone Step-1 estimation
-(including from an externally supplied starting classification, via its
+(including from an externally supplied starting classification, with its
 own <code>startval</code> argument); <code><a href="fitZ_from_fit0.html">fitZ_from_fit0()</a></code> and <code><a href="fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>
 for two-step covariate estimation.</p></div>
     </div>
@@ -601,6 +632,24 @@ for two-step covariate estimation.</p></div>
 <span class="r-out co"><span class="r-pr">#&gt;</span> mu_C3 (mean)   0.0492    0.1531  0.3212 0.7480     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Nominal categorical distal outcome (3+ categories): coef() returns a</span></span></span>
+<span class="r-in"><span><span class="co"># T x C matrix of class-conditional category probabilities; omnibus_test()</span></span></span>
+<span class="r-in"><span><span class="co"># gives a single Wald test of whether the category distribution differs</span></span></span>
+<span class="r-in"><span><span class="co"># across classes at all.</span></span></span>
+<span class="r-in"><span><span class="va">d2</span><span class="op">$</span><span class="va">Zcat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"mid"</span>, <span class="st">"high"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d2</span><span class="op">)</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit_cat</span> <span class="op">&lt;-</span> <span class="fu">three_step</span><span class="op">(</span><span class="va">d2</span>, Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>, n_classes <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>                      Zo.name <span class="op">=</span> <span class="st">"Zcat"</span>, family <span class="op">=</span> <span class="st">"multinomial"</span>,</span></span>
+<span class="r-in"><span>                      use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_cat</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         high       low       mid</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> C1 0.2973475 0.3543067 0.3483458</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> C2 0.4450948 0.2178582 0.3370470</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> C3 0.3628017 0.2689451 0.3682532</span>
+<span class="r-in"><span><span class="fu"><a href="omnibus_test.html">omnibus_test</a></span><span class="op">(</span><span class="va">fit_cat</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Omnibus Wald test of class equality (distal outcome)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Family: multinomial   Classes: 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   W(4) = 3.6188, p = 0.4600</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Pass a pre-fitted measurement model to skip Step 1</span></span></span>
 <span class="r-in"><span><span class="va">fit_step1</span> <span class="op">&lt;-</span> <span class="fu">three_step</span><span class="op">(</span><span class="va">d</span>, Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>, n_classes <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>

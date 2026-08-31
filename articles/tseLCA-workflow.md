@@ -175,7 +175,7 @@ plot(d.measurement)
 
 [`fitZ_from_fit0()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md)
 fixes the measurement parameters at their Step-1 values and estimates
-multinomial logit coefficients $`\gamma`$ via EM. These two-step
+multinomial logit coefficients $`\gamma`$ with EM. These two-step
 estimates serve as starting values for Step 3 and are generally close to
 the final three-step estimates.
 
@@ -362,7 +362,7 @@ summary(d.three_step.simple)
 
 ### BCH estimator
 
-The BCH correction of Bolck, Croon & Hagenaars (2004) is available via
+The BCH correction of Bolck, Croon & Hagenaars (2004) is available with
 `use.bch = TRUE`. It works well with high separation but can produce an
 ill-conditioned Hessian when separation is low (resulting in a
 covariance matrix that is not positive semi-definite), in which case the
@@ -571,7 +571,7 @@ This is useful when you want to:
   models.
 - Estimate the measurement model on a large reference sample and apply
   it to a smaller analysis sample.
-- Inject custom two-step starting values computed via
+- Inject custom two-step starting values computed with
   [`fitZ_from_fit0()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md).
 
 ``` r
@@ -707,6 +707,97 @@ summary(d.low.three_step.prop3)
 
 ------------------------------------------------------------------------
 
+## Fixed Step-1 initialization
+
+[`multilevLCA::multiLCA()`](https://rdrr.io/pkg/multilevLCA/man/multiLCA.html)’s
+default initialization (k-means on principal components) is
+deterministic given the data, and on some datasets can converge to a
+local rather than global optimum of the Step-1 log-likelihood. The
+`startval` argument anchors Step 1 to a fixed starting classification
+instead, bypassing k-means entirely (`kmea = FALSE` under the hood).
+
+`startval` accepts an integer classification vector (one predicted class
+per row)…
+
+``` r
+
+startval.vec <- d.measurement$classifications
+d.three_step.startval <- three_step(
+  data = d,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3,
+  Zp.names = "Zp",
+  startval = startval.vec
+)
+summary(d.three_step.startval)
+#> -- tseLCA Three-step Covariate Model -----------------------
+#> Latent classes : 3
+#> Estimator      : ML
+#> Log-likelihood : -1339.0651
+#> AIC            : 2758.1302
+#> BIC            : 2926.7145
+#> Entropy R²     : 0.8693  (covariate-adjusted)
+#> 
+#> Two-step (starting) estimates:
+#>                C2      C3
+#> Intercept  2.1934 -3.4524
+#> Zp        -0.9411  0.8972
+#> 
+#> Three-step estimates:
+#>              Estimate Std.Error z.value     p.value
+#> Intercept:C2   2.0411    0.3237  6.3049 < 0.001 ***
+#> Zp:C2         -0.8821    0.1406 -6.2730 < 0.001 ***
+#> Intercept:C3  -3.4836    0.5913 -5.8913 < 0.001 ***
+#> Zp:C3          0.8985    0.1435  6.2606 < 0.001 ***
+#> ---
+#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+…or a $`T \times C`$ conditional item-response probability matrix – e.g.
+from an external solver such as `poLCA`, or, as here, a first-pass
+tseLCA fit’s own `mPhi` expanded to both categories per item.
+
+``` r
+
+phi.compact <- d.measurement$measurement_model$fit0$mPhi # 6 binary items x 3 classes
+phi.full <- do.call(
+  rbind,
+  lapply(1:6, \(h) rbind(1 - phi.compact[h, ], phi.compact[h, ]))
+)
+d.three_step.startval.phi <- three_step(
+  data = d,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3,
+  Zp.names = "Zp",
+  startval = phi.full
+)
+# Same solution as startval.vec above (both anchor Step 1 to the same fit)
+summary(d.three_step.startval.phi)
+#> -- tseLCA Three-step Covariate Model -----------------------
+#> Latent classes : 3
+#> Estimator      : ML
+#> Log-likelihood : -1339.0650
+#> AIC            : 2758.1299
+#> BIC            : 2926.7142
+#> Entropy R²     : 0.8693  (covariate-adjusted)
+#> 
+#> Two-step (starting) estimates:
+#>                C2      C3
+#> Intercept  2.1934 -3.4524
+#> Zp        -0.9411  0.8972
+#> 
+#> Three-step estimates:
+#>              Estimate Std.Error z.value     p.value
+#> Intercept:C2   2.0411    0.3237  6.3050 < 0.001 ***
+#> Zp:C2         -0.8821    0.1406 -6.2730 < 0.001 ***
+#> Intercept:C3  -3.4836    0.5913 -5.8913 < 0.001 ***
+#> Zp:C3          0.8985    0.1435  6.2606 < 0.001 ***
+#> ---
+#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+------------------------------------------------------------------------
+
 ## Missing data
 
 `tseLCA` uses a two-pass row-filtering strategy that matches
@@ -779,7 +870,7 @@ summary(d.sparse.measurement)
 ```
 
 With `incomplete = TRUE`, only fully-missing rows are dropped; partially
-observed rows contribute to the measurement model via FIML.
+observed rows contribute to the measurement model through FIML.
 
 ``` r
 
@@ -1000,7 +1091,8 @@ text(2.0, 0.65, "Gore affinity")
 
 For distal outcomes ($`Z_o \leftarrow X \rightarrow Y`$), supply
 `Zo.name` and a `family` argument. The available families are
-`"gaussian"` (default), `"poisson"`, and `"binomial"`. Both ML and BCH
+`"gaussian"` (default), `"poisson"`, `"binomial"`, and `"multinomial"`
+(for a nominal categorical outcome; see below). Both ML and BCH
 estimators are available.
 
 ``` r
@@ -1078,6 +1170,115 @@ summary(d.distal.three_step.bch)
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
+
+------------------------------------------------------------------------
+
+## Categorical distal outcomes
+
+For a nominal `Zo` with two or more categories and no natural ordering,
+`family = "multinomial"` estimates a saturated model: the $`T \times C`$
+matrix of class-conditional category probabilities
+$`\hat\pi_{tc} = P(Z_o = c \mid X = t)`$, together with its
+$`(TC) \times (TC)`$ sandwich covariance.
+
+``` r
+
+cat.probs <- matrix(c(.7, .15, .15, .15, .7, .15, .15, .15, .7), 3, 3, byrow = TRUE)
+d.distal$Zcat <- factor(apply(
+  cat.probs[d.distal$X, ],
+  1,
+  \(p) sample(c("low", "mid", "high"), 1, prob = p)
+))
+```
+
+``` r
+
+d.distal.three_step.multi <- three_step(
+  data = d.distal,
+  Y.names = paste0("Y", 1:6),
+  n_classes = 3,
+  Zo.name = "Zcat",
+  step1 = d.distal.measurement$measurement_model,
+  family = "multinomial"
+)
+# coef() returns a T x C matrix of category probabilities (rows sum to 1)
+coef(d.distal.three_step.multi)
+#>         high       low       mid
+#> C1 0.1386734 0.7121485 0.1491781
+#> C2 0.1428699 0.1274120 0.7297182
+#> C3 0.6892212 0.2019472 0.1088316
+summary(d.distal.three_step.multi)
+#> -- tseLCA Three-step Distal Outcome Model -------------------
+#> Latent classes : 3
+#> Estimator      : ML
+#> Family         : multinomial
+#> Log-likelihood : -1855.2387
+#> AIC            : 3762.4774
+#> BIC            : 3872.0572
+#> 
+#> Distal outcome estimates by class:
+#>                       Estimate Std.Error z.value     p.value
+#> C1:high (probability)   0.1387    0.0289  4.7948 < 0.001 ***
+#> C2:high (probability)   0.1429    0.0310  4.6101 < 0.001 ***
+#> C3:high (probability)   0.6892    0.0366 18.8429 < 0.001 ***
+#> C1:low (probability)    0.7121    0.0360 19.7800 < 0.001 ***
+#> C2:low (probability)    0.1274    0.0303  4.2019 < 0.001 ***
+#> C3:low (probability)    0.2019    0.0327  6.1707 < 0.001 ***
+#> C1:mid (probability)    0.1492    0.0332  4.4890 < 0.001 ***
+#> C2:mid (probability)    0.7297    0.0344 21.1863 < 0.001 ***
+#> C3:mid (probability)    0.1088    0.0276  3.9392 < 0.001 ***
+#> ---
+#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Note: Std.Error above is on the probability scale; the per-cell z/p-value
+#> tests each probability against 0 (rarely of interest), and a symmetric
+#> CI can fall outside [0, 1] near a boundary. See omnibus_test() for a
+#> test of whether the distribution differs across classes.
+```
+
+Unlike `"binomial"`, whose
+[`coef()`](https://rdrr.io/r/stats/coef.html)/[`vcov()`](https://rdrr.io/r/stats/vcov.html)
+are on the logit scale, `"multinomial"` reports both directly on the
+probability scale, so `Std.Error` is directly interpretable without a
+delta-method back-transform – but a symmetric interval
+`Estimate ± 1.96 * Std.Error` can fall outside the unit interval for a
+probability near a boundary, the same familiar limitation as a naive
+Wald interval for a sample proportion. The per-cell `z.value`/`p.value`
+above (testing each probability against zero) are rarely the question of
+interest; the omnibus test below gives a boundary-safe test of whether
+the outcome’s distribution differs across classes.
+
+------------------------------------------------------------------------
+
+## Omnibus test of class equality
+
+[`omnibus_test()`](https://samleebyu.github.io/tseLCA/reference/omnibus_test.md)
+runs a generalized Wald test of
+$`H_0: \theta_1 = \theta_2 = \cdots = \theta_T`$ – whether the distal
+outcome’s distribution is the same for every class – for any
+`tseLCA_distal` or `tseLCA_both` object, regardless of family. It uses a
+Moore-Penrose pseudo-inverse of the contrast covariance, so it stays
+valid when that covariance is singular, as it always is for
+`family = "multinomial"` (each class’s category probabilities sum to 1).
+The resulting degrees of freedom recover the textbook $`(T-1)(C-1)`$ for
+a $`T \times C`$ chi-squared test of homogeneity in that case, and
+$`T-1`$ for the scalar-parameter families.
+
+``` r
+
+omnibus_test(d.distal.three_step.ml)
+#> Omnibus Wald test of class equality (distal outcome)
+#>   Family: gaussian   Classes: 3
+#>   W(2) = 347.5847, p < 0.001
+omnibus_test(d.distal.three_step.multi)
+#> Omnibus Wald test of class equality (distal outcome)
+#>   Family: multinomial   Classes: 3
+#>   W(4) = 299.5837, p < 0.001
+```
+
+A significant result only says *some* class differs from some other on
+this outcome, not which – pairwise post-hoc comparisons with
+multiplicity correction are a natural next step and are not yet
+implemented in tseLCA.
 
 ------------------------------------------------------------------------
 
@@ -1232,15 +1433,15 @@ sessionInfo()
 #> [13] jsonlite_2.0.0     mclust_6.1.3       combinat_0.0-8     promises_1.5.0    
 #> [17] purrr_1.2.2        codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4   
 #> [21] cli_3.6.6          shiny_1.14.0       labelled_2.16.1    rlang_1.3.0       
-#> [25] cachem_1.1.0       yaml_2.3.12        otel_0.2.0         klaR_1.7-4        
-#> [29] parallel_4.6.1     tools_4.6.1        dplyr_1.2.1        httpuv_1.6.17     
-#> [33] forcats_1.0.1      vctrs_0.7.3        R6_2.6.1           mime_0.13         
-#> [37] lifecycle_1.0.5    multilevLCA_2.1.5  tictoc_1.2.1       fs_2.1.0          
-#> [41] MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2    ragg_1.5.2        
-#> [45] pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1      bslib_0.12.0      
-#> [49] pillar_1.11.1      later_1.4.8        glue_1.8.1         Rcpp_1.1.2        
-#> [53] systemfonts_1.3.2  haven_2.5.5        xfun_0.60          tibble_3.3.1      
-#> [57] tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0  knitr_1.51        
-#> [61] xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.31     clustMixType_0.5-2
-#> [65] compiler_4.6.1     questionr_0.8.2
+#> [25] withr_3.0.3        cachem_1.1.0       yaml_2.3.12        otel_0.2.0        
+#> [29] klaR_1.7-4         parallel_4.6.1     tools_4.6.1        dplyr_1.2.1       
+#> [33] httpuv_1.6.17      forcats_1.0.1      vctrs_0.7.3        R6_2.6.1          
+#> [37] mime_0.13          lifecycle_1.0.5    multilevLCA_2.1.5  tictoc_1.2.1      
+#> [41] fs_2.1.0           MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2   
+#> [45] ragg_1.5.2         pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1     
+#> [49] bslib_0.12.0       pillar_1.11.1      later_1.4.8        glue_1.8.1        
+#> [53] Rcpp_1.1.2         systemfonts_1.3.2  haven_2.5.5        xfun_0.60         
+#> [57] tibble_3.3.1       tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0 
+#> [61] knitr_1.51         xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.31    
+#> [65] clustMixType_0.5-2 compiler_4.6.1     questionr_0.8.2
 ```

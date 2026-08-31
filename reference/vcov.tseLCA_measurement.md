@@ -61,7 +61,11 @@ Row/column names identify each parameter as `log(pi_t/pi_1)` or
 `log(P(Y=k|C_t)/P(Y=0|C_t))`. An attribute `"parameterization"` is
 attached as a reminder. Returns `NULL` invisibly if `fit0$mU` is not
 available. For structural models, returns the Step-3 vcov matrix; the
-two-step vcov is only available when `get.twostep.vcov = TRUE`.
+two-step vcov is only available when `get.twostep.vcov = TRUE`. For
+distal models with `family = "multinomial"`, this is instead on the
+probability scale (see
+[`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)'s
+`family` argument for the caveat that comes with that).
 
 ## Examples
 

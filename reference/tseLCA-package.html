@@ -109,7 +109,7 @@ Step-1 input through <code>step1</code>.</p></dd>
 
 <dt><code><a href="lca_step1.html">lca_step1</a></code></dt>
 <dd><p>Standalone Step-1 measurement model
-estimation via <span class="pkg">multilevLCA</span>. Returns a reusable fit object that
+estimation with <span class="pkg">multilevLCA</span>. Returns a reusable fit object that
 can be passed to <code><a href="three_step.html">three_step()</a></code> to avoid re-estimating the
 measurement model across multiple structural specifications.</p></dd>
 
@@ -117,12 +117,12 @@ measurement model across multiple structural specifications.</p></dd>
 <dd><p>Two-step covariate estimation by
 fixing measurement parameters at their Step-1 values and estimating
 multinomial logit coefficients \(\gamma\) with an EM algorithm. Returns starting
-values for Step 3. Custom starting values can be supplied via
+values for Step 3. Custom starting values can be supplied with
 <code>starting_val</code>.</p></dd>
 
 <dt><code><a href="fitZ_from_multiLCA.html">fitZ_from_multiLCA</a></code></dt>
 <dd><p>Two-step covariate estimation
-via <code>multiLCA(fixedpars = 1)</code>, returning <span class="pkg">multilevLCA</span>'s
+with <code>multiLCA(fixedpars = 1)</code>, returning <span class="pkg">multilevLCA</span>'s
 bias-corrected standard errors. Called automatically when
 <code>get.twostep.vcov = TRUE</code> in <code><a href="three_step.html">three_step</a></code>.</p></dd>
 
@@ -197,15 +197,15 @@ analytic Jacobian.</p></dd>
 
 <ul><li><p>Binary and polytomous indicators, following <span class="pkg">multilevLCA</span>
 coding conventions.</p></li>
-<li><p>Gaussian, Poisson, and binomial distal outcome families.</p></li>
+<li><p>Gaussian, Poisson, binomial, and multinomial distal outcome families.</p></li>
 <li><p>Full-information maximum likelihood (FIML) for partially observed
 indicator patterns (<code>incomplete = TRUE</code>). Step 3 always performs
 listwise deletion on missing covariates or distal outcomes.</p></li>
 <li><p>Flexible measurement and structural samples: fit the measurement
 model on a reference sample and apply it to a different analysis sample
-via the <code>step1</code> argument.</p></li>
+with the <code>step1</code> argument.</p></li>
 <li><p>Arbitrary reference class for the multinomial logit parameterization
-via the <code>rebase</code> argument. Log-likelihoods are invariant to this
+with the <code>rebase</code> argument. Log-likelihoods are invariant to this
 choice.</p></li>
 <li><p>Joint covariate and distal outcome estimation (<code>Zp.names</code> and
 <code>Zo.name</code> supplied together). The covariate model is estimated

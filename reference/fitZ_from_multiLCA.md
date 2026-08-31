@@ -1,4 +1,4 @@
-# Estimate two-step covariate model via multilevLCA (optional reference path)
+# Estimate two-step covariate model with multilevLCA (optional reference path)
 
 Calls
 [`multilevLCA::multiLCA`](https://rdrr.io/pkg/multilevLCA/man/multiLCA.html)
@@ -148,7 +148,7 @@ A list with the following elements:
 # \donttest{
 d <- generate_data(200, "high", "covariate", seed = 1)
 
-# Two-step estimation via multiLCA (fixedpars = 1)
+# Two-step estimation with multiLCA (fixedpars = 1)
 fZ_ml <- fitZ_from_multiLCA(
   data                = d,
   Y.names             = paste0("Y", 1:6),

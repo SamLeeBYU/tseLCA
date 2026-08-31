@@ -48,7 +48,11 @@ coef(
 ## Value
 
 The coefficient matrix (covariate models), named numeric vector (distal
-models), or a named list of both (measurement or both models).
+models – or, for `family = "multinomial"`, a `T x C` matrix of category
+probabilities on the probability scale, not logit; see
+[`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)'s
+`family` argument for the boundary/inference caveat that comes with
+that), or a named list of both (measurement or both models).
 
 ## Examples
 

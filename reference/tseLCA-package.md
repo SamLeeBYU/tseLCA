@@ -43,7 +43,7 @@ sample.
 
 - [`lca_step1`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md):
 
-  Standalone Step-1 measurement model estimation via multilevLCA.
+  Standalone Step-1 measurement model estimation with multilevLCA.
   Returns a reusable fit object that can be passed to
   [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
   to avoid re-estimating the measurement model across multiple
@@ -54,13 +54,13 @@ sample.
   Two-step covariate estimation by fixing measurement parameters at
   their Step-1 values and estimating multinomial logit coefficients
   \\\gamma\\ with an EM algorithm. Returns starting values for Step 3.
-  Custom starting values can be supplied via `starting_val`.
+  Custom starting values can be supplied with `starting_val`.
 
 - [`fitZ_from_multiLCA`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md):
 
-  Two-step covariate estimation via `multiLCA(fixedpars = 1)`, returning
-  multilevLCA's bias-corrected standard errors. Called automatically
-  when `get.twostep.vcov = TRUE` in
+  Two-step covariate estimation with `multiLCA(fixedpars = 1)`,
+  returning multilevLCA's bias-corrected standard errors. Called
+  automatically when `get.twostep.vcov = TRUE` in
   [`three_step`](https://samleebyu.github.io/tseLCA/reference/three_step.md).
 
 - [`generate_data`](https://samleebyu.github.io/tseLCA/reference/generate_data.md):
@@ -121,18 +121,18 @@ sample.
 - Binary and polytomous indicators, following multilevLCA coding
   conventions.
 
-- Gaussian, Poisson, and binomial distal outcome families.
+- Gaussian, Poisson, binomial, and multinomial distal outcome families.
 
 - Full-information maximum likelihood (FIML) for partially observed
   indicator patterns (`incomplete = TRUE`). Step 3 always performs
   listwise deletion on missing covariates or distal outcomes.
 
 - Flexible measurement and structural samples: fit the measurement model
-  on a reference sample and apply it to a different analysis sample via
+  on a reference sample and apply it to a different analysis sample with
   the `step1` argument.
 
 - Arbitrary reference class for the multinomial logit parameterization
-  via the `rebase` argument. Log-likelihoods are invariant to this
+  with the `rebase` argument. Log-likelihoods are invariant to this
   choice.
 
 - Joint covariate and distal outcome estimation (`Zp.names` and
