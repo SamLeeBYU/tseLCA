@@ -1,5 +1,74 @@
 # Changelog
 
+## tseLCA 1.1.0 (development version)
+
+### Externally supplied Step-1 starting values
+
+- Added
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md),
+  a wrapper around
+  [`multilevLCA::multiLCA()`](https://rdrr.io/pkg/multilevLCA/man/multiLCA.html)
+  that injects a user-supplied Step-1 starting value and sets
+  `kmea = FALSE`, bypassing `multilevLCA`’s default deterministic
+  k-means-on-principal- components initialization. This addresses
+  feedback that the default initialization can consistently converge to
+  a local optimum of the Step-1 log-likelihood on some datasets.
+  `startval` accepts either:
+  - an integer classification vector (`1..n_classes`, one entry per row
+    of `data`), e.g. the modal class from an external solver run with
+    many random starts (‘StepMix’, ‘poLCA’); or
+  - a numeric matrix of conditional item-response probabilities
+    `P(Y_h = k | X = t)`, from which a classification is derived
+    internally (naive-Bayes argmax under a flat class prior). This is
+    the natural format for an externally estimated Step-1 solution that
+    isn’t tied to the current sample, e.g. `poLCA`’s `probs` output or a
+    published item-response table. Either way, users can pass their
+    external Step-1 solution straight through instead of hand-assembling
+    a `tseLCA` measurement object.
+- Added a matching `startval` argument to
+  [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
+  and
+  [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md),
+  so every place a measurement model is fit from raw data can use an
+  external starting value instead of `multilevLCA`’s k-means
+  initialization. Supplying `startval` skips the
+  `iter.measurement`/`R2.threshold` random-restart logic, since
+  restarting from fresh k-means seeds would defeat the purpose of a
+  user-vetted start.
+- Added a `startval` argument to
+  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md),
+  forwarded to
+  [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
+  (and to
+  [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md)
+  when `get.twostep.vcov = TRUE`) so the measurement model can be fit
+  from an external starting value in a single call.
+
+### Multiple random-start Step-1 initialization (`n_init`)
+
+- Added an `n_init` argument to
+  [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md),
+  [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md),
+  and
+  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md):
+  the unconditional multi-random-start analog of `n_init` in `StepMix`
+  or `nrep` in `poLCA`. When supplied, the measurement model is fit
+  `n_init` times from independent uniform-random classifications
+  (`kmea = FALSE`, not `multilevLCA`’s deterministic k-means-on-PCA
+  path), and the highest-log-likelihood fit is kept. This is a separate
+  mechanism from the existing `iter.measurement`/`R2.threshold` restart
+  logic, which reruns `multilevLCA`’s own k-means initialization and
+  only when entropy R^2 is low; `n_init` restarts always run and never
+  use k-means.
+- `step1`, `startval`, and `n_init` are mutually exclusive ways of
+  controlling Step 1 in
+  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+  (and `startval`/`n_init` in
+  [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
+  and
+  [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md));
+  supplying more than one errors.
+
 ## tseLCA 1.0.0
 
 - Initial submission to CRAN.

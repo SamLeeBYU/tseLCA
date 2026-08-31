@@ -24,6 +24,8 @@ lca_step1(
   maxIter.fitZ = 200L,
   include.intercept = TRUE,
   rebase = "C1",
+  startval = NULL,
+  n_init = NULL,
   verbose = FALSE
 )
 ```
@@ -101,6 +103,35 @@ lca_step1(
   it the reference for all downstream multinomial logit
   parameterizations.
 
+- startval:
+
+  Optional starting classification for the Step-1 measurement model:
+  either an integer vector of length `nrow(data)` (`1..n_classes` per
+  row) or a numeric matrix of conditional item-response probabilities
+  from which a classification is derived. See
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
+  for the full description of both forms. When supplied, `lca_step1()`
+  fits the measurement model via
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
+  instead of multilevLCA's default k-means-on-principal-components
+  initialization, and `estimate.one.step`, `iter.measurement`, and
+  `R2.threshold` (which govern the default restart-on-low-entropy
+  behavior) are ignored. Mutually exclusive with `n_init`. Default
+  `NULL`.
+
+- n_init:
+
+  Optional positive integer. If supplied, fits the measurement model
+  `n_init` times from independent uniform-random classifications (each
+  via `startval`-style injection with `kmea = FALSE`, not multilevLCA's
+  k-means-on-PCA path) and keeps the fit with the highest log-likelihood
+  – the unconditional multi-start analog of `n_init` in StepMix or
+  `nrep` in poLCA. Unlike `iter.measurement` (which reruns multilevLCA's
+  own k-means initialization, and only when entropy R\\^2\\ is low), all
+  `n_init` fits are always run. `estimate.one.step`, `iter.measurement`,
+  and `R2.threshold` are ignored when `n_init` is supplied. Mutually
+  exclusive with `startval`. Default `NULL`.
+
 - verbose:
 
   Logical. Print progress messages. Default `FALSE`.
@@ -143,5 +174,11 @@ s1z$fitZ$mGamma   # two-step gamma estimates
 #>                  C2         C3
 #> Intercept  1.988800 -3.1317130
 #> Zp        -1.017498  0.9190021
+
+# Many random-classification restarts, keeping the best (analogous to
+# n_init in StepMix or nrep in poLCA)
+s1r <- lca_step1(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+                 n_init = 20L, verbose = TRUE)
+#> Best of 20 random-start Step-1 fits: run 1 with log-likelihood -595.2880 (range [-595.2880, -595.2880]).
 # }
 ```

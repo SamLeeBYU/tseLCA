@@ -13,7 +13,7 @@ multilevLCA's corrected standard errors for the two-step gamma estimates."></hea
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,6 +64,8 @@ multilevLCA's corrected standard errors for the two-step gamma estimates.</p>
 <span>  <span class="va">R2.threshold</span>,</span>
 <span>  incomplete <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rebase <span class="op">=</span> <span class="st">"C1"</span>,</span>
+<span>  startval <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  n_init <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -118,6 +120,26 @@ Default <code>FALSE</code>.</p></dd>
 <dd><p>Character or integer. Reference class for column naming of
 <code>$mGamma</code>. Must match the <code>rebase</code> used in <code><a href="three_step.html">three_step()</a></code> so
 coefficient labels are consistent. Default <code>"C1"</code>.</p></dd>
+
+
+<dt id="arg-startval">startval<a class="anchor" aria-label="anchor" href="#arg-startval"></a></dt>
+<dd><p>Optional starting classification for the measurement
+portion of this <code>multiLCA(fixedpars = 1)</code> fit – an integer vector or a
+conditional item-response probability matrix, as described in
+<code><a href="lca_step1_startval.html">lca_step1_startval()</a></code> – e.g. the same value passed to <code><a href="lca_step1.html">lca_step1()</a></code>
+for the primary Step-1 fit. When supplied, <code>kmea = FALSE</code> is used and
+<code>iter.measurement</code>/<code>R2.threshold</code> restarts are skipped, for the same
+reasons as in <code><a href="lca_step1_startval.html">lca_step1_startval()</a></code>. Mutually exclusive with <code>n_init</code>.
+Default <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-n-init">n_init<a class="anchor" aria-label="anchor" href="#arg-n-init"></a></dt>
+<dd><p>Optional positive integer. If supplied, fits this
+<code>multiLCA(fixedpars = 1)</code> model <code>n_init</code> times from independent
+uniform-random classifications (<code>kmea = FALSE</code>) and keeps the fit with
+the highest log-likelihood, as in <code><a href="lca_step1.html">lca_step1()</a></code>'s <code>n_init</code> argument.
+<code>iter.measurement</code>/<code>R2.threshold</code> restarts are skipped. Mutually
+exclusive with <code>startval</code>. Default <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

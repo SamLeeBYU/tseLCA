@@ -26,6 +26,8 @@ three_step(
   Zp.names = NULL,
   Zo.name = NULL,
   step1 = NULL,
+  startval = NULL,
+  n_init = NULL,
   use.two.step = TRUE,
   use.modal.assignment = TRUE,
   include.intercept = TRUE,
@@ -79,6 +81,36 @@ three_step(
   [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
   or a prior `three_step()` call), or `NULL` to run Step 1 internally.
   Default `NULL`.
+
+- startval:
+
+  Optional starting classification for the Step-1 measurement model,
+  either an integer vector of length `nrow(data)` (a class assignment
+  `1..n_classes` for every row) or a numeric matrix of conditional
+  item-response probabilities \\P(Y_h = k \mid X = t)\\ (one row per
+  item-category pair in `Y.names` order, one column per class) from
+  which a classification is derived internally. See
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
+  for the full description of both forms and typical sources (an
+  external solver run with many random starts, or a published
+  item-response table). multilevLCA's default initialization (k-means on
+  principal components) is deterministic given the data and can converge
+  to a local optimum of the Step-1 log-likelihood; supplying `startval`
+  bypasses it entirely (`kmea = FALSE` with the classification injected
+  as multilevLCA's `startval`). Mutually exclusive with `step1` and
+  `n_init`. Default `NULL`.
+
+- n_init:
+
+  Optional positive integer. If supplied, fits the Step-1 measurement
+  model `n_init` times from independent uniform-random classifications
+  (`kmea = FALSE`, not multilevLCA's k-means-on-PCA path) and keeps the
+  fit with the highest log-likelihood – the unconditional multi-start
+  analog of `n_init` in StepMix or `nrep` in poLCA. This is distinct
+  from `iter.measurement`, which instead reruns multilevLCA's own
+  k-means initialization, and only when the entropy R\\^2\\ of the
+  default fit is below `R2.threshold`; `n_init` restarts always run.
+  Mutually exclusive with `step1` and `startval`. Default `NULL`.
 
 - use.two.step:
 
@@ -353,7 +385,8 @@ Behavioral Research*.
 
 `vignette("tseLCA", package = "tseLCA")` for a full worked example;
 [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
-for standalone Step-1 estimation;
+for standalone Step-1 estimation (including from an externally supplied
+starting classification, via its own `startval` argument);
 [`fitZ_from_fit0()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md)
 and
 [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md)
@@ -558,6 +591,66 @@ summary(fit2)
 #> Zp:C3          0.9401    0.1896  4.9587 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Supply an external starting classification for Step 1 (bypasses
+# multilevLCA's k-means-on-PCA initialization; here we use the DGP's own
+# true classes as a stand-in for e.g. a StepMix solution with many
+# random starts)
+fit_ext <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+                      startval = d$X, use.simple.cov = TRUE)
+summary(fit_ext)
+#> -- tseLCA Measurement Model --------------------------------
+#> Latent classes : 3
+#> Log-likelihood : -595.2880
+#> AIC            : 1230.5760
+#> BIC            : 1296.5424
+#> Entropy R²     : 0.8430
+#> 
+#> Class prevalences:
+#>             
+#> P(C1) 0.3495
+#> P(C2) 0.2915
+#> P(C3) 0.3590
+#> attr(,"names")
+#> [1] "C1" "C2" "C3"
+#> 
+#> Item-response probabilities (P(Y=1|class)):
+#>             C1     C2     C3
+#> P(Y1|C) 0.8702 0.7946 0.1232
+#> P(Y2|C) 0.9017 0.8853 0.1025
+#> P(Y3|C) 0.8743 0.8757 0.0672
+#> P(Y4|C) 0.8566 0.0913 0.0669
+#> P(Y5|C) 0.8910 0.0978 0.0281
+#> P(Y6|C) 0.8206 0.1385 0.0914
+
+# Many random-classification restarts for Step 1, keeping the best
+# (analogous to n_init in StepMix or nrep in poLCA)
+fit_ninit <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+                        n_init = 20L, use.simple.cov = TRUE)
+summary(fit_ninit)
+#> -- tseLCA Measurement Model --------------------------------
+#> Latent classes : 3
+#> Log-likelihood : -595.2880
+#> AIC            : 1230.5760
+#> BIC            : 1296.5424
+#> Entropy R²     : 0.8430
+#> 
+#> Class prevalences:
+#>             
+#> P(C1) 0.3495
+#> P(C2) 0.2915
+#> P(C3) 0.3590
+#> attr(,"names")
+#> [1] "C1" "C2" "C3"
+#> 
+#> Item-response probabilities (P(Y=1|class)):
+#>             C1     C2     C3
+#> P(Y1|C) 0.8702 0.7946 0.1232
+#> P(Y2|C) 0.9017 0.8852 0.1025
+#> P(Y3|C) 0.8743 0.8757 0.0672
+#> P(Y4|C) 0.8566 0.0913 0.0669
+#> P(Y5|C) 0.8910 0.0978 0.0281
+#> P(Y6|C) 0.8206 0.1385 0.0914
 
 # Plot item-response profiles from the measurement model
 plot(fit)

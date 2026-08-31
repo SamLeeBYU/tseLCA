@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,24 @@
       <small>Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.1.0" id="tselca-110-development-version">tseLCA 1.1.0 (development version)<a class="anchor" aria-label="anchor" href="#tselca-110-development-version"></a></h2>
+<div class="section level3">
+<h3 id="externally-supplied-step-starting-values-1-1-0">Externally supplied Step-1 starting values<a class="anchor" aria-label="anchor" href="#externally-supplied-step-starting-values-1-1-0"></a></h3>
+<ul><li>Added <code><a href="../reference/lca_step1_startval.html">lca_step1_startval()</a></code>, a wrapper around <code><a href="https://rdrr.io/pkg/multilevLCA/man/multiLCA.html" class="external-link">multilevLCA::multiLCA()</a></code> that injects a user-supplied Step-1 starting value and sets <code>kmea = FALSE</code>, bypassing <code>multilevLCA</code>’s default deterministic k-means-on-principal- components initialization. This addresses feedback that the default initialization can consistently converge to a local optimum of the Step-1 log-likelihood on some datasets. <code>startval</code> accepts either:
+<ul><li>an integer classification vector (<code>1..n_classes</code>, one entry per row of <code>data</code>), e.g. the modal class from an external solver run with many random starts (‘StepMix’, ‘poLCA’); or</li>
+<li>a numeric matrix of conditional item-response probabilities <code>P(Y_h = k | X = t)</code>, from which a classification is derived internally (naive-Bayes argmax under a flat class prior). This is the natural format for an externally estimated Step-1 solution that isn’t tied to the current sample, e.g. <code>poLCA</code>’s <code>probs</code> output or a published item-response table. Either way, users can pass their external Step-1 solution straight through instead of hand-assembling a <code>tseLCA</code> measurement object.</li>
+</ul></li>
+<li>Added a matching <code>startval</code> argument to <code><a href="../reference/lca_step1.html">lca_step1()</a></code> and <code><a href="../reference/fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>, so every place a measurement model is fit from raw data can use an external starting value instead of <code>multilevLCA</code>’s k-means initialization. Supplying <code>startval</code> skips the <code>iter.measurement</code>/<code>R2.threshold</code> random-restart logic, since restarting from fresh k-means seeds would defeat the purpose of a user-vetted start.</li>
+<li>Added a <code>startval</code> argument to <code><a href="../reference/three_step.html">three_step()</a></code>, forwarded to <code><a href="../reference/lca_step1.html">lca_step1()</a></code> (and to <code><a href="../reference/fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code> when <code>get.twostep.vcov = TRUE</code>) so the measurement model can be fit from an external starting value in a single call.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="multiple-random-start-step-initialization-n_init-1-1-0">Multiple random-start Step-1 initialization (<code>n_init</code>)<a class="anchor" aria-label="anchor" href="#multiple-random-start-step-initialization-n_init-1-1-0"></a></h3>
+<ul><li>Added an <code>n_init</code> argument to <code><a href="../reference/lca_step1.html">lca_step1()</a></code>, <code><a href="../reference/fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>, and <code><a href="../reference/three_step.html">three_step()</a></code>: the unconditional multi-random-start analog of <code>n_init</code> in <code>StepMix</code> or <code>nrep</code> in <code>poLCA</code>. When supplied, the measurement model is fit <code>n_init</code> times from independent uniform-random classifications (<code>kmea = FALSE</code>, not <code>multilevLCA</code>’s deterministic k-means-on-PCA path), and the highest-log-likelihood fit is kept. This is a separate mechanism from the existing <code>iter.measurement</code>/<code>R2.threshold</code> restart logic, which reruns <code>multilevLCA</code>’s own k-means initialization and only when entropy R^2 is low; <code>n_init</code> restarts always run and never use k-means.</li>
+<li>
+<code>step1</code>, <code>startval</code>, and <code>n_init</code> are mutually exclusive ways of controlling Step 1 in <code><a href="../reference/three_step.html">three_step()</a></code> (and <code>startval</code>/<code>n_init</code> in <code><a href="../reference/lca_step1.html">lca_step1()</a></code> and <code><a href="../reference/fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>); supplying more than one errors.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="tselca-100">tseLCA 1.0.0<a class="anchor" aria-label="anchor" href="#tselca-100"></a></h2>
 <ul><li>Initial submission to CRAN.</li>

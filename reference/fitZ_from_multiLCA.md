@@ -24,6 +24,8 @@ fitZ_from_multiLCA(
   R2.threshold,
   incomplete = FALSE,
   rebase = "C1",
+  startval = NULL,
+  n_init = NULL,
   verbose = FALSE
 )
 ```
@@ -77,6 +79,30 @@ fitZ_from_multiLCA(
   Must match the `rebase` used in
   [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
   so coefficient labels are consistent. Default `"C1"`.
+
+- startval:
+
+  Optional starting classification for the measurement portion of this
+  `multiLCA(fixedpars = 1)` fit – an integer vector or a conditional
+  item-response probability matrix, as described in
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
+  – e.g. the same value passed to
+  [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
+  for the primary Step-1 fit. When supplied, `kmea = FALSE` is used and
+  `iter.measurement`/`R2.threshold` restarts are skipped, for the same
+  reasons as in
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md).
+  Mutually exclusive with `n_init`. Default `NULL`.
+
+- n_init:
+
+  Optional positive integer. If supplied, fits this
+  `multiLCA(fixedpars = 1)` model `n_init` times from independent
+  uniform-random classifications (`kmea = FALSE`) and keeps the fit with
+  the highest log-likelihood, as in
+  [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)'s
+  `n_init` argument. `iter.measurement`/`R2.threshold` restarts are
+  skipped. Mutually exclusive with `startval`. Default `NULL`.
 
 - verbose:
 

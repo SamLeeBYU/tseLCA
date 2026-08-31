@@ -35,7 +35,7 @@ vignette("tseLCA", package = "tseLCA") for a worked example.
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,6 +89,8 @@ means following Bakk, Tekle &amp; Vermunt (2013), with the ML correction (Vermun
 <span>  Zp.names <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  Zo.name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  step1 <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  startval <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  n_init <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use.two.step <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  use.modal.assignment <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  include.intercept <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -141,6 +143,38 @@ for a measurement-only fit. Default <code>NULL</code>.</p></dd>
 <dd><p>Pre-fitted Step-1 object (output of <code><a href="lca_step1.html">lca_step1()</a></code> or a
 prior <code>three_step()</code> call), or <code>NULL</code> to run Step 1 internally.
 Default <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-startval">startval<a class="anchor" aria-label="anchor" href="#arg-startval"></a></dt>
+<dd><p>Optional starting classification for the Step-1
+measurement model, either an integer vector of length <code>nrow(data)</code>
+(a class assignment <code>1..n_classes</code> for every row) or a numeric
+matrix of conditional item-response probabilities
+\(P(Y_h = k \mid X = t)\) (one row per item-category pair in
+<code>Y.names</code> order, one column per class) from which a classification
+is derived internally. See <code><a href="lca_step1_startval.html">lca_step1_startval()</a></code> for the full
+description of both forms and typical sources (an external solver run
+with many random starts, or a published item-response table).
+<span class="pkg">multilevLCA</span>'s default initialization (k-means on principal
+components) is deterministic given the data and can converge to a local
+optimum of the Step-1 log-likelihood; supplying <code>startval</code> bypasses
+it entirely (<code>kmea = FALSE</code> with the classification injected as
+multilevLCA's <code>startval</code>). Mutually exclusive with <code>step1</code> and
+<code>n_init</code>. Default <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-n-init">n_init<a class="anchor" aria-label="anchor" href="#arg-n-init"></a></dt>
+<dd><p>Optional positive integer. If supplied, fits the Step-1
+measurement model <code>n_init</code> times from independent uniform-random
+classifications (<code>kmea = FALSE</code>, not multilevLCA's k-means-on-PCA
+path) and keeps the fit with the highest log-likelihood – the
+unconditional multi-start analog of <code>n_init</code> in <span class="pkg">StepMix</span> or
+<code>nrep</code> in <span class="pkg">poLCA</span>. This is distinct from
+<code>iter.measurement</code>, which instead reruns multilevLCA's own k-means
+initialization, and only when the entropy R\(^2\) of the default fit
+is below <code>R2.threshold</code>; <code>n_init</code> restarts always run.
+Mutually exclusive with <code>step1</code> and <code>startval</code>. Default
+<code>NULL</code>.</p></dd>
 
 
 <dt id="arg-use-two-step">use.two.step<a class="anchor" aria-label="anchor" href="#arg-use-two-step"></a></dt>
@@ -391,9 +425,10 @@ Behavioral Research</em>. <a href="https://doi.org/10.1080/00273171.2025.2473935
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code>vignette("tseLCA", package = "tseLCA")</code> for a full worked
-example; <code><a href="lca_step1.html">lca_step1()</a></code> for standalone Step-1 estimation;
-<code><a href="fitZ_from_fit0.html">fitZ_from_fit0()</a></code> and <code><a href="fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code> for two-step covariate
-estimation.</p></div>
+example; <code><a href="lca_step1.html">lca_step1()</a></code> for standalone Step-1 estimation
+(including from an externally supplied starting classification, via its
+own <code>startval</code> argument); <code><a href="fitZ_from_fit0.html">fitZ_from_fit0()</a></code> and <code><a href="fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>
+for two-step covariate estimation.</p></div>
     </div>
 
     <div class="section level2">
@@ -594,6 +629,66 @@ estimation.</p></div>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Zp:C3          0.9401    0.1896  4.9587 &lt; 0.001 ***</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Supply an external starting classification for Step 1 (bypasses</span></span></span>
+<span class="r-in"><span><span class="co"># multilevLCA's k-means-on-PCA initialization; here we use the DGP's own</span></span></span>
+<span class="r-in"><span><span class="co"># true classes as a stand-in for e.g. a StepMix solution with many</span></span></span>
+<span class="r-in"><span><span class="co"># random starts)</span></span></span>
+<span class="r-in"><span><span class="va">fit_ext</span> <span class="op">&lt;-</span> <span class="fu">three_step</span><span class="op">(</span><span class="va">d</span>, Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>, n_classes <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>                      startval <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">X</span>, use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_ext</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -- tseLCA Measurement Model --------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Latent classes : 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Log-likelihood : -595.2880</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> AIC            : 1230.5760</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> BIC            : 1296.5424</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Entropy R²     : 0.8430</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Class prevalences:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(C1) 0.3495</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(C2) 0.2915</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(C3) 0.3590</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"names")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "C1" "C2" "C3"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Item-response probabilities (P(Y=1|class)):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             C1     C2     C3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y1|C) 0.8702 0.7946 0.1232</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y2|C) 0.9017 0.8853 0.1025</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y3|C) 0.8743 0.8757 0.0672</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y4|C) 0.8566 0.0913 0.0669</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y5|C) 0.8910 0.0978 0.0281</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y6|C) 0.8206 0.1385 0.0914</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Many random-classification restarts for Step 1, keeping the best</span></span></span>
+<span class="r-in"><span><span class="co"># (analogous to n_init in StepMix or nrep in poLCA)</span></span></span>
+<span class="r-in"><span><span class="va">fit_ninit</span> <span class="op">&lt;-</span> <span class="fu">three_step</span><span class="op">(</span><span class="va">d</span>, Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>, n_classes <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>                        n_init <span class="op">=</span> <span class="fl">20L</span>, use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_ninit</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -- tseLCA Measurement Model --------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Latent classes : 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Log-likelihood : -595.2880</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> AIC            : 1230.5760</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> BIC            : 1296.5424</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Entropy R²     : 0.8430</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Class prevalences:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(C1) 0.3495</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(C2) 0.2915</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(C3) 0.3590</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"names")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "C1" "C2" "C3"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Item-response probabilities (P(Y=1|class)):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             C1     C2     C3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y1|C) 0.8702 0.7946 0.1232</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y2|C) 0.9017 0.8852 0.1025</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y3|C) 0.8743 0.8757 0.0672</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y4|C) 0.8566 0.0913 0.0669</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y5|C) 0.8910 0.0978 0.0281</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> P(Y6|C) 0.8206 0.1385 0.0914</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Plot item-response profiles from the measurement model</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
