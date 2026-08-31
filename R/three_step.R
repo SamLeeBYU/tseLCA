@@ -1485,6 +1485,32 @@ lca_vcov_distal <- function(
 #' @param step1 Pre-fitted Step-1 object (output of [tseLCA::lca_step1()] or a
 #'   prior \code{three_step()} call), or \code{NULL} to run Step 1 internally.
 #'   Default \code{NULL}.
+#' @param startval Optional starting classification for the Step-1
+#'   measurement model, either an integer vector of length \code{nrow(data)}
+#'   (a class assignment \code{1..n_classes} for every row) or a numeric
+#'   matrix of conditional item-response probabilities
+#'   \eqn{P(Y_h = k \mid X = t)} (one row per item-category pair in
+#'   \code{Y.names} order, one column per class) from which a classification
+#'   is derived internally. See [lca_step1_startval()] for the full
+#'   description of both forms and typical sources (an external solver run
+#'   with many random starts, or a published item-response table).
+#'   \pkg{multilevLCA}'s default initialization (k-means on principal
+#'   components) is deterministic given the data and can converge to a local
+#'   optimum of the Step-1 log-likelihood; supplying \code{startval} bypasses
+#'   it entirely (\code{kmea = FALSE} with the classification injected as
+#'   multilevLCA's \code{startval}). Mutually exclusive with \code{step1} and
+#'   \code{n_init}. Default \code{NULL}.
+#' @param n_init Optional positive integer. If supplied, fits the Step-1
+#'   measurement model \code{n_init} times from independent uniform-random
+#'   classifications (\code{kmea = FALSE}, not multilevLCA's k-means-on-PCA
+#'   path) and keeps the fit with the highest log-likelihood -- the
+#'   unconditional multi-start analog of \code{n_init} in \pkg{StepMix} or
+#'   \code{nrep} in \pkg{poLCA}. This is distinct from
+#'   \code{iter.measurement}, which instead reruns multilevLCA's own k-means
+#'   initialization, and only when the entropy R\eqn{^2} of the default fit
+#'   is below \code{R2.threshold}; \code{n_init} restarts always run.
+#'   Mutually exclusive with \code{step1} and \code{startval}. Default
+#'   \code{NULL}.
 #' @param use.two.step Logical. Initialize Step-3 from two-step estimates.
 #'   Default \code{TRUE}.
 #' @param use.modal.assignment Logical. Use modal (hard) class assignments in
@@ -1623,9 +1649,10 @@ lca_vcov_distal <- function(
 #'   Behavioral Research}. \doi{10.1080/00273171.2025.2473935}
 #'
 #' @seealso \code{vignette("tseLCA", package = "tseLCA")} for a full worked
-#'   example; [tseLCA::lca_step1()] for standalone Step-1 estimation;
-#'   [fitZ_from_fit0()] and [fitZ_from_multiLCA()] for two-step covariate
-#'   estimation.
+#'   example; [tseLCA::lca_step1()] for standalone Step-1 estimation
+#'   (including from an externally supplied starting classification, via its
+#'   own `startval` argument); [fitZ_from_fit0()] and [fitZ_from_multiLCA()]
+#'   for two-step covariate estimation.
 #'
 #' @examples
 #' d <- generate_data(n = 200, separation = "high",
@@ -1674,6 +1701,20 @@ lca_vcov_distal <- function(
 #'                    use.simple.cov = TRUE)
 #' summary(fit2)
 #'
+#' # Supply an external starting classification for Step 1 (bypasses
+#' # multilevLCA's k-means-on-PCA initialization; here we use the DGP's own
+#' # true classes as a stand-in for e.g. a StepMix solution with many
+#' # random starts)
+#' fit_ext <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+#'                       startval = d$X, use.simple.cov = TRUE)
+#' summary(fit_ext)
+#'
+#' # Many random-classification restarts for Step 1, keeping the best
+#' # (analogous to n_init in StepMix or nrep in poLCA)
+#' fit_ninit <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+#'                         n_init = 20L, use.simple.cov = TRUE)
+#' summary(fit_ninit)
+#'
 #' # Plot item-response profiles from the measurement model
 #' plot(fit)
 #'
@@ -1685,6 +1726,8 @@ three_step <- function(
   Zp.names = NULL,
   Zo.name = NULL,
   step1 = NULL,
+  startval = NULL,
+  n_init = NULL,
   use.two.step = TRUE,
   use.modal.assignment = TRUE,
   include.intercept = TRUE,
@@ -1706,6 +1749,18 @@ three_step <- function(
 ) {
   # -- Step 1: measurement model -----------------------------------------------
   ref_idx <- parse_rebase(rebase, n_classes)
+
+  n_step1_inputs <- sum(!is.null(step1), !is.null(startval), !is.null(n_init))
+  if (n_step1_inputs > 1L) {
+    stop(
+      "`step1`, `startval`, and `n_init` are mutually exclusive ways of ",
+      "controlling Step 1: supply a pre-fitted measurement model via ",
+      "`step1`, a starting classification (or item-response probability ",
+      "matrix) to fit one via `startval`, or a number of random restarts ",
+      "via `n_init`, not more than one of these.",
+      call. = FALSE
+    )
+  }
 
   if (!is.null(step1)) {
     # Normalize: accept raw lca_step1() list or any tseLCA object
@@ -1734,6 +1789,8 @@ three_step <- function(
       incomplete = incomplete,
       include.intercept = include.intercept,
       rebase = rebase,
+      startval = startval,
+      n_init = n_init,
       verbose = verbose
     )
   }
@@ -2145,6 +2202,8 @@ three_step <- function(
         R2.threshold = R2.threshold,
         incomplete = incomplete,
         rebase = rebase,
+        startval = startval,
+        n_init = n_init,
         verbose = verbose
       )
       if (is.null(fitZ)) {

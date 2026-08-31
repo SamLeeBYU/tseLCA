@@ -1,6 +1,4 @@
 # tests/testthat/test-integration.R
-# Full pipeline tests using multilevLCA.
-# All tests run on CRAN
 
 # ---- Step 1 ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -37,6 +35,296 @@ test_that("lca_step1 with Zp returns fitZ with named mGamma", {
   expect_equal(dim(s1$fitZ$mGamma), c(2L, 2L))
   expect_equal(rownames(s1$fitZ$mGamma)[1L], "Intercept")
   expect_equal(colnames(s1$fitZ$mGamma), c("C2", "C3"))
+})
+
+# ---- Step 1: external starting values ---------------------------------------------------------------------------------------------------
+
+test_that("lca_step1_startval fits from a user-supplied classification", {
+  d <- generate_data(300L, "high", "distal", seed = 44L)
+  s1 <- lca_step1_startval(
+    d,
+    Y.names = paste0("Y", 1:6),
+    n_classes = 3L,
+    startval = d$X
+  )
+
+  expect_type(s1, "list")
+  expect_null(s1$fitZ)
+  fit0 <- s1$fit0
+  expect_equal(dim(fit0$mPhi), c(6L, 3L))
+  expect_equal(sum(fit0$vPi), 1, tolerance = 1e-10)
+  expect_true(all(fit0$mPhi > 0 & fit0$mPhi < 1))
+})
+
+test_that("lca_step1_startval validates the startval vector", {
+  d <- generate_data(100L, "high", "distal", seed = 45L)
+  expect_error(
+    lca_step1_startval(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      startval = d$X[1:10]
+    ),
+    "length"
+  )
+  expect_error(
+    lca_step1_startval(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      startval = rep(5L, nrow(d))
+    ),
+    "between 1 and n_classes"
+  )
+  expect_error(
+    lca_step1_startval(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      startval = c(NA_integer_, d$X[-1])
+    ),
+    "NA"
+  )
+})
+
+test_that("lca_step1(startval=) matches lca_step1_startval() and skips restarts", {
+  d <- generate_data(300L, "high", "distal", seed = 46L)
+  s1 <- lca_step1_startval(
+    d,
+    Y.names = paste0("Y", 1:6),
+    n_classes = 3L,
+    startval = d$X
+  )
+  s2 <- lca_step1(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    startval = d$X,
+    verbose = FALSE
+  )
+
+  expect_equal(s1$fit0$vPi, s2$fit0$vPi)
+  expect_equal(s1$fit0$mPhi, s2$fit0$mPhi)
+})
+
+test_that("three_step(startval=) reproduces the same measurement fit", {
+  d <- generate_data(300L, "high", "covariate", seed = 47L)
+
+  fit <- three_step(
+    d,
+    Y.names = paste0("Y", 1:6),
+    n_classes = 3L,
+    Zp.names = "Zp",
+    startval = d$X,
+    use.simple.cov = TRUE
+  )
+  s1 <- lca_step1_startval(
+    d,
+    Y.names = paste0("Y", 1:6),
+    n_classes = 3L,
+    startval = d$X
+  )
+
+  expect_s3_class(fit, "tseLCA_covariate")
+  expect_equal(fit$measurement_model$fit0$vPi, s1$fit0$vPi)
+  expect_equal(dim(fit$three_step), c(2L, 2L))
+})
+
+test_that("three_step errors when both step1 and startval are supplied", {
+  d <- generate_data(200L, "high", "distal", seed = 48L)
+  s1 <- lca_step1_startval(d, paste0("Y", 1:6), n_classes = 3L, startval = d$X)
+
+  expect_error(
+    three_step(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      step1 = s1,
+      startval = d$X
+    ),
+    "mutually exclusive"
+  )
+})
+
+# ---- Step 1: item-response probability matrix as startval -------------------------------------------------------------------------------
+
+phi_from_fit0 <- function(fit0, ivItemcat) {
+  # Expand multilevLCA's compact mPhi (dichotomous items: 1 row = P(Y=1|C))
+  # into the full one-row-per-category convention `startval` expects.
+  blocks <- vector("list", length(ivItemcat))
+  row <- 1L
+  for (h in seq_along(ivItemcat)) {
+    K_h <- ivItemcat[h]
+    if (K_h == 2L) {
+      blocks[[h]] <- rbind(1 - fit0$mPhi[row, ], fit0$mPhi[row, ])
+      row <- row + 1L
+    } else {
+      blocks[[h]] <- fit0$mPhi[row:(row + K_h - 1L), , drop = FALSE]
+      row <- row + K_h
+    }
+  }
+  do.call(rbind, blocks)
+}
+
+test_that("lca_step1_startval derives a classification from a phi matrix", {
+  d <- generate_data(300L, "high", "distal", seed = 51L)
+  Y.names <- paste0("Y", 1:6)
+  fit_ref <- lca_step1(d, Y.names, n_classes = 3L)$fit0
+  phi <- phi_from_fit0(fit_ref, rep(2L, 6L))
+
+  expect_equal(dim(phi), c(12L, 3L))
+  expect_equal(colSums(phi[1:2, ]), c(1, 1, 1), ignore_attr = TRUE)
+
+  s1_phi <- lca_step1_startval(d, Y.names, n_classes = 3L, startval = phi)
+  expect_null(s1_phi$fitZ)
+  expect_equal(dim(s1_phi$fit0$mPhi), c(6L, 3L))
+  # Deriving startval from the reference fit's own phi should reproduce it.
+  expect_equal(sort(s1_phi$fit0$vPi), sort(fit_ref$vPi), tolerance = 1e-4)
+})
+
+test_that("lca_step1(startval=phi matrix) matches lca_step1_startval()", {
+  d <- generate_data(300L, "high", "distal", seed = 52L)
+  Y.names <- paste0("Y", 1:6)
+  fit_ref <- lca_step1(d, Y.names, n_classes = 3L)$fit0
+  phi <- phi_from_fit0(fit_ref, rep(2L, 6L))
+
+  s1 <- lca_step1_startval(d, Y.names, n_classes = 3L, startval = phi)
+  s2 <- lca_step1(d, Y.names, n_classes = 3L, startval = phi)
+
+  expect_equal(s1$fit0$vPi, s2$fit0$vPi)
+  expect_equal(s1$fit0$mPhi, s2$fit0$mPhi)
+})
+
+test_that("startval phi matrix validates dimensions, probability range, and row sums", {
+  d <- generate_data(150L, "high", "distal", seed = 53L)
+  Y.names <- paste0("Y", 1:6)
+  fit_ref <- lca_step1(d, Y.names, n_classes = 3L)$fit0
+  phi <- phi_from_fit0(fit_ref, rep(2L, 6L))
+
+  expect_error(
+    lca_step1_startval(d, Y.names, n_classes = 3L, startval = phi[1:10, ]),
+    "sum\\(category counts\\)"
+  )
+  expect_error(
+    lca_step1_startval(d, Y.names, n_classes = 3L, startval = phi[, 1:2]),
+    "n_classes"
+  )
+  bad_range <- phi
+  bad_range[1L, 1L] <- 1.5
+  expect_error(
+    lca_step1_startval(d, Y.names, n_classes = 3L, startval = bad_range),
+    "\\[0, 1\\]"
+  )
+  bad_sum <- phi
+  bad_sum[1L, ] <- c(0.9, 0.9, 0.9)
+  expect_error(
+    lca_step1_startval(d, Y.names, n_classes = 3L, startval = bad_sum),
+    "sum to ~1"
+  )
+})
+
+test_that("three_step(startval=phi matrix) fits a covariate model", {
+  d <- generate_data(300L, "high", "covariate", seed = 54L)
+  Y.names <- paste0("Y", 1:6)
+  fit_ref <- lca_step1(d, Y.names, n_classes = 3L)$fit0
+  phi <- phi_from_fit0(fit_ref, rep(2L, 6L))
+
+  fit <- three_step(
+    d,
+    Y.names,
+    n_classes = 3L,
+    Zp.names = "Zp",
+    startval = phi,
+    use.simple.cov = TRUE
+  )
+
+  expect_s3_class(fit, "tseLCA_covariate")
+  expect_equal(dim(fit$three_step), c(2L, 2L))
+})
+
+# ---- Step 1: n_init random-classification restarts ---------------------------------------------------------------------------------------
+
+test_that("lca_step1(n_init=) fits from independent random restarts", {
+  d <- generate_data(300L, "high", "distal", seed = 55L)
+  s1 <- lca_step1(d, paste0("Y", 1:6), n_classes = 3L, n_init = 5L, verbose = FALSE)
+
+  expect_null(s1$fitZ)
+  expect_equal(dim(s1$fit0$mPhi), c(6L, 3L))
+  expect_equal(sum(s1$fit0$vPi), 1, tolerance = 1e-10)
+})
+
+test_that("lca_step1 errors when both startval and n_init are supplied", {
+  d <- generate_data(150L, "high", "distal", seed = 56L)
+  expect_error(
+    lca_step1(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      startval = d$X,
+      n_init = 5L
+    ),
+    "mutually exclusive"
+  )
+})
+
+test_that("three_step(n_init=) fits measurement and covariate models", {
+  d <- generate_data(300L, "high", "covariate", seed = 57L)
+
+  fit_m <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    n_init = 5L,
+    use.simple.cov = TRUE
+  )
+  expect_s3_class(fit_m, "tseLCA_measurement")
+
+  fit_c <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zp.names = "Zp",
+    n_init = 5L,
+    use.simple.cov = TRUE
+  )
+  expect_s3_class(fit_c, "tseLCA_covariate")
+})
+
+test_that("three_step errors when step1/startval/n_init are combined", {
+  d <- generate_data(150L, "high", "distal", seed = 58L)
+  s1 <- lca_step1(d, paste0("Y", 1:6), n_classes = 3L)
+
+  expect_error(
+    three_step(d, paste0("Y", 1:6), n_classes = 3L, step1 = s1, n_init = 5L),
+    "mutually exclusive"
+  )
+  expect_error(
+    three_step(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      startval = d$X,
+      n_init = 5L
+    ),
+    "mutually exclusive"
+  )
+})
+
+test_that("fitZ_from_multiLCA(n_init=) fits from independent random restarts", {
+  d <- generate_data(300L, "high", "covariate", seed = 59L)
+  fZ <- fitZ_from_multiLCA(
+    data = d,
+    Y.names = paste0("Y", 1:6),
+    n_classes = 3L,
+    Zp.names = "Zp",
+    maxIter.measurement = 5000L,
+    measurement.tol = 1e-8,
+    covariate.tol = 1e-6,
+    iter.measurement = 10L,
+    R2.threshold = 0.70,
+    n_init = 5L
+  )
+  expect_equal(dim(fZ$mGamma), c(2L, 2L))
 })
 
 # ---- Measurement only --------------------------------------------------------------------------------------------------------------------

@@ -439,25 +439,73 @@ elec <- election
 elec.items <- colnames(election)[1:12]
 #Like multiLCA, we require that all variables in Y are coded as sequential integers with base level coded as 0
 elec[, elec.items] <- lapply(elec[, elec.items], function(x) as.integer(x) - 1L)
-
-#Measurement model (again, not necessarily required to be ran separately like this)
 elec.measurement <- three_step(
   data = elec,
   Y.names = elec.items,
   n_classes = 3,
-  incomplete = TRUE
+  incomplete = FALSE
 )
+
 elec.three_step <- three_step(
   data = elec,
   Y.names = elec.items,
   n_classes = 3,
-  Zp.names = c("PARTY"),
+  Zp.names = "PARTY",
+  use.simple.cov = TRUE,
   step1 = elec.measurement$measurement_model,
-  incomplete = TRUE,
-  #With the neutral group as the base-category
+  incomplete = FALSE,
   rebase = "C3"
 )
-summary(elec.three_step)
+
+party.x <- seq(from = 1, to = 7, length.out = 101)
+pidmat <- cbind(1, party.x)
+exb.tse <- exp(pidmat %*% coef(elec.three_step))
+probs.tse <- (cbind(1, exb.tse)) / (1 + rowSums(exb.tse))
+
+f.party <- cbind(
+  MORALG,
+  CARESG,
+  KNOWG,
+  LEADG,
+  DISHONG,
+  INTELG,
+  MORALB,
+  CARESB,
+  KNOWB,
+  LEADB,
+  DISHONB,
+  INTELB
+) ~ PARTY
+nes.party <- poLCA::poLCA(f.party, election, nclass = 3, verbose = FALSE)
+
+exb.polca <- exp(pidmat %*% nes.party$coeff)
+probs.polca <- (cbind(1, exb.polca)) / (1 + rowSums(exb.polca))
+
+matplot(
+  party.x,
+  probs.tse,
+  ylim = c(0, 1),
+  type = "l",
+  lwd = 3,
+  col = 1,
+  lty = 1,
+  xlab = "Party ID: strong Democratic (1) to strong Republican (7)",
+  ylab = "Probability of latent class membership",
+  main = "Party ID as a predictor of candidate affinity class"
+)
+matlines(party.x, probs.polca, lwd = 2, col = 1, lty = 2)
+
+text(3.9, 0.60, "Other")
+text(6.2, 0.6, "Bush affinity")
+text(2.0, 0.65, "Gore affinity")
+legend(
+  "topright",
+  legend = c("tseLCA (3-step)", "poLCA (1-step)"),
+  lty = c(1, 2),
+  lwd = c(3, 2),
+  col = 1,
+  bty = "n"
+)
 
 ###################################################
 ### distal outcomes

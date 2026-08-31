@@ -11,6 +11,8 @@ three_step(
   Zp.names = NULL,
   Zo.name = NULL,
   step1 = NULL,
+  startval = NULL,
+  n_init = NULL,
   use.two.step = TRUE,
   use.modal.assignment = TRUE,
   include.intercept = TRUE,
@@ -48,6 +50,34 @@ for a measurement-only fit. Default \code{NULL}.}
 \item{step1}{Pre-fitted Step-1 object (output of \code{\link[=lca_step1]{lca_step1()}} or a
 prior \code{three_step()} call), or \code{NULL} to run Step 1 internally.
 Default \code{NULL}.}
+
+\item{startval}{Optional starting classification for the Step-1
+measurement model, either an integer vector of length \code{nrow(data)}
+(a class assignment \code{1..n_classes} for every row) or a numeric
+matrix of conditional item-response probabilities
+\eqn{P(Y_h = k \mid X = t)} (one row per item-category pair in
+\code{Y.names} order, one column per class) from which a classification
+is derived internally. See \code{\link[=lca_step1_startval]{lca_step1_startval()}} for the full
+description of both forms and typical sources (an external solver run
+with many random starts, or a published item-response table).
+\pkg{multilevLCA}'s default initialization (k-means on principal
+components) is deterministic given the data and can converge to a local
+optimum of the Step-1 log-likelihood; supplying \code{startval} bypasses
+it entirely (\code{kmea = FALSE} with the classification injected as
+multilevLCA's \code{startval}). Mutually exclusive with \code{step1} and
+\code{n_init}. Default \code{NULL}.}
+
+\item{n_init}{Optional positive integer. If supplied, fits the Step-1
+measurement model \code{n_init} times from independent uniform-random
+classifications (\code{kmea = FALSE}, not multilevLCA's k-means-on-PCA
+path) and keeps the fit with the highest log-likelihood -- the
+unconditional multi-start analog of \code{n_init} in \pkg{StepMix} or
+\code{nrep} in \pkg{poLCA}. This is distinct from
+\code{iter.measurement}, which instead reruns multilevLCA's own k-means
+initialization, and only when the entropy R\eqn{^2} of the default fit
+is below \code{R2.threshold}; \code{n_init} restarts always run.
+Mutually exclusive with \code{step1} and \code{startval}. Default
+\code{NULL}.}
 
 \item{use.two.step}{Logical. Initialize Step-3 from two-step estimates.
 Default \code{TRUE}.}
@@ -254,6 +284,20 @@ fit2 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                    use.simple.cov = TRUE)
 summary(fit2)
 
+# Supply an external starting classification for Step 1 (bypasses
+# multilevLCA's k-means-on-PCA initialization; here we use the DGP's own
+# true classes as a stand-in for e.g. a StepMix solution with many
+# random starts)
+fit_ext <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+                      startval = d$X, use.simple.cov = TRUE)
+summary(fit_ext)
+
+# Many random-classification restarts for Step 1, keeping the best
+# (analogous to n_init in StepMix or nrep in poLCA)
+fit_ninit <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
+                        n_init = 20L, use.simple.cov = TRUE)
+summary(fit_ninit)
+
 # Plot item-response profiles from the measurement model
 plot(fit)
 
@@ -274,7 +318,8 @@ Behavioral Research}. \doi{10.1080/00273171.2025.2473935}
 }
 \seealso{
 \code{vignette("tseLCA", package = "tseLCA")} for a full worked
-example; \code{\link[=lca_step1]{lca_step1()}} for standalone Step-1 estimation;
-\code{\link[=fitZ_from_fit0]{fitZ_from_fit0()}} and \code{\link[=fitZ_from_multiLCA]{fitZ_from_multiLCA()}} for two-step covariate
-estimation.
+example; \code{\link[=lca_step1]{lca_step1()}} for standalone Step-1 estimation
+(including from an externally supplied starting classification, via its
+own \code{startval} argument); \code{\link[=fitZ_from_fit0]{fitZ_from_fit0()}} and \code{\link[=fitZ_from_multiLCA]{fitZ_from_multiLCA()}}
+for two-step covariate estimation.
 }

@@ -1,0 +1,27 @@
+K <- 3
+Y.names <- paste0("Y", 1:6)
+d.multistart <- generate_data(
+  n = 100,
+  separation = "low",
+  scenario = "covariate",
+  seed = 42
+)
+
+d_polca <- d
+d_polca[Y.names] <- lapply(d[Y.names], function(x) x + 1L)
+f <- as.formula(paste0("cbind(", paste(Y.names, collapse = ", "), ") ~ 1"))
+
+polca_fit <- poLCA::poLCA(f, d_polca, nclass = K, nrep = 10, verbose = FALSE)
+polca_fit$attempts
+
+phi <- do.call(rbind, lapply(polca_fit$probs, t))
+
+fit.multi <- three_step(
+  d.multistart,
+  Y.names = Y.names,
+  n_classes = K,
+  Zp.names = "Zp",
+  startval = phi,
+  use.simple.cov = TRUE
+)
+fit.multi$measurement_model$fit0$LLKSeries |> tail(1) |> c()
