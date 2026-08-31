@@ -498,6 +498,17 @@ ml_hessian_distal <- function(
   -H_pos # Hessian of neg.ll
 }
 
+#' BCH classification-error-corrected weight matrix
+#'
+#' Computes the N x T BCH weight matrix used throughout the BCH estimators:
+#' \code{w.it = w.is \%*\% t(pwx)^-1}, where \code{pwx[s, t] = P(W = s | X =
+#' t)} is the column-stochastic classification-error matrix from
+#' \code{compute_pwx_adj()}/\code{lca_step2()} (\code{colSums(pwx) == 1}).
+#' @noRd
+bch_weight_matrix <- function(w.is, pwx) {
+  w.is %*% t(qr.solve(pwx))
+}
+
 #' Step 3 (distal): estimate class-specific distal outcome parameters
 #'
 #' Estimates mu = (mu_1, ..., mu_T) for Gaussian (means), Poisson (log-rates),
@@ -531,8 +542,7 @@ lca_step3.distal <- function(
   }
 
   if (use.bch) {
-    D <- qr.solve(pwx)
-    w.it <- w.is_cc %*% D # N x T
+    w.it <- bch_weight_matrix(w.is_cc, pwx) # N x T
 
     score_nt_bch <- function(mu) {
       if (family == "gaussian") {
@@ -770,8 +780,7 @@ lca_step3 <- function(
   H <- NULL
   # print(ll_prev)
   if (use.bch) {
-    D <- qr.solve(pwx)
-    w.it <- w.is_cc %*% D # N x T
+    w.it <- bch_weight_matrix(w.is_cc, pwx) # N x T
     w.it_plus <- rowSums(w.it)
 
     for (nr in seq_len(em.maxIter)) {
@@ -1984,8 +1993,7 @@ three_step <- function(
     }
 
     if (use.bch) {
-      D <- qr.solve(s2_for_cov$p.wx_mat)
-      w.it <- s2_for_cov$w.is %*% D
+      w.it <- bch_weight_matrix(s2_for_cov$w.is, s2_for_cov$p.wx_mat)
 
       .ll_bch <- function(params, pwx = NULL) {
         beta.cur <- matrix(params, ncol = iT - 1)
@@ -2385,8 +2393,7 @@ three_step <- function(
     }
 
     if (use.bch) {
-      D <- qr.solve(res_adj$p.wx_mat)
-      w.it <- res_adj$w.is %*% D
+      w.it <- bch_weight_matrix(res_adj$w.is, res_adj$p.wx_mat)
 
       neg.ll <- function(params) {
         -sum(w.it * p.zx(params))

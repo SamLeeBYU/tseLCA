@@ -400,6 +400,150 @@ test_that("three_step BCH covariate runs and returns finite SEs", {
   expect_true(all(is.finite(fit$three_step)))
 })
 
+# ---- BCH weight orientation --------------------------------------------------------------------------------------------------------------
+
+test_that("bch_weight_matrix rows sum to 1 and recovers posterior class totals", {
+  # Regression test for the BCH weight-matrix orientation bug: pwx[s, t] =
+  # P(W = s | X = t) is column-stochastic, and the correct BCH weight
+  # matrix is w.is %*% t(pwx)^-1 (Mplus Web Note 21), not w.is %*% pwx^-1.
+  # The two orientations only agree when pwx is symmetric, so this uses a
+  # deliberately asymmetric classification-error matrix, built the same way
+  # compute_pwx_adj() builds it, so the test fails loudly if the `t()` in
+  # bch_weight_matrix() is ever removed.
+  set.seed(321)
+  N <- 3000L
+  iT <- 4L
+  true_class <- sample(
+    seq_len(iT),
+    N,
+    replace = TRUE,
+    prob = c(0.4, 0.3, 0.2, 0.1)
+  )
+  conc <- c(3, 8, 15, 25)[true_class] # unequal concentration -> asymmetric confusion
+  post <- t(vapply(
+    seq_len(N),
+    function(i) {
+      alpha <- rep(1, iT)
+      alpha[true_class[i]] <- conc[i]
+      p <- rgamma(iT, alpha)
+      p / sum(p)
+    },
+    numeric(iT)
+  ))
+
+  w.is <- matrix(0, N, iT)
+  w.is[cbind(seq_len(N), max.col(post))] <- 1
+
+  p.wx_joint <- (t(w.is) %*% post) / N
+  pwx <- sweep(p.wx_joint, 2, colSums(p.wx_joint), "/")
+  expect_equal(colSums(pwx), rep(1, iT), tolerance = 1e-10)
+  # Confirm the scenario is genuinely asymmetric -- otherwise both
+  # orientations would agree and this test wouldn't discriminate them.
+  expect_true(max(abs(pwx - t(pwx))) > 0.02)
+
+  w.it <- bch_weight_matrix(w.is, pwx)
+
+  # Mplus Web Note 21: each case's BCH weights sum to 1.
+  expect_equal(rowSums(w.it), rep(1, N))
+  # Sample identity: weighted totals recover the posterior class sizes.
+  expect_equal(colSums(w.it), colSums(post), tolerance = 1e-6)
+
+  w.it_wrong <- w.is %*% qr.solve(pwx)
+  expect_false(isTRUE(all.equal(rowSums(w.it_wrong), rep(1, N))))
+  expect_false(
+    isTRUE(all.equal(colSums(w.it_wrong), colSums(post), tolerance = 1e-6))
+  )
+})
+
+test_that("three_step BCH covariate recovers true DGP slopes and intercepts", {
+  d <- generate_data(2000L, "high", "covariate", seed = 42L)
+  fit <- suppressWarnings(
+    three_step(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      Zp.names = "Zp",
+      use.bch = TRUE,
+      use.simple.cov = TRUE,
+      verbose = FALSE
+    )
+  )
+
+  #True non-reference class params, sorted by slope ascending: (-1, 1)
+  #Align estimated classes to true classes by Zp slope sign
+  slopes <- fit$three_step["Zp", ]
+  ord <- order(slopes)
+
+  true_intercepts <- c(2.3446, -3.6554) # b0 for (C2, C3) in DGP ordering
+  true_slopes <- c(-1, 1)
+
+  ses <- sqrt(diag(fit$three_step_vcov))
+
+  est_int <- fit$three_step["Intercept", ord]
+  est_slope <- fit$three_step["Zp", ord]
+  se_int <- ses[c(1L, 3L)][ord]
+  se_slope <- ses[c(2L, 4L)][ord]
+
+  for (j in 1:2) {
+    expect_true(
+      abs(est_slope[j] - true_slopes[j]) <= 2 * se_slope[j],
+      label = sprintf(
+        "BCH slope[%d]: est=%.3f, true=%.3f, 2SE=%.3f",
+        j,
+        est_slope[j],
+        true_slopes[j],
+        2 * se_slope[j]
+      )
+    )
+    expect_true(
+      abs(est_int[j] - true_intercepts[j]) <= 2 * se_int[j],
+      label = sprintf(
+        "BCH intercept[%d]: est=%.3f, true=%.3f, 2SE=%.3f",
+        j,
+        est_int[j],
+        true_intercepts[j],
+        2 * se_int[j]
+      )
+    )
+  }
+})
+
+test_that("three_step BCH gaussian distal recovers true class means", {
+  d <- generate_data(2000L, "high", "distal", seed = 88L)
+  fit <- suppressWarnings(
+    three_step(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      Zo.name = "Zo",
+      family = "gaussian",
+      use.bch = TRUE,
+      use.simple.cov = TRUE,
+      verbose = FALSE
+    )
+  )
+
+  true_mu_sorted <- sort(c(-1, 0, 1))
+  est_mu_sorted <- sort(fit$three_step)
+
+  # BCH has higher sampling variance than ML, so this uses a looser 3 SE
+  # bound (vs. 2 SE for the analogous ML test) to avoid single-seed
+  # flakiness while still checking the estimates are unbiased.
+  ses_sorted <- sort(sqrt(diag(fit$three_step_vcov)))
+  for (j in seq_along(true_mu_sorted)) {
+    expect_true(
+      abs(est_mu_sorted[j] - true_mu_sorted[j]) <= 3 * ses_sorted[j],
+      label = sprintf(
+        "BCH mu[%d]: est=%.3f, true=%.3f, 3SE=%.3f",
+        j,
+        est_mu_sorted[j],
+        true_mu_sorted[j],
+        3 * ses_sorted[j]
+      )
+    )
+  }
+})
+
 # ---- Distal model ----------------------------------------------------------------------------------------------------------------------------
 
 test_that("three_step gaussian distal returns tseLCA_distal with named estimates", {
