@@ -126,7 +126,7 @@ or distal outcome model. Default \code{200L}.}
 \item{get.twostep.vcov}{Logical. If \code{TRUE}, obtain \pkg{multilevLCA}'s
 bias-corrected variance-covariance matrix for the two-step gamma estimates
 and store it in \code{$two_step_vcov}. If the \code{fitZ} object passed
-via \code{step1} already contains a \code{Varmat_cor} (from a prior
+through \code{step1} already contains a \code{Varmat_cor} (from a prior
 \code{\link[=fitZ_from_multiLCA]{fitZ_from_multiLCA()}} or plain \code{multiLCA} call), it is attached
 automatically even when \code{get.twostep.vcov = FALSE}. Default
 \code{FALSE}.}
@@ -137,8 +137,34 @@ multinomial logit. The measurement model is permuted so this class becomes
 column 1 before any structural estimation. Default \code{"C1"}.}
 
 \item{family}{Character. Distal outcome family: one of \code{"gaussian"}
-(class means), \code{"poisson"} (log-rates), or \code{"binomial"}
-(logits). Default \code{"gaussian"}.}
+(class means), \code{"poisson"} (log-rates), \code{"binomial"}
+(logits), or \code{"multinomial"} (a saturated model for a nominal
+categorical outcome with 2 or more categories -- \code{Zo.name} may be
+a factor, character, or integer column; categories are taken from
+\code{sort(unique(data[[Zo.name]]))} with \code{factor()}). For
+\code{"multinomial"}, \code{coef()} returns a \code{T x C} matrix of
+class-conditional category probabilities
+\eqn{\hat\pi_{tc} = P(Zo = c \mid X = t)} (rows sum to 1) instead of a
+length-\code{T} vector, and \code{vcov()} returns its
+\code{(T*C) x (T*C)} sandwich covariance (necessarily singular, since
+each class's row sums to 1 -- see \code{\link{omnibus_test}()} for a
+Wald test that accounts for this). Unlike \code{"binomial"}, whose
+\code{coef()}/\code{vcov()} are on the logit scale, \code{"multinomial"}
+reports \code{coef()}/\code{vcov()} directly on the probability scale,
+so \code{Std.Error} is directly interpretable without a delta-method
+back-transform -- but a symmetric interval
+\code{Estimate +/- 1.96*Std.Error} can fall outside \eqn{[0, 1]} for a
+probability near a boundary, the same well-known limitation as a naive
+Wald interval for any sample proportion. The \code{z.value}/\code{p.value}
+columns \code{summary()}/\code{print()} show for this family test each
+probability against 0, which is rarely the question of interest;
+\code{\link{omnibus_test}()} is the intended, boundary-safe test of
+whether the outcome's distribution differs across classes. Combining
+\code{family = "multinomial"} with both \code{Zp.names} and
+\code{Zo.name} fully
+propagates both Step-1 measurement and Step-3 covariate uncertainty
+under \code{use.simple.cov = FALSE}, the same as the other families.
+Default \code{"gaussian"}.}
 
 \item{correct.spec}{Logical. Use the model-robust outer-product Hessian for
 Step-3 standard errors rather than the observed-data Hessian. Not appropriate
@@ -186,9 +212,14 @@ smaller than the equivalent one-step MLE likelihood.}
 \code{Zp.names} is \code{NULL}. Contains:
 \describe{
 \item{\code{three_step}}{Named length-T vector of Step-3 distal outcome
-parameters (means, log-rates, or logits depending on \code{family}).}
+parameters (means, log-rates, or logits depending on
+\code{family}) -- or, for \code{family = "multinomial"}, a
+\code{T x C} matrix of class-conditional category probabilities
+(rows sum to 1).}
 \item{\code{three_step_vcov}}{T x T variance-covariance matrix for
-\code{three_step}, named \code{mu_C1} through \code{mu_CT}.}
+\code{three_step}, named \code{mu_C1} through \code{mu_CT} --
+or, for \code{family = "multinomial"}, a \code{(T*C) x (T*C)}
+(necessarily rank-deficient) matrix named \code{"C{t}:{category}"}.}
 \item{\code{three_step.llik}}{Step-3 distal log-likelihood
 \eqn{\log P(Z_o|X=t)} at converged estimates.}
 \item{\code{llik}}{Profile log-likelihood
@@ -277,6 +308,17 @@ fit_dis <- three_step(d2, Y.names = paste0("Y", 1:6), n_classes = 3,
                       use.simple.cov = TRUE)
 summary(fit_dis)
 
+# Nominal categorical distal outcome (3+ categories): coef() returns a
+# T x C matrix of class-conditional category probabilities; omnibus_test()
+# gives a single Wald test of whether the category distribution differs
+# across classes at all.
+d2$Zcat <- factor(sample(c("low", "mid", "high"), nrow(d2), replace = TRUE))
+fit_cat <- three_step(d2, Y.names = paste0("Y", 1:6), n_classes = 3,
+                      Zo.name = "Zcat", family = "multinomial",
+                      use.simple.cov = TRUE)
+coef(fit_cat)
+omnibus_test(fit_cat)
+
 # Pass a pre-fitted measurement model to skip Step 1
 fit_step1 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3)
 fit2 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
@@ -319,7 +361,7 @@ Behavioral Research}. \doi{10.1080/00273171.2025.2473935}
 \seealso{
 \code{vignette("tseLCA", package = "tseLCA")} for a full worked
 example; \code{\link[=lca_step1]{lca_step1()}} for standalone Step-1 estimation
-(including from an externally supplied starting classification, via its
+(including from an externally supplied starting classification, with its
 own \code{startval} argument); \code{\link[=fitZ_from_fit0]{fitZ_from_fit0()}} and \code{\link[=fitZ_from_multiLCA]{fitZ_from_multiLCA()}}
 for two-step covariate estimation.
 }

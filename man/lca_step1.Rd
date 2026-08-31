@@ -65,7 +65,7 @@ measurement model: either an integer vector of length \code{nrow(data)}
 (\verb{1..n_classes} per row) or a numeric matrix of conditional
 item-response probabilities from which a classification is derived. See
 \code{\link[=lca_step1_startval]{lca_step1_startval()}} for the full description of both forms. When
-supplied, \code{lca_step1()} fits the measurement model via
+supplied, \code{lca_step1()} fits the measurement model with
 \code{\link[=lca_step1_startval]{lca_step1_startval()}} instead of multilevLCA's default
 k-means-on-principal-components initialization, and \code{estimate.one.step},
 \code{iter.measurement}, and \code{R2.threshold} (which govern the default
@@ -74,7 +74,7 @@ restart-on-low-entropy behavior) are ignored. Mutually exclusive with
 
 \item{n_init}{Optional positive integer. If supplied, fits the
 measurement model \code{n_init} times from independent uniform-random
-classifications (each via \code{startval}-style injection with
+classifications (each through \code{startval}-style injection with
 \code{kmea = FALSE}, not multilevLCA's k-means-on-PCA path) and keeps the
 fit with the highest log-likelihood -- the unconditional multi-start
 analog of \code{n_init} in \pkg{StepMix} or \code{nrep} in \pkg{poLCA}. Unlike

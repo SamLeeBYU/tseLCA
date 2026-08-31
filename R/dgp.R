@@ -249,8 +249,8 @@ draw_Zo <- function(X, params) {
 #'   Maps to pi = 0.70, 0.80, 0.90 respectively.
 #' @param scenario   Character. One of:
 #'   \describe{
-#'     \item{`"covariate"`}{Zp (discrete, 1-5) predicts latent X via multinomial logit.}
-#'     \item{`"distal"`}{Latent X predicts continuous Zo via linear regression.}
+#'     \item{`"covariate"`}{Zp (discrete, 1-5) predicts latent X with multinomial logit.}
+#'     \item{`"distal"`}{Latent X predicts continuous Zo with linear regression.}
 #'   }
 #' @param params     List of population parameters.  Defaults to [tseLCA::bk2018_params].
 #' @param seed       Integer or `NULL`. Optional random seed for reproducibility.

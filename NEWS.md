@@ -59,11 +59,68 @@
   produce the "negative column sums" error the package warns about (users
   were advised to fall back to `use.bch = FALSE`). With the corrected
   orientation, every row of the weight matrix sums to 1 and the class
-  totals it implies exactly match the posterior class sizes, The weight-matrix computation
-  is now consolidated into a single internal helper (`bch_weight_matrix()`)
-  used by all four call sites that previously duplicated it, with a
-  regression test asserting `rowSums(w.it) == 1` under a deliberately
-  asymmetric classification-error matrix.
+  totals it implies exactly match the posterior class sizes. The
+  weight-matrix computation is now consolidated into a single internal
+  helper (`bch_weight_matrix()`) used by all four call sites that
+  previously duplicated it, with a regression test asserting
+  `rowSums(w.it) == 1` under a deliberately asymmetric classification-error
+  matrix.
+
+## Multinomial distal outcomes and an omnibus class-equality test
+
+- Added `family = "multinomial"` to `three_step()`'s distal-outcome
+  estimation, for a nominal categorical outcome with 2 or more categories
+  (`Zo.name` may be a factor, character, or integer column). Estimates a
+  saturated model -- the `T x C` matrix of class-conditional category
+  probabilities `pi_hat[t, c] = P(Zo = c | X = t)` -- with the closed-form
+  weighted-proportion estimator `pi_hat[t, c] = sum_i w_it * 1(y_i = c) /
+  sum_i w_it`, for both `use.bch = TRUE` (BCH weights) and `use.bch =
+  FALSE` (ML, through EM with the same closed-form M-step and
+  responsibility-weighted E-step). This replaces the previous workaround of
+  fitting one `family = "binomial"` model per category and renormalizing
+  the resulting probabilities by hand, which wasn't constrained to the
+  simplex before renormalizing and had no joint covariance across
+  categories.
+  - `coef()` returns the `T x C` probability matrix (rows sum to 1) instead
+    of a length-`T` vector; `vcov()` returns its `(T*C) x (T*C)` sandwich
+    covariance, which is necessarily rank-deficient (each class's row sums
+    to 1).
+  - For `use.bch = FALSE`, `use.simple.cov = FALSE` (the default) fully
+    propagates both Step-1 measurement uncertainty and, when `Zp.names` is
+    also supplied, Step-3 covariate uncertainty into the SEs, matching the
+    existing gaussian/poisson/binomial ML paths exactly (the T x C
+    generalization of each chain-rule term -- `C1_mat` for Step 1, `C_mat`
+    for Step 2 -- only required expanding the "unit score" `g_it` across
+    categories, since neither term's derivation otherwise depends on the
+    outcome's dimensionality). The ML bread (`multinomial_ml_jacobian()`)
+    is a closed-form Jacobian of the estimating equation, generalizing
+    `ml_hessian_distal()`'s "observed = complete - missing information"
+    correction to the T x C case. Both the bread and the full propagation
+    (including the Step-2 term) were cross-validated against independent,
+    from-scratch numerical differentiation (explicit per-case loops sharing
+    no code with the package, `optim()` from multiple starting points for
+    the point estimate) and matched to machine precision.
+- Added `omnibus_test()`, a generalized Wald test of
+  `H0: theta_1 = theta_2 = ... = theta_T` (the distal outcome's class-t
+  parameter vector is the same for every class) for any `tseLCA_distal` or
+  `tseLCA_both` object, regardless of family. Uses a Moore-Penrose
+  pseudo-inverse of the contrast covariance so it remains valid when that
+  covariance is singular, as it always is for `family = "multinomial"`; the
+  resulting degrees of freedom recover the textbook `(T-1)*(C-1)` for a
+  `T x C` chi-squared test of homogeneity in that case, and `T-1` for the
+  scalar-parameter families.
+- Unlike `family = "binomial"`, whose `coef()`/`vcov()` are on the logit
+  scale, `family = "multinomial"` reports `coef()`/`vcov()` directly on the
+  probability scale -- `Std.Error` is directly interpretable without a
+  delta-method back-transform, but a symmetric interval
+  `Estimate +/- 1.96*Std.Error` can fall outside the unit interval for a
+  probability near a boundary, the same known limitation as a naive Wald
+  interval for a sample proportion, and the per-cell `z.value`/`p.value`
+  (testing each probability against 0) are rarely the question of interest.
+  `print()`/`summary()` now print a one-line reminder of this after a
+  multinomial distal-outcome table, pointing to `omnibus_test()` for the
+  intended, boundary-safe test of whether the distribution differs across
+  classes.
 
 # tseLCA 1.0.0
 
@@ -80,8 +137,8 @@
 
 -   Integrated with the 'multilevLCA' package for efficient Step-1 measurement model estimation.
 -   Added support for polytomous indicator items (0-based integer coding).
--   Implemented Full Information Maximum Likelihood (FIML) to handle missing data in the measurement model via the `incomplete = TRUE` argument (using a two-pass row-filtering strategy).
--   Added the ability to pass a pre-fitted measurement model (via the `step1` argument) to reuse across multiple structural models or apply to different sample subsets.
+-   Implemented Full Information Maximum Likelihood (FIML) to handle missing data in the measurement model with the `incomplete = TRUE` argument (using a two-pass row-filtering strategy).
+-   Added the ability to pass a pre-fitted measurement model (with the `step1` argument) to reuse across multiple structural models or apply to different sample subsets.
 -   Implemented automated random restarts for the measurement model triggered when entropy $R^2$ falls below a user-specified threshold.
 
 ## Algorithmic Flexibility & Structural Models

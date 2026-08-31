@@ -2,7 +2,7 @@
 % Please edit documentation in R/lca_measurement.R
 \name{fitZ_from_multiLCA}
 \alias{fitZ_from_multiLCA}
-\title{Estimate two-step covariate model via multilevLCA (optional reference path)}
+\title{Estimate two-step covariate model with multilevLCA (optional reference path)}
 \usage{
 fitZ_from_multiLCA(
   data,
@@ -95,7 +95,7 @@ multilevLCA's corrected standard errors for the two-step gamma estimates.
 \donttest{
 d <- generate_data(200, "high", "covariate", seed = 1)
 
-# Two-step estimation via multiLCA (fixedpars = 1)
+# Two-step estimation with multiLCA (fixedpars = 1)
 fZ_ml <- fitZ_from_multiLCA(
   data                = d,
   Y.names             = paste0("Y", 1:6),

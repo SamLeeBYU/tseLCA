@@ -1,6 +1,6 @@
 # tseLCA/R/lca_measurement.R
 #
-# Step-1 measurement model via multilevLCA::multiLCA.
+# Step-1 measurement model with multilevLCA::multiLCA.
 #
 # Exports:
 #   lca_step1()          - measurement model fit + optional two-step fitZ
@@ -129,7 +129,7 @@ classify_from_phi <- function(data, Y.names, n_classes, phi, incomplete = FALSE)
 #' written into `data` before it can be passed through. `startval` may be
 #' supplied as an integer classification vector (used as-is) or a numeric
 #' matrix of conditional item-response probabilities (converted to a
-#' classification via `classify_from_phi()`); either way this helper
+#' classification with `classify_from_phi()`); either way this helper
 #' validates the result (length, range, no missing values) and returns
 #' `data` with the classification attached under a reserved column name.
 #' @noRd
@@ -264,7 +264,7 @@ run_measurement_fit_startval <- function(
 #' The unconditional multi-random-start analog of StepMix's `n_init` and
 #' poLCA's `nrep`: fits the measurement model `n_init` times, each from an
 #' independent uniform-random classification (`sample.int(n_classes, N,
-#' replace = TRUE)`) injected via `run_measurement_fit_startval()` (so each
+#' replace = TRUE)`) injected with `run_measurement_fit_startval()` (so each
 #' restart also uses `kmea = FALSE`, not multilevLCA's k-means-on-PCA path),
 #' and returns the fit with the highest final log-likelihood. Unlike
 #' `run_measurement_fit()`'s `iter.measurement`/`R2.threshold` restarts,
@@ -477,7 +477,7 @@ lca_step1_startval <- function(
 #'   (`1..n_classes` per row) or a numeric matrix of conditional
 #'   item-response probabilities from which a classification is derived. See
 #'   [lca_step1_startval()] for the full description of both forms. When
-#'   supplied, `lca_step1()` fits the measurement model via
+#'   supplied, `lca_step1()` fits the measurement model with
 #'   [lca_step1_startval()] instead of multilevLCA's default
 #'   k-means-on-principal-components initialization, and `estimate.one.step`,
 #'   `iter.measurement`, and `R2.threshold` (which govern the default
@@ -485,7 +485,7 @@ lca_step1_startval <- function(
 #'   `n_init`. Default `NULL`.
 #' @param n_init Optional positive integer. If supplied, fits the
 #'   measurement model `n_init` times from independent uniform-random
-#'   classifications (each via `startval`-style injection with
+#'   classifications (each through `startval`-style injection with
 #'   `kmea = FALSE`, not multilevLCA's k-means-on-PCA path) and keeps the
 #'   fit with the highest log-likelihood -- the unconditional multi-start
 #'   analog of `n_init` in \pkg{StepMix} or `nrep` in \pkg{poLCA}. Unlike
@@ -541,8 +541,8 @@ lca_step1 <- function(
   if (!is.null(startval) && !is.null(n_init)) {
     stop(
       "`startval` and `n_init` are mutually exclusive ways of controlling ",
-      "Step-1 initialization: supply a fixed starting classification via ",
-      "`startval`, or a number of independent random restarts via ",
+      "Step-1 initialization: supply a fixed starting classification with ",
+      "`startval`, or a number of independent random restarts with ",
       "`n_init`, not both.",
       call. = FALSE
     )
@@ -683,7 +683,7 @@ lca_step1 <- function(
 #' Estimate covariate effects with measurement parameters fixed (two-step EM)
 #'
 #' Fixes `mPhi` at `fit0$mPhi` and estimates multinomial logit coefficients
-#' `mGamma` (Q x (T-1)) via an EM algorithm with a BFGS M-step.
+#' `mGamma` (Q x (T-1)) with an EM algorithm using a BFGS M-step.
 #'
 #' @param fit0 Output of `lca_step1()$fit0`.
 #' @param data A data.frame.
@@ -886,7 +886,7 @@ fitZ_from_fit0 <- function(
 
 # -- fitZ_from_multiLCA --------------------------------------------------------
 
-#' Estimate two-step covariate model via multilevLCA (optional reference path)
+#' Estimate two-step covariate model with multilevLCA (optional reference path)
 #'
 #' Calls `multilevLCA::multiLCA` with `fixedpars = 1` and `Z = Zp.names` to
 #' fit the two-step covariate model.  This is the original multilevLCA approach
@@ -945,7 +945,7 @@ fitZ_from_fit0 <- function(
 #' \donttest{
 #' d <- generate_data(200, "high", "covariate", seed = 1)
 #'
-#' # Two-step estimation via multiLCA (fixedpars = 1)
+#' # Two-step estimation with multiLCA (fixedpars = 1)
 #' fZ_ml <- fitZ_from_multiLCA(
 #'   data                = d,
 #'   Y.names             = paste0("Y", 1:6),
@@ -981,7 +981,7 @@ fitZ_from_multiLCA <- function(
     stop(
       "`startval` and `n_init` are mutually exclusive ways of controlling ",
       "this fit's initialization: supply a fixed starting classification ",
-      "via `startval`, or a number of independent random restarts via ",
+      "with `startval`, or a number of independent random restarts with ",
       "`n_init`, not both.",
       call. = FALSE
     )

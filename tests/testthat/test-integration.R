@@ -591,6 +591,418 @@ test_that("three_step with both Zp and Zo returns tseLCA_both", {
   expect_equal(fit$family, "gaussian")
 })
 
+# ---- Distal model: multinomial family ---------------------------------------------------------------------------------------------------
+
+make_multinomial_distal_data <- function(n, seed) {
+  d <- generate_data(n, "high", "distal", seed = seed)
+  # True class-conditional category probabilities: each class has a
+  # dominant category, giving a genuinely asymmetric confusion structure.
+  pi_true <- matrix(
+    c(
+      0.70, 0.10, 0.10, 0.10,
+      0.10, 0.70, 0.10, 0.10,
+      0.10, 0.10, 0.10, 0.70
+    ),
+    nrow = 3,
+    byrow = TRUE
+  )
+  d$Zcat <- factor(vapply(
+    seq_len(nrow(d)),
+    function(i) sample(c("a", "b", "c", "d"), 1, prob = pi_true[d$X[i], ]),
+    character(1)
+  ))
+  d
+}
+
+test_that("three_step multinomial BCH returns a T x C probability matrix", {
+  d <- make_multinomial_distal_data(1500L, seed = 55L)
+  fit <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.bch = TRUE,
+    use.simple.cov = TRUE,
+    verbose = FALSE
+  )
+
+  expect_s3_class(fit, "tseLCA_distal")
+  pi_hat <- coef(fit)
+  expect_equal(dim(pi_hat), c(3L, 4L))
+  expect_equal(rowSums(pi_hat), setNames(rep(1, 3), rownames(pi_hat)))
+  expect_true(all(pi_hat >= 0 & pi_hat <= 1))
+
+  V <- vcov(fit)
+  expect_equal(dim(V), c(12L, 12L))
+  expect_true(all(is.finite(sqrt(diag(V)))))
+})
+
+test_that("print/summary don't error on a multinomial tseLCA_distal object", {
+  d <- make_multinomial_distal_data(300L, seed = 55L)
+  fit <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.simple.cov = TRUE
+  )
+  expect_output(print(fit), "multinomial")
+  expect_output(print(summary(fit)), "multinomial")
+})
+
+test_that("three_step multinomial ML (simple and full) agree and full SEs are >= simple SEs", {
+  d <- make_multinomial_distal_data(1500L, seed = 55L)
+  Y.names <- paste0("Y", 1:6)
+
+  fit_simple <- three_step(
+    d,
+    Y.names,
+    n_classes = 3L,
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.bch = FALSE,
+    use.simple.cov = TRUE
+  )
+  fit_full <- three_step(
+    d,
+    Y.names,
+    n_classes = 3L,
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.bch = FALSE,
+    use.simple.cov = FALSE
+  )
+
+  expect_equal(coef(fit_simple), coef(fit_full), tolerance = 1e-6)
+  se_simple <- sqrt(diag(vcov(fit_simple)))
+  se_full <- sqrt(diag(vcov(fit_full)))
+  # Full Step-1 propagation should add uncertainty on top of the robust
+  # sandwich, not remove it.
+  expect_true(all(se_full >= se_simple - 1e-8))
+})
+
+test_that("multinomial_ml_jacobian matches a numerical check of the estimating equation", {
+  # multinomial_ml_jacobian() is a closed-form derivation (no numerical
+  # differentiation in the package); this is a cheap regression check
+  # against a numerical Jacobian computed inline, entirely independent of
+  # multinomial_ml_jacobian() itself.
+  d <- make_multinomial_distal_data(600L, seed = 60L)
+  # Pre-encode as integer categories, matching what three_step() itself
+  # does internally before calling clean_data() -- required here since we
+  # call clean_data() directly below.
+  d$Zcat <- as.integer(factor(d$Zcat))
+  Y.names <- paste0("Y", 1:6)
+
+  s1 <- lca_step1(d, Y.names, n_classes = 3L)
+  fit0 <- s1$fit0
+  cd <- clean_data(
+    data = d, Y.names = Y.names, Zo.name = "Zcat",
+    incomplete = FALSE, include.intercept = TRUE, verbose = FALSE
+  )
+  s2 <- lca_step2(
+    cd$Y.obs, fit0, 3L, TRUE, 1e-2, FALSE,
+    ivItemcat = cd$ivItemcat, mDesign = cd$mDesign
+  )
+  w.is <- s2$w.is[cd$keep_step3_Zo_in_Y, , drop = FALSE]
+  pwx <- s2$p.wx_mat
+  Y_cat <- cd$Zo_mat[, 1L]
+  C <- length(unique(Y_cat))
+  pi_adj <- matrix(fit0$vPi, nrow = length(Y_cat), ncol = 3L, byrow = TRUE)
+
+  s3 <- lca_step3.distal.multinomial(
+    Y_cat = Y_cat, C = C, iT = 3L, covariate.tol = 1e-8, use.bch = FALSE,
+    w.is_cc = w.is, pwx = pwx, em.maxIter = 500L, vPi = fit0$vPi, pi_mat = pi_adj
+  )
+  theta_hat <- s3$res$par
+  Psi <- function(theta) colSums(s3$three_step.score(theta))
+
+  n <- length(theta_hat)
+  Jac_numeric <- matrix(0, n, n)
+  eps <- 1e-5
+  for (j in seq_len(n)) {
+    h <- eps * max(abs(theta_hat[j]), 1)
+    xp <- theta_hat; xp[j] <- xp[j] + h
+    xm <- theta_hat; xm[j] <- xm[j] - h
+    Jac_numeric[, j] <- (Psi(xp) - Psi(xm)) / (2 * h)
+  }
+
+  pi_hat <- matrix(theta_hat, nrow = 3L, ncol = C)
+  pzx_mat <- t(pi_hat[, Y_cat, drop = FALSE])
+  ae <- w.is %*% pwx
+  q_i <- rowSums(pi_adj * pzx_mat * ae)
+  r_it <- pi_adj * pzx_mat * ae / q_i
+  Jac_analytic <- multinomial_ml_jacobian(pi_hat, r_it, Y_cat)
+
+  expect_equal(Jac_analytic, Jac_numeric, tolerance = 1e-4)
+})
+
+test_that("multinomial with C=2 matches the existing binomial family exactly", {
+  d <- make_multinomial_distal_data(1200L, seed = 56L)
+  Y.names <- paste0("Y", 1:6)
+  d$Zbin <- rbinom(nrow(d), 1, c(0.2, 0.5, 0.8)[d$X])
+  d$Zbin_cat <- factor(d$Zbin)
+
+  fit_bin <- three_step(
+    d,
+    Y.names,
+    n_classes = 3L,
+    Zo.name = "Zbin",
+    family = "binomial",
+    use.bch = TRUE,
+    use.simple.cov = TRUE
+  )
+  fit_multi <- three_step(
+    d,
+    Y.names,
+    n_classes = 3L,
+    Zo.name = "Zbin_cat",
+    family = "multinomial",
+    use.bch = TRUE,
+    use.simple.cov = TRUE
+  )
+
+  mu_bin <- 1 / (1 + exp(-coef(fit_bin)))
+  pi_multi <- coef(fit_multi)[, "1"]
+  # Both estimators solve the same weighted-proportion closed form, but
+  # binomial's BCH path gets there with Newton-Raphson (converged to within
+  # covariate.tol on the parameter step, default 1e-6) while multinomial's
+  # BCH is a direct closed form, so residual agreement is to ~1e-6-1e-7,
+  # not machine precision.
+  expect_equal(unname(mu_bin), unname(pi_multi), tolerance = 1e-5)
+})
+
+test_that("multinomial recovers the true category probability structure", {
+  d <- make_multinomial_distal_data(3000L, seed = 57L)
+  fit <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.simple.cov = TRUE
+  )
+  pi_hat <- coef(fit)
+  # Each class should have exactly one dominant (> 0.5) category.
+  dominant <- apply(pi_hat, 1L, max)
+  expect_true(all(dominant > 0.5))
+  # The three dominant categories should be distinct (classes recovered
+  # three different modes, matching the DGP's three distinct classes).
+  expect_length(unique(apply(pi_hat, 1L, which.max)), 3L)
+})
+
+test_that("family = \"multinomial\" validates the category count", {
+  d <- make_multinomial_distal_data(200L, seed = 58L)
+  d$Zconst <- factor(rep("a", nrow(d)))
+
+  expect_error(
+    three_step(
+      d,
+      paste0("Y", 1:6),
+      n_classes = 3L,
+      Zo.name = "Zconst",
+      family = "multinomial"
+    ),
+    "at least 2 distinct categories"
+  )
+})
+
+test_that("combined Zp.names + family = \"multinomial\" works under full propagation", {
+  d2 <- generate_data(200L, "high", "covariate", seed = 59L)
+  d2$Zcat <- factor(sample(c("a", "b", "c"), nrow(d2), replace = TRUE))
+
+  fit_full <- three_step(
+    d2,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zp.names = "Zp",
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.simple.cov = FALSE
+  )
+  expect_s3_class(fit_full, "tseLCA_both")
+  V_full <- vcov(fit_full, which = "distal")
+  expect_true(all(is.finite(diag(V_full))))
+  expect_true(all(diag(V_full) > 0))
+
+  fit_simple <- three_step(
+    d2,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zp.names = "Zp",
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.simple.cov = TRUE
+  )
+  expect_s3_class(fit_simple, "tseLCA_both")
+  # Full Step-1/Step-2 propagation should add uncertainty on top of the
+  # robust sandwich, not remove it (same check as the distal-only case).
+  se_full <- sqrt(diag(V_full))
+  se_simple <- sqrt(diag(vcov(fit_simple, which = "distal")))
+  expect_true(all(se_full >= se_simple - 1e-8))
+})
+
+test_that("Step-2 covariate-uncertainty propagation is actually wired through for multinomial", {
+  # The se_full >= se_simple check above would still pass even if
+  # three_step() silently stopped passing Sigma.3/s3.par/p.xz.cov/Z_mat_cov
+  # to lca_vcov_distal_multinomial() (it would just fall back to a
+  # step1-only propagation, still >= the robust sandwich). This test
+  # isolates the step-2 term's contribution directly through the internal
+  # function, so a regression that drops the wiring shows up as "no
+  # difference" rather than merely "still bigger than simple.cov".
+  d2 <- generate_data(400L, "high", "covariate", seed = 59L)
+  # Pre-encode as integer categories, matching what three_step() itself
+  # does internally before calling clean_data() -- required here since we
+  # call clean_data() directly below to reconstruct the internals.
+  d2$Zcat <- as.integer(factor(sample(c("a", "b", "c"), nrow(d2), replace = TRUE)))
+  Y.names <- paste0("Y", 1:6)
+
+  fit <- three_step(
+    d2, Y.names, n_classes = 3L, Zp.names = "Zp", Zo.name = "Zcat",
+    family = "multinomial", use.bch = FALSE, use.simple.cov = FALSE
+  )
+
+  s1 <- lca_step1(d2, Y.names, n_classes = 3L)
+  fit0 <- s1$fit0
+  cd <- clean_data(
+    data = d2, Y.names = Y.names, Zp.names = "Zp", Zo.name = "Zcat",
+    incomplete = FALSE, include.intercept = TRUE, verbose = FALSE
+  )
+  s2 <- lca_step2(
+    cd$Y.obs, fit0, 3L, TRUE, 1e-2, FALSE,
+    ivItemcat = cd$ivItemcat, mDesign = cd$mDesign
+  )
+  J.2_dis <- s2$compute_J_unc(
+    s2$p.xy[cd$keep_step3_Zo_in_Y, , drop = FALSE],
+    cd$Y.obs[cd$keep_step3_Zo_in_Y, , drop = FALSE],
+    matrix(1L, length(cd$keep_step3_Zo_in_Y), ncol(cd$Y.obs)),
+    s2$theta1, cd$ivItemcat, 3L
+  )
+  s2_for_dis <- list(
+    J.2 = J.2_dis, p.wx_mat = s2$p.wx_mat,
+    w.is = s2$w.is[cd$keep_step3_Zo_in_Y, , drop = FALSE]
+  )
+
+  s3.par <- as.vector(fit$covariate$three_step)
+  Z_full_raw <- cbind(1, as.matrix(d2[, "Zp", drop = FALSE]))
+  Z_mat_dis <- Z_full_raw[cd$keep_step3_Zo, , drop = FALSE]
+  p.xz_dis <- function(params) {
+    eta_full <- cbind(0, Z_mat_dis %*% params)
+    ex <- exp(eta_full - apply(eta_full, 1L, max))
+    ex / rowSums(ex)
+  }
+  pi_adj <- p.xz_dis(matrix(s3.par, ncol = 2))
+
+  res_adj <- compute_pwx_adj(
+    cd$Y.obs[cd$keep_step3_Zo_in_Y, , drop = FALSE], fit0, cd$ivItemcat,
+    NULL, TRUE, pi_adj = pi_adj
+  )
+  Y_cat_dis <- cd$Zo_mat[, 1L]
+  C <- length(levels(factor(d2$Zcat)))
+
+  s3.distal <- lca_step3.distal.multinomial(
+    Y_cat = Y_cat_dis, C = C, iT = 3L, covariate.tol = 1e-8, use.bch = FALSE,
+    w.is_cc = res_adj$w.is, pwx = res_adj$p.wx_mat, em.maxIter = 500L,
+    vPi = fit0$vPi, pi_mat = pi_adj
+  )
+  Sigma.1 <- lca_indiv_varmat(
+    cd$Y.obs, cd$mDesign, fit0, cd$ivItemcat, boundary.tol = 1e-2
+  )$Varmat
+
+  V_step1_only <- lca_vcov_distal_multinomial(
+    theta_hat = s3.distal$res$par, three_step.score = s3.distal$three_step.score,
+    pi_adj = pi_adj, w.is = res_adj$w.is, p.wx_mat = res_adj$p.wx_mat,
+    Y_cat = Y_cat_dis, C = C, H.3.inv = s3.distal$H.3.inv, Sigma.1 = Sigma.1,
+    s2 = s2_for_dis, iT = 3L, use.simple.cov = FALSE, use.bch = FALSE
+    # Sigma.3/s3.par/p.xz.cov/Z_mat_cov omitted -> step1 term only
+  )
+
+  V_full <- vcov(fit, which = "distal")
+  expect_false(isTRUE(all.equal(diag(V_step1_only), diag(V_full))))
+  # Adding the step-2 term should increase (not decrease) the variance.
+  expect_true(all(diag(V_full) >= diag(V_step1_only) - 1e-10))
+})
+
+# ---- Omnibus test -------------------------------------------------------------------------------------------------------------------------
+
+test_that("omnibus_test degrees of freedom match theory for multinomial and scalar families", {
+  d <- make_multinomial_distal_data(1500L, seed = 55L)
+  fit_multi <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.simple.cov = TRUE
+  )
+  ob_multi <- omnibus_test(fit_multi)
+  expect_s3_class(ob_multi, "tseLCA_omnibus")
+  # (T-1)*(C-1) = 2*3 = 6, the textbook df for a T x C homogeneity test.
+  expect_equal(ob_multi$df, 6L)
+  expect_true(ob_multi$p.value < 0.001)
+
+  fit_gauss <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zo.name = "Zo",
+    use.simple.cov = TRUE
+  )
+  ob_gauss <- omnibus_test(fit_gauss)
+  expect_equal(ob_gauss$df, 2L) # T - 1
+})
+
+test_that("omnibus_test does not reject when classes share the same distribution", {
+  d <- make_multinomial_distal_data(1500L, seed = 55L)
+  d$Zcat_null <- factor(sample(
+    c("a", "b", "c", "d"),
+    nrow(d),
+    replace = TRUE,
+    prob = c(0.4, 0.3, 0.2, 0.1)
+  ))
+  fit_null <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zo.name = "Zcat_null",
+    family = "multinomial",
+    use.simple.cov = TRUE
+  )
+  ob_null <- omnibus_test(fit_null)
+  expect_true(ob_null$p.value > 0.10)
+})
+
+test_that("omnibus_test works on a tseLCA_both object's distal component", {
+  d <- generate_data(1500L, "high", "covariate", seed = 66L)
+  pi_true <- matrix(
+    c(
+      0.70, 0.10, 0.10, 0.10,
+      0.10, 0.70, 0.10, 0.10,
+      0.10, 0.10, 0.10, 0.70
+    ),
+    nrow = 3,
+    byrow = TRUE
+  )
+  d$Zcat <- factor(vapply(
+    seq_len(nrow(d)),
+    function(i) sample(c("a", "b", "c", "d"), 1, prob = pi_true[d$X[i], ]),
+    character(1)
+  ))
+  fit_both <- three_step(
+    d,
+    paste0("Y", 1:6),
+    n_classes = 3L,
+    Zp.names = "Zp",
+    Zo.name = "Zcat",
+    family = "multinomial",
+    use.simple.cov = TRUE
+  )
+  ob <- omnibus_test(fit_both)
+  expect_s3_class(ob, "tseLCA_omnibus")
+  expect_equal(ob$df, 6L)
+})
+
 # ---- Missing data ----------------------------------------------------------------------------------------------------------------------------
 
 test_that("three_step uses all Y rows when Z has missing values", {
