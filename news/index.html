@@ -53,6 +53,10 @@
 <li>
 <code>step1</code>, <code>startval</code>, and <code>n_init</code> are mutually exclusive ways of controlling Step 1 in <code><a href="../reference/three_step.html">three_step()</a></code> (and <code>startval</code>/<code>n_init</code> in <code><a href="../reference/lca_step1.html">lca_step1()</a></code> and <code><a href="../reference/fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>); supplying more than one errors.</li>
 </ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
+<ul><li>Fixed the orientation of the BCH weight matrix used throughout <code>use.bch = TRUE</code> estimation (both covariate and distal-outcome models). <code>pwx[s, t] = P(W = s | X = t)</code> is column-stochastic; the correct BCH weight matrix is <code>w.is %*% t(pwx)^-1</code> (Mplus Web Note 21: the row of <code>H^-1</code> for each case’s most likely class, where <code>H = t(pwx)</code> is row-stochastic), not <code>w.is %*% pwx^-1</code>, which the code had been computing. The two orientations only agree when <code>pwx</code> is symmetric, so the bug was largely invisible in well-separated, balanced test cases; with genuine classification-error asymmetry it biased BCH point estimates and could produce the “negative column sums” error the package warns about (users were advised to fall back to <code>use.bch = FALSE</code>). With the corrected orientation, every row of the weight matrix sums to 1 and the class totals it implies exactly match the posterior class sizes, The weight-matrix computation is now consolidated into a single internal helper (<code>bch_weight_matrix()</code>) used by all four call sites that previously duplicated it, with a regression test asserting <code>rowSums(w.it) == 1</code> under a deliberately asymmetric classification-error matrix.</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="tselca-100">tseLCA 1.0.0<a class="anchor" aria-label="anchor" href="#tselca-100"></a></h2>

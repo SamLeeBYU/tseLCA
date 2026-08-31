@@ -69,6 +69,27 @@
   [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md));
   supplying more than one errors.
 
+### Bug fixes
+
+- Fixed the orientation of the BCH weight matrix used throughout
+  `use.bch = TRUE` estimation (both covariate and distal-outcome
+  models). `pwx[s, t] = P(W = s | X = t)` is column-stochastic; the
+  correct BCH weight matrix is `w.is %*% t(pwx)^-1` (Mplus Web Note 21:
+  the row of `H^-1` for each case’s most likely class, where
+  `H = t(pwx)` is row-stochastic), not `w.is %*% pwx^-1`, which the code
+  had been computing. The two orientations only agree when `pwx` is
+  symmetric, so the bug was largely invisible in well-separated,
+  balanced test cases; with genuine classification-error asymmetry it
+  biased BCH point estimates and could produce the “negative column
+  sums” error the package warns about (users were advised to fall back
+  to `use.bch = FALSE`). With the corrected orientation, every row of
+  the weight matrix sums to 1 and the class totals it implies exactly
+  match the posterior class sizes, The weight-matrix computation is now
+  consolidated into a single internal helper (`bch_weight_matrix()`)
+  used by all four call sites that previously duplicated it, with a
+  regression test asserting `rowSums(w.it) == 1` under a deliberately
+  asymmetric classification-error matrix.
+
 ## tseLCA 1.0.0
 
 - Initial submission to CRAN.

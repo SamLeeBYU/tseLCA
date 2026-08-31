@@ -496,10 +496,10 @@ summary(fit_bch)
 #> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : BCH
-#> Log-likelihood : -548.8676
-#> AIC            : 1177.7352
-#> BIC            : 1309.6679
-#> Entropy R²     : 0.8595  (covariate-adjusted)
+#> Log-likelihood : -548.5643
+#> AIC            : 1177.1287
+#> BIC            : 1309.0614
+#> Entropy R²     : 0.8590  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -508,10 +508,10 @@ summary(fit_bch)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.4128    0.7552  3.1950 0.0014  ** 
-#> Zp:C2         -1.2468    0.4043 -3.0837 0.0020  ** 
-#> Intercept:C3  -2.9675    0.7342 -4.0419 < 0.001 ***
-#> Zp:C3          0.8684    0.1952  4.4494 < 0.001 ***
+#> Intercept:C2   2.1318    0.6582  3.2386 0.0012  ** 
+#> Zp:C2         -1.0967    0.3355 -3.2686 0.0011  ** 
+#> Intercept:C3  -3.2851    0.8029 -4.0913 < 0.001 ***
+#> Zp:C3          0.9407    0.2081  4.5196 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 

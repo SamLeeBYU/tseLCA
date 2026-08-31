@@ -381,10 +381,10 @@ summary(d.three_step.bch)
 #> -- tseLCA Three-step Covariate Model -----------------------
 #> Latent classes : 3
 #> Estimator      : BCH
-#> Log-likelihood : -1339.2863
-#> AIC            : 2758.5726
-#> BIC            : 2927.1569
-#> Entropy R²     : 0.8700  (covariate-adjusted)
+#> Log-likelihood : -1339.1908
+#> AIC            : 2758.3815
+#> BIC            : 2926.9658
+#> Entropy R²     : 0.8704  (covariate-adjusted)
 #> 
 #> Two-step (starting) estimates:
 #>                C2      C3
@@ -393,10 +393,10 @@ summary(d.three_step.bch)
 #> 
 #> Three-step estimates:
 #>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   1.9554    0.3111  6.2844 < 0.001 ***
-#> Zp:C2         -0.8424    0.1304 -6.4613 < 0.001 ***
-#> Intercept:C3  -3.4634    0.5697 -6.0790 < 0.001 ***
-#> Zp:C3          0.8923    0.1385  6.4412 < 0.001 ***
+#> Intercept:C2   2.0073    0.3157  6.3588 < 0.001 ***
+#> Zp:C2         -0.8634    0.1330 -6.4912 < 0.001 ***
+#> Intercept:C3  -3.3019    0.5410 -6.1032 < 0.001 ***
+#> Zp:C3          0.8558    0.1326  6.4544 < 0.001 ***
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -1066,15 +1066,15 @@ summary(d.distal.three_step.bch)
 #> Latent classes : 3
 #> Estimator      : BCH
 #> Family         : gaussian
-#> Log-likelihood : -2168.8685
-#> AIC            : 4383.7370
-#> BIC            : 4480.6730
+#> Log-likelihood : -2168.8166
+#> AIC            : 4383.6331
+#> BIC            : 4480.5691
 #> 
 #> Distal outcome estimates by class:
 #>              Estimate Std.Error  z.value     p.value
-#> mu_C1 (mean)  -1.0941    0.0867 -12.6134 < 0.001 ***
-#> mu_C2 (mean)   0.9751    0.0823  11.8534 < 0.001 ***
-#> mu_C3 (mean)   0.0578    0.0859   0.6733 0.5008     
+#> mu_C1 (mean)  -1.0836    0.0861 -12.5815 < 0.001 ***
+#> mu_C2 (mean)   0.9869    0.0830  11.8889 < 0.001 ***
+#> mu_C3 (mean)   0.0604    0.0856   0.7057 0.4804     
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
