@@ -263,6 +263,25 @@ if (length(pending) == 0L) {
             m.r$fitZ_iters <- c.r$iter
           }
 
+          # Keep only what three_step(step1 = ...) actually reads back out of
+          # a saved measurement model: vPi/mPhi (three_step() recomputes
+          # posteriors from `data` itself when fit0$mU is absent -- see
+          # lca_step2()/step1_Y in R/three_step.R) and, for the covariate
+          # scenario, the two-step gamma coefficients plus their vcov (needed
+          # for the two_step estimator's SE). Everything else multilevLCA
+          # attaches (mU, Varmat, SEs, mScore, ...) is diagnostic-only here,
+          # and fit0$call in particular is dead weight: multilevLCA builds it
+          # via do.call() with the literal data.frame, so it embeds a full
+          # copy of the replicate's data (several MB at n=500, more at larger
+          # n) for no downstream use.
+          m.r$fit0 <- list(vPi = m.r$fit0$vPi, mPhi = m.r$fit0$mPhi)
+          if (!is.null(m.r$fitZ)) {
+            m.r$fitZ <- list(
+              mGamma = m.r$fitZ$mGamma,
+              Varmat_cor = m.r$fitZ$Varmat_cor
+            )
+          }
+
           m.r
         },
         error = function(e) {
