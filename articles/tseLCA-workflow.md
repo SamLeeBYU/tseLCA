@@ -1442,6 +1442,6 @@ sessionInfo()
 #> [49] bslib_0.12.0       pillar_1.11.1      later_1.4.8        glue_1.8.1        
 #> [53] Rcpp_1.1.2         systemfonts_1.3.2  haven_2.5.5        xfun_0.60         
 #> [57] tibble_3.3.1       tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0 
-#> [61] knitr_1.51         xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.31    
+#> [61] knitr_1.51         xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.32    
 #> [65] clustMixType_0.5-2 compiler_4.6.1     questionr_0.8.2
 ```
