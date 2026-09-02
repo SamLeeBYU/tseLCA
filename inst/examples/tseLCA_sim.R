@@ -34,13 +34,13 @@
 #   pak::pak("SamLeeBYU/tseLCA")
 # }
 
-library(tseLCA)
+devtools::load_all() #library(tseLCA)
 
 ###################################################
 ### generate all simulation conditions
 ###################################################
 
-output.dir <- tempdir() #"tseLCA_output/simulation"
+output.dir <- "tseLCA_output/simulation2" #tempdir() #
 dataset_path <- file.path(output.dir, "sim_datasets.rds")
 
 if (!dir.exists(output.dir)) {
@@ -437,21 +437,15 @@ sim.cond <- function(
       # ---- modal BCH --------------------------------------------------------------------------------------------------------------
       if (run_bch) {
         fit <- tryCatch(
-          {
-            if (cond[2] != "low") {
-              three_step(
-                data = dat.s,
-                Y.names = paste0("Y", 1:6),
-                Zp.names = "Zp",
-                n_classes = 3,
-                step1 = m.s,
-                use.bch = TRUE,
-                em.maxIter = 500L
-              )
-            } else {
-              NULL
-            }
-          },
+          three_step(
+            data = dat.s,
+            Y.names = paste0("Y", 1:6),
+            Zp.names = "Zp",
+            n_classes = 3,
+            step1 = m.s,
+            use.bch = TRUE,
+            em.maxIter = 500L
+          ),
           error = function(e) {
             # cli::cli_alert_warning(sprintf("rep %d: %s", s, conditionMessage(e)))
             NULL
@@ -491,22 +485,16 @@ sim.cond <- function(
       # ---- proportional BCH --------------------------------------------------------------------------------------------------
       if (run_bch) {
         fit <- tryCatch(
-          {
-            if (cond[2] != "low") {
-              three_step(
-                data = dat.s,
-                Y.names = paste0("Y", 1:6),
-                Zp.names = "Zp",
-                n_classes = 3,
-                step1 = m.s,
-                use.modal.assignment = FALSE,
-                use.bch = TRUE,
-                em.maxIter = 500L
-              )
-            } else {
-              NULL
-            }
-          },
+          three_step(
+            data = dat.s,
+            Y.names = paste0("Y", 1:6),
+            Zp.names = "Zp",
+            n_classes = 3,
+            step1 = m.s,
+            use.modal.assignment = FALSE,
+            use.bch = TRUE,
+            em.maxIter = 500L
+          ),
           error = function(e) {
             # cli::cli_alert_warning(sprintf("rep %d: %s", s, conditionMessage(e)))
             NULL
@@ -601,21 +589,15 @@ sim.cond <- function(
       # ---- modal BCH --------------------------------------------------------------------------------------------------------------
       if (run_bch) {
         fit <- tryCatch(
-          {
-            if (cond[2] != "low") {
-              three_step(
-                data = dat.s,
-                Y.names = paste0("Y", 1:6),
-                Zo.name = "Zo",
-                n_classes = 3,
-                step1 = m.s,
-                use.bch = TRUE,
-                em.maxIter = 500L
-              )
-            } else {
-              NULL
-            }
-          },
+          three_step(
+            data = dat.s,
+            Y.names = paste0("Y", 1:6),
+            Zo.name = "Zo",
+            n_classes = 3,
+            step1 = m.s,
+            use.bch = TRUE,
+            em.maxIter = 500L
+          ),
           error = function(e) {
             #cli::cli_alert_warning("rep {s} modal.bch: {conditionMessage(e)}")
             NULL
@@ -656,22 +638,16 @@ sim.cond <- function(
       # ---- proportional BCH --------------------------------------------------------------------------------------------------
       if (run_bch) {
         fit <- tryCatch(
-          {
-            if (cond[2] != "low") {
-              three_step(
-                data = dat.s,
-                Y.names = paste0("Y", 1:6),
-                Zo.name = "Zo",
-                n_classes = 3,
-                step1 = m.s,
-                use.modal.assignment = FALSE,
-                use.bch = TRUE,
-                em.maxIter = 500L
-              )
-            } else {
-              NULL
-            }
-          },
+          three_step(
+            data = dat.s,
+            Y.names = paste0("Y", 1:6),
+            Zo.name = "Zo",
+            n_classes = 3,
+            step1 = m.s,
+            use.modal.assignment = FALSE,
+            use.bch = TRUE,
+            em.maxIter = 500L
+          ),
           error = function(e) {
             #cli::cli_alert_warning("rep {s} prop.bch: {conditionMessage(e)}")
             NULL
@@ -838,7 +814,7 @@ run_simulation <- function(
     length(unique(conditions$separation)),
     length(unique(conditions$n))
   ))
-  cli::cli_alert_info(sprintf("Parallelising over %d core(s)", n_cores))
+  cli::cli_alert_info(sprintf("Parallelizing over %d core(s)", n_cores))
 
   # ---- Run conditions in parallel --------------------------------------------
   if (n_cores > 1L && requireNamespace("parallel", quietly = TRUE)) {
@@ -960,15 +936,9 @@ sim.results <- run_simulation(
   # Pass e.g. list(c("covariate", "low", "500")) to test only specific
   # conditions; leave NULL to test every condition in measurement_models.
   conditions = list(
-    c("distal", "low", "500"),
-    c("distal", "low", "1000"),
-    c("distal", "low", "2000"),
-    c("distal", "mid", "500"),
-    c("distal", "mid", "1000"),
-    c("distal", "mid", "2000"),
-    c("distal", "high", "500"),
-    c("distal", "high", "1000"),
-    c("distal", "high", "2000")
+    c("covariate", "low", "500"),
+    c("covariate", "low", "1000"),
+    c("covariate", "low", "2000")
   ),
   # Which bias-adjustment(s) to run: c("ml", "bch") (default, both), "ml"
   # only, or "bch" only.

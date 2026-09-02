@@ -564,7 +564,7 @@ test_that("three_step gaussian distal returns tseLCA_distal with named estimates
   expect_equal(dim(fit$three_step_vcov), c(3L, 3L))
   expect_equal(rownames(fit$three_step_vcov), paste0("mu_C", 1:3))
   expect_true(all(sqrt(diag(fit$three_step_vcov)) > 0))
-  #True mu = (-1, 0, 1) up to class labelling; range should span negatives and positives
+  #True mu = (-1, 0, 1) up to class labeling; range should span negatives and positives
   expect_true(min(fit$three_step) < 0)
   expect_true(max(fit$three_step) > 0)
 })
@@ -1041,7 +1041,7 @@ test_that("three_step uses all Y rows when Z has missing values", {
 #              intercepts b0 = (0, 2.3446, -3.6554)
 #   Distal:    class means mu = (-1, 1, 0)
 #
-# Class labels from the estimator may differ from the DGP labelling.
+# Class labels from the estimator may differ from the DGP labeling.
 # We align by Zp slope sign: most negative slope -> DGP class 2 (b=-1),
 # most positive -> DGP class 3 (b=+1).
 
