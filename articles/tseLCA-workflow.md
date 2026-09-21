@@ -1405,7 +1405,7 @@ improved three-step approaches. *Political Analysis*, 18(4), 450–469.
 sessionInfo()
 #> R version 4.6.1 (2026-06-24)
 #> Platform: x86_64-pc-linux-gnu
-#> Running under: Ubuntu 24.04.4 LTS
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
 #> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
@@ -1424,24 +1424,24 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] tseLCA_1.1.0.9000
+#> [1] tseLCA_1.1.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] sass_0.4.10        generics_0.1.4     tidyr_1.3.2        pracma_2.4.6      
 #>  [5] hms_1.1.4          digest_0.6.39      magrittr_2.0.5     RColorBrewer_1.1-3
 #>  [9] evaluate_1.0.5     iterators_1.0.14   fastmap_1.2.0      foreach_1.5.2     
-#> [13] jsonlite_2.0.0     mclust_6.1.3       combinat_0.0-8     promises_1.5.0    
+#> [13] jsonlite_2.0.0     mclust_6.1.3       combinat_0.0-9     promises_1.5.0    
 #> [17] purrr_1.2.2        codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4   
 #> [21] cli_3.6.6          shiny_1.14.0       labelled_2.16.1    rlang_1.3.0       
 #> [25] withr_3.0.3        cachem_1.1.0       yaml_2.3.12        otel_0.2.0        
 #> [29] klaR_1.7-4         parallel_4.6.1     tools_4.6.1        dplyr_1.2.1       
 #> [33] httpuv_1.6.17      forcats_1.0.1      vctrs_0.7.3        R6_2.6.1          
-#> [37] mime_0.13          lifecycle_1.0.5    multilevLCA_2.1.5  tictoc_1.2.1      
+#> [37] mime_0.13          lifecycle_1.0.5    multilevLCA_2.1.6  tictoc_1.2.1      
 #> [41] fs_2.1.0           MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2   
 #> [45] ragg_1.5.2         pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1     
 #> [49] bslib_0.12.0       pillar_1.11.1      later_1.4.8        glue_1.8.1        
-#> [53] Rcpp_1.1.2         systemfonts_1.3.2  haven_2.5.5        xfun_0.60         
+#> [53] Rcpp_1.1.2         systemfonts_1.3.2  haven_2.5.5        xfun_0.61         
 #> [57] tibble_3.3.1       tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0 
-#> [61] knitr_1.51         xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.32    
+#> [61] knitr_1.52         xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.32    
 #> [65] clustMixType_0.5-2 compiler_4.6.1     questionr_0.8.2
 ```

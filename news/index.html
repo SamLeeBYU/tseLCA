@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,7 +37,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.1.0" id="tselca-110-development-version">tseLCA 1.1.0 (development version)<a class="anchor" aria-label="anchor" href="#tselca-110-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.1.0" id="tselca-110">tseLCA 1.1.0<a class="anchor" aria-label="anchor" href="#tselca-110"></a></h2><p class="text-muted">CRAN release: 2026-09-20</p>
 <div class="section level3">
 <h3 id="externally-supplied-step-starting-values-1-1-0">Externally supplied Step-1 starting values<a class="anchor" aria-label="anchor" href="#externally-supplied-step-starting-values-1-1-0"></a></h3>
 <ul><li>Added <code><a href="../reference/lca_step1_startval.html">lca_step1_startval()</a></code>, a wrapper around <code><a href="https://rdrr.io/pkg/multilevLCA/man/multiLCA.html" class="external-link">multilevLCA::multiLCA()</a></code> that injects a user-supplied Step-1 starting value and sets <code>kmea = FALSE</code>, bypassing <code>multilevLCA</code>’s default deterministic k-means-on-principal- components initialization. This addresses feedback that the default initialization can consistently converge to a local optimum of the Step-1 log-likelihood on some datasets. <code>startval</code> accepts either:
