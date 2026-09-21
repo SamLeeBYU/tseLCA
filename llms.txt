@@ -46,7 +46,8 @@ distributions, including:
 
 - Continuous outcomes (Gaussian)
 - Count outcomes (Poisson)
-- Binary outcomes (Bernoulli).
+- Binary outcomes (Bernoulli)
+- Nominal categorical outcomes (multinomial).
 
 ### Automated Model Optimization
 
