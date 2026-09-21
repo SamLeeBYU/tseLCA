@@ -40,7 +40,7 @@ devtools::load_all() #library(tseLCA)
 ### generate all simulation conditions
 ###################################################
 
-output.dir <- "tseLCA_output/simulation2" #tempdir() #
+output.dir <- tempdir()
 dataset_path <- file.path(output.dir, "sim_datasets.rds")
 
 if (!dir.exists(output.dir)) {
@@ -76,15 +76,13 @@ if (!file.exists(dataset_path)) {
 # consistent results for multiLCA in the presence of low-separation.
 #
 # The alternative would be to call multiLCA a bunch of times and take the model
-# with the best log-likelihood (which is what we already do for the measurement model,
-# via three_step()'s n_init argument -- see below).
+# with the best log-likelihood (which is what we already do for the measurement model with three_step()'s n_init argument -- see below).
 # This saves some computation time.
 #
 # We fit the Step-1 measurement model with n_init = 20L independent
 # uniform-random-classification restarts (bypassing multilevLCA's default
 # k-means-on-principal-components initialization) and keep the
-# highest-log-likelihood fit, rather than the old iter.measurement/R2.threshold
-# mechanism, which only restarts (from k-means) when entropy R^2 already looks
+# highest-log-likelihood fit when entropy R^2 already looks
 # low. Restarting unconditionally guards against Step-1 settling into a local
 # optimum of the log-likelihood that nonetheless has acceptable entropy --
 # especially relevant in the low-separation conditions here.
@@ -270,10 +268,7 @@ if (length(pending) == 0L) {
           # scenario, the two-step gamma coefficients plus their vcov (needed
           # for the two_step estimator's SE). Everything else multilevLCA
           # attaches (mU, Varmat, SEs, mScore, ...) is diagnostic-only here,
-          # and fit0$call in particular is dead weight: multilevLCA builds it
-          # via do.call() with the literal data.frame, so it embeds a full
-          # copy of the replicate's data (several MB at n=500, more at larger
-          # n) for no downstream use.
+          # and fit0$call in particular is dead weight
           m.r$fit0 <- list(vPi = m.r$fit0$vPi, mPhi = m.r$fit0$mPhi)
           if (!is.null(m.r$fitZ)) {
             m.r$fitZ <- list(
@@ -954,14 +949,10 @@ sim.results <- run_simulation(
   measurement_models,
   # Pass e.g. list(c("covariate", "low", "500")) to test only specific
   # conditions; leave NULL to test every condition in measurement_models.
-  conditions = list(
-    c("covariate", "low", "500"),
-    c("covariate", "low", "1000"),
-    c("covariate", "low", "2000")
-  ),
+  conditions = NULL,
   # Which bias-adjustment(s) to run: c("ml", "bch") (default, both), "ml"
   # only, or "bch" only.
-  methods = c("bch"),
+  methods = c("ml", "bch"),
   out_path = file.path(output.dir, "sim_results.rds"),
   #Just run sequentially
   n_cores = 1

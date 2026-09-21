@@ -251,7 +251,7 @@ run_measurement_fit_startval <- function(
 
   if (verbose && !is.null(fit$R2entr) && fit$R2entr < 0.70) {
     warning(sprintf(
-      "Measurement model fit from `startval` has low entropy R² (%.3f). Because `startval` is user-supplied, tseLCA does not run automatic random restarts on top of it; inspect the external solution if this is unexpected.",
+      "Measurement model fit from `startval` has low entropy R\u00b2 (%.3f). Because `startval` is user-supplied, tseLCA does not run automatic random restarts on top of it; inspect the external solution if this is unexpected.",
       fit$R2entr
     ))
   }

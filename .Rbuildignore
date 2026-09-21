@@ -1,4 +1,5 @@
 ^tseLCA\.Rproj$
+^\.claude$
 ^\.Rproj\.user$
 ^_pkgdown\.yml$
 ^docs$
@@ -8,3 +9,4 @@
 tseLCA_output/
 ^CRAN-SUBMISSION$
 R/step1-local-maxima-ex\.R\.txt$
+Rplots.pdf

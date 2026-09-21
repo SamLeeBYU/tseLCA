@@ -2239,10 +2239,6 @@ three_step <- function(
   fitZ <- s1$fitZ
 
   # -- Multinomial distal outcome: encode categories as 1..C -------------------
-  # Done before clean_data() so Zo_mat comes out purely numeric regardless of
-  # whether Zo.name was supplied as a factor, character, or integer column
-  # (as.matrix() on a single-factor-column data.frame would otherwise coerce
-  # to character labels, not codes).
   zo_levels <- NULL
   if (!is.null(Zo.name) && family == "multinomial") {
     zo_factor <- factor(data[[Zo.name]])
@@ -3877,7 +3873,6 @@ omnibus_test.tseLCA_distal <- function(object, ...) {
 #' @rdname omnibus_test
 #' @export
 omnibus_test.tseLCA_both <- function(object, ...) {
-  # tseLCA_both stores n_classes/family at the top level, not inside $distal.
   .omnibus_test_distal(object$distal, object$n_classes, object$family)
 }
 

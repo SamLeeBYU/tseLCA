@@ -1,4 +1,4 @@
-# tseLCA 1.1.0 (development version)
+# tseLCA 1.1.0
 
 ## Externally supplied Step-1 starting values
 

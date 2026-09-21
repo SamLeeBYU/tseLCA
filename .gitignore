@@ -1,6 +1,6 @@
 .Rproj.user
 data/*
-tseLCA_output/*
+tseLCA_output/server
 .Rhistory
 docs
 Rplots.pdf
