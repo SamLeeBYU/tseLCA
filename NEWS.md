@@ -51,6 +51,19 @@
   in the log-likelihood's degrees of freedom. BCH class means were
   unaffected; their log-likelihood now uses the estimated variance.
 
+- Three-step ML for distal outcomes with proportional assignment
+  (`use.modal.assignment = FALSE`) maximized the wrong likelihood. It used
+  log sum_t P(t) f(z|t) sum_s w_s P(W=s|t), with the assignment weights inside
+  the log. The likelihood of Bakk, Tekle & Vermunt (2013), for the expanded
+  data file weighted by the posterior assignment probabilities, is
+  sum_s w_s log sum_t P(t) f(z|t) P(W=s|t). The covariate model already used
+  this form. The E-step, score, Hessian/Jacobian, and Step-1/Step-2
+  uncertainty propagation now use the correct likelihood for all distal
+  families. Proportional-assignment ML distal estimates were biased away from
+  zero (e.g. class means of -1.07 and 1.06 instead of -1 and 1 at mid
+  separation). Modal-assignment fits, whose single assignment makes the two
+  forms identical, BCH, and covariate models are unchanged.
+
 ## Breaking changes
 
 - `coef()` returns a named vector whose names match `vcov()`, so

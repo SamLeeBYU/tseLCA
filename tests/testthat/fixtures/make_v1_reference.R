@@ -17,6 +17,10 @@
 #     variance sigma2 (fixed at 1 in 1.1.1). Gaussian ML distal estimates and
 #     variances, and gaussian log-likelihoods/AIC/BIC (ML and BCH), change;
 #     sigma2 is now pinned. Other families unchanged.
+#   - 2.0 Step 1d: ML distal likelihood over the expanded data (proportional
+#     assignment weights outside the log, Bakk, Tekle & Vermunt 2013).
+#     Proportional-assignment ML distal fits (dis_gauss_ml, both_ml_prop)
+#     change; modal-assignment, BCH, and covariate fits are unchanged.
 
 pkgload::load_all(".", quiet = TRUE)
 source("tests/testthat/helper-v1-reference.R")

@@ -683,11 +683,11 @@ test_that("three_step multinomial ML (simple and full) agree and full SEs are >=
   expect_true(all(se_full >= se_simple - 1e-8))
 })
 
-test_that("multinomial_ml_jacobian matches a numerical check of the estimating equation", {
-  # multinomial_ml_jacobian() is a closed-form derivation (no numerical
+test_that("distal_multinomial_jacobian matches a numerical check of the estimating equation", {
+  # distal_multinomial_jacobian() is a closed-form derivation (no numerical
   # differentiation in the package); this is a cheap regression check
   # against a numerical Jacobian computed inline, entirely independent of
-  # multinomial_ml_jacobian() itself.
+  # distal_multinomial_jacobian() itself.
   d <- make_multinomial_distal_data(600L, seed = 60L)
   # Pre-encode as integer categories, matching what three_step() itself
   # does internally before calling clean_data() -- required here since we
@@ -729,11 +729,8 @@ test_that("multinomial_ml_jacobian matches a numerical check of the estimating e
   }
 
   pi_hat <- matrix(theta_hat, nrow = 3L, ncol = C)
-  pzx_mat <- t(pi_hat[, Y_cat, drop = FALSE])
-  ae <- w.is %*% pwx
-  q_i <- rowSums(pi_adj * pzx_mat * ae)
-  r_it <- pi_adj * pzx_mat * ae / q_i
-  Jac_analytic <- multinomial_ml_jacobian(pi_hat, r_it, Y_cat)
+  rec <- distal_records(log(t(pi_hat[, Y_cat, drop = FALSE])), pi_adj, pwx)
+  Jac_analytic <- distal_multinomial_jacobian(pi_hat, rec, w.is, Y_cat)
 
   expect_equal(Jac_analytic, Jac_numeric, tolerance = 1e-4)
 })

@@ -497,137 +497,6 @@ lca_step2 <- function(
   )
 }
 
-#' Analytic Hessian of the ML distal outcome negative log-likelihood
-#'
-#' Computes the T x T observed-data Hessian matrix at the current parameter
-#' vector beta = (mu_1, ..., mu_T) for Gaussian, Poisson, or Binomial families,
-#' accounting for classification error with the p.wx_mat correction matrix.
-#' Used by lca_step3.distal to invert for the naive SE estimate.
-#' @noRd
-ml_hessian_distal <- function(
-  beta,
-  p.zx,
-  pi_mat,
-  pwx,
-  Zo_cc,
-  w.is_cc,
-  iT,
-  family,
-  sigma2 = 1
-) {
-  N <- length(Zo_cc)
-  pzx <- exp(pmax(p.zx(beta), -500))
-  assignment_errors <- w.is_cc %*% pwx # N x T: P(W=s_i|X=t)
-  q_i <- rowSums(pi_mat * pzx * assignment_errors) # N x 1
-  r_it <- pi_mat * pzx * assignment_errors / q_i # N x T
-
-  if (family == "gaussian") {
-    mu <- beta
-    g_it <- outer(Zo_cc, mu, "-") / sigma2 # N x T
-    h_t <- rep(-1 / sigma2, iT)
-  } else if (family == "poisson") {
-    mu <- exp(beta)
-    g_it <- outer(Zo_cc, rep(1, iT)) -
-      outer(rep(1, N), mu) # N x T: z_i - mu_t
-    h_t <- -mu
-  } else if (family == "binomial") {
-    mu <- 1 / (1 + exp(-beta))
-    g_it <- outer(Zo_cc, rep(1, iT)) -
-      outer(rep(1, N), mu) # N x T: z_i - mu_t
-    h_t <- -mu * (1 - mu)
-  }
-  diag_term <- colSums(r_it) * h_t + colSums(r_it * g_it^2 * (1 - r_it))
-
-  rg <- r_it * g_it # N x T
-  off_diag <- -crossprod(rg) # T x T
-
-  H_pos <- off_diag
-  diag(H_pos) <- diag_term
-
-  -H_pos # Hessian of neg.ll
-}
-
-#' Gaussian distal outcome, three-step ML: per-class unit scores
-#'
-#' For theta = (mu_1, ..., mu_T, sigma2), returns the derivatives of
-#' log f(z_i | X = t) = -(z_i - mu_t)^2 / (2 sigma2) - log(2 pi sigma2) / 2:
-#' a list of T + 1 matrices (N x T), element p holding
-#' d log f(z_i | t) / d theta_p for every (i, t). Mean parameter t only moves
-#' class t; sigma2 moves every class.
-#' @noRd
-unit_scores_distal_gaussian <- function(theta, Zo_cc, iT) {
-  mu <- theta[1:iT]
-  sigma2 <- theta[iT + 1L]
-  resid <- outer(Zo_cc, mu, "-")
-  G <- lapply(seq_len(iT), function(t) {
-    g <- matrix(0, length(Zo_cc), iT)
-    g[, t] <- resid[, t] / sigma2
-    g
-  })
-  G[[iT + 1L]] <- (resid^2 - sigma2) / (2 * sigma2^2)
-  G
-}
-
-#' Posterior weights r_it = P(X = t | W_i, Zo_i) of the three-step ML
-#' distal model at theta (gaussian family)
-#' @noRd
-posterior_distal_gaussian <- function(theta, pi_mat, pwx, Zo_cc, w.is_cc, iT) {
-  mu <- theta[1:iT]
-  sigma2 <- theta[iT + 1L]
-  resid <- outer(Zo_cc, mu, "-")
-  log_f <- -0.5 * resid^2 / sigma2 - 0.5 * log(2 * pi * sigma2)
-  a <- pi_mat * (w.is_cc %*% pwx) * exp(log_f - apply(log_f, 1L, max))
-  a / rowSums(a)
-}
-
-#' Case-wise score (N x (T + 1)) of the three-step ML gaussian distal
-#' log-likelihood sum_i log sum_t pi_it P(W_i | t) f(z_i | t)
-#' @noRd
-ml_score_distal_gaussian <- function(theta, pi_mat, pwx, Zo_cc, w.is_cc, iT) {
-  r <- posterior_distal_gaussian(theta, pi_mat, pwx, Zo_cc, w.is_cc, iT)
-  G <- unit_scores_distal_gaussian(theta, Zo_cc, iT)
-  vapply(G, function(g) rowSums(r * g), numeric(length(Zo_cc)))
-}
-
-#' Hessian of the negative three-step ML gaussian distal log-likelihood with
-#' respect to theta = (mu_1, ..., mu_T, sigma2)
-#'
-#' For a mixture term l_i = log sum_t a_it f_it,
-#'   d2 l_i = sum_t r_it (d2 log f_it + d log f_it d log f_it') - s_i s_i',
-#' with s_i = sum_t r_it d log f_it and
-#'   d2 log f / d mu_t2        = -1 / sigma2
-#'   d2 log f / d mu_t d sigma2 = -(z - mu_t) / sigma2^2
-#'   d2 log f / d sigma2^2     = 1 / (2 sigma2^2) - (z - mu_t)^2 / sigma2^3.
-#' @noRd
-ml_hessian_distal_gaussian <- function(theta, pi_mat, pwx, Zo_cc, w.is_cc, iT) {
-  sigma2 <- theta[iT + 1L]
-  resid <- outer(Zo_cc, theta[1:iT], "-")
-  r <- posterior_distal_gaussian(theta, pi_mat, pwx, Zo_cc, w.is_cc, iT)
-  G <- unit_scores_distal_gaussian(theta, Zo_cc, iT)
-  P <- iT + 1L
-
-  H <- matrix(0, P, P)
-  # sum_i sum_t r_it d log f_it d log f_it'
-  for (p in seq_len(P)) {
-    for (q in p:P) {
-      H[p, q] <- H[q, p] <- sum(r * G[[p]] * G[[q]])
-    }
-  }
-  # sum_i sum_t r_it d2 log f_it
-  d2_mumu <- -colSums(r) / sigma2
-  d2_musig <- -colSums(r * resid) / sigma2^2
-  d2_sigsig <- sum(r * (1 / (2 * sigma2^2) - resid^2 / sigma2^3))
-  H[cbind(seq_len(iT), seq_len(iT))] <- H[cbind(seq_len(iT), seq_len(iT))] + d2_mumu
-  H[seq_len(iT), P] <- H[seq_len(iT), P] + d2_musig
-  H[P, seq_len(iT)] <- H[P, seq_len(iT)] + d2_musig
-  H[P, P] <- H[P, P] + d2_sigsig
-  # - sum_i s_i s_i'
-  S <- vapply(G, function(g) rowSums(r * g), numeric(length(Zo_cc)))
-  H <- H - crossprod(S)
-
-  -H
-}
-
 #' BCH classification-error-corrected weight matrix
 #'
 #' Computes the N x T BCH weight matrix used throughout the BCH estimators:
@@ -657,69 +526,6 @@ pinv_rank <- function(M, tol = sqrt(.Machine$double.eps)) {
   list(pinv = s$v %*% (d_inv * t(s$u)), rank = sum(keep))
 }
 
-#' Analytic Jacobian of the multinomial-distal ML estimating equation
-#'
-#' Computes the closed-form Jacobian `d Psi / d theta` of the ML estimating
-#' equation `Psi_(t,c)(theta) = sum_i r_it(theta) * (1(y_i=c) - theta_tc)`
-#' used by `lca_step3.distal.multinomial()`, where `r_it(theta) = A_it *
-#' theta_{t,y_i} / q_i(theta)`, `A_it = pi_adj[i,t] * ae[i,t]` (fixed given
-#' Step 1/2), and `q_i(theta) = sum_t A_it * theta_{t,y_i}`. The bread is
-#' `-`this Jacobian.
-#'
-#' By the quotient rule, `d r_it / d theta_{t',c'}` is nonzero only when
-#' `c' = y_i` (only entries `theta_{., y_i}` affect case `i`'s density), and
-#' equals `1(y_i=c') * [1(t=t') * A_it/q_i - r_it * A_i,t'/q_i]`; using
-#' `A_it/q_i = r_it / theta_{t,y_i}` throughout gives, after restricting the
-#' sum over `i` to cases observed in category `c'` (where `theta_{t,y_i} =
-#' theta_{t,c'}` is a constant, not indexed by `i`):
-#' \preformatted{
-#'   d Psi_(t,c) / d theta_{t',c'} =
-#'     [1(c'=c) - theta_tc] * [1(t=t') * R1(t,c') - R2(t,t',c')] / theta_{t',c'}
-#'     - 1(t=t') * 1(c=c') * sum_i r_it
-#'   R1(t,c')    = sum_{i: y_i=c'} r_it
-#'   R2(t,t',c') = sum_{i: y_i=c'} r_it * r_i,t'
-#' }
-#' Cross-checked against central-difference numerical differentiation of
-#' `Psi` (matched to 1e-6, the expected step-size error of that method) and,
-#' downstream, against `optim()` and independent from-scratch
-#' reimplementations of the full sandwich (see the "full propagation" tests
-#' in test-integration.R).
-#' @noRd
-multinomial_ml_jacobian <- function(pi_hat, r_it, Y_cat) {
-  iT <- nrow(pi_hat)
-  C <- ncol(pi_hat)
-  n_par <- iT * C
-  Jac <- matrix(0, n_par, n_par)
-  r_colsums <- colSums(r_it)
-
-  for (cprime in seq_len(C)) {
-    idx_i <- which(Y_cat == cprime)
-    if (length(idx_i) == 0L) {
-      next
-    }
-    r_sub <- r_it[idx_i, , drop = FALSE]
-    R1 <- colSums(r_sub) # length iT
-    R2 <- crossprod(r_sub) # iT x iT
-
-    for (tprime in seq_len(iT)) {
-      col_idx <- (cprime - 1L) * iT + tprime
-      denom <- pmax(pi_hat[tprime, cprime], 1e-300)
-
-      for (c in seq_len(C)) {
-        indicator_cc <- as.numeric(cprime == c)
-        for (t in seq_len(iT)) {
-          row_idx <- (c - 1L) * iT + t
-          bracket <- (if (t == tprime) R1[t] else 0) - R2[t, tprime]
-          term1 <- (indicator_cc - pi_hat[t, c]) * bracket / denom
-          term2 <- if (t == tprime && c == cprime) r_colsums[t] else 0
-          Jac[row_idx, col_idx] <- term1 - term2
-        }
-      }
-    }
-  }
-  Jac
-}
-
 #' Step 3 (distal, multinomial): estimate class-conditional category
 #' probabilities for a nominal categorical distal outcome
 #'
@@ -738,14 +544,10 @@ multinomial_ml_jacobian <- function(pi_hat, r_it, Y_cat) {
 #' proportion solves, `s_i,(t,c) = w_it * (1(y_i=c) - pi_hat[t,c])`; its
 #' bread is exactly `diag(1 / colSums(w_it))` (repeated across categories)
 #' since `w_it` does not depend on `pi_hat`. For ML, the same estimating
-#' equation is used with `w_it` replaced by the (theta-dependent) posterior
-#' responsibility `r_it`; its bread is `solve(-Jacobian(Psi))`, with the
-#' Jacobian given in closed form by `multinomial_ml_jacobian()`. That
-#' Jacobian reduces to the BCH bread when responsibility is held fixed and
-#' otherwise captures the same "observed = complete - missing information"
-#' correction `ml_hessian_distal()` derives by hand for the other families
-#' (both conventions were checked to give identical `H.3.inv` formulas on
-#' the existing gaussian/binomial BCH and ML paths).
+#' equation is used with `w_it` replaced by the (theta-dependent) E-step
+#' weights `lambda_it = sum_s w_is R_ist` of the expanded-data likelihood
+#' (R/distal-ml.R); its bread is `solve(-Jacobian(Psi))`, with the Jacobian
+#' given in closed form by `distal_multinomial_jacobian()`.
 #' @noRd
 lca_step3.distal.multinomial <- function(
   Y_cat,
@@ -821,19 +623,23 @@ lca_step3.distal.multinomial <- function(
     pi_hat <- pi_hat / rowSums(pi_hat)
     storage.mode(pi_hat) <- "double"
 
-    ll_prev <- -Inf
-    r_it <- NULL
-    for (iter in seq_len(em.maxIter)) {
-      pzx_mat <- t(pi_hat[, Y_cat, drop = FALSE]) # N x T: P(y_i | X = t)
-      ae <- w.is_cc %*% pwx # N x T
-      q_i <- rowSums(pi_s * pzx_mat * ae)
-      r_it <- pi_s * pzx_mat * ae / q_i
+    # Per-record posteriors (see R/distal-ml.R) at a T x C probability matrix
+    records_at <- function(pi_hat) {
+      distal_records(
+        log(pmax(t(pi_hat[, Y_cat, drop = FALSE]), 1e-300)), # N x T
+        pi_s,
+        pwx
+      )
+    }
 
-      pi_hat_new <- weighted_props(r_it)
+    ll_prev <- -Inf
+    for (iter in seq_len(em.maxIter)) {
+      rec <- records_at(pi_hat)
+      pi_hat_new <- weighted_props(distal_lambda(rec$R, w.is_cc))
       pi_hat_new <- pmax(pmin(pi_hat_new, 1 - 1e-10), 1e-10)
       pi_hat_new <- pi_hat_new / rowSums(pi_hat_new)
 
-      ll_new <- sum(log(pmax(q_i, 1e-300)))
+      ll_new <- distal_loglik(rec$logM, w.is_cc)
       if (iter > 1L && abs(ll_new - ll_prev) < covariate.tol) {
         pi_hat <- pi_hat_new
         if (verbose) {
@@ -851,22 +657,14 @@ lca_step3.distal.multinomial <- function(
       }
     }
 
-    pzx_mat <- t(pi_hat[, Y_cat, drop = FALSE])
-    ae <- w.is_cc %*% pwx
-    q_i <- rowSums(pi_s * pzx_mat * ae)
-
     three_step.score <- function(params) {
       pi_hat_p <- matrix(params, nrow = iT, ncol = C)
-      pzx_mat_p <- t(pi_hat_p[, Y_cat, drop = FALSE])
-      ae_p <- w.is_cc %*% pwx
-      q_i_p <- rowSums(pi_s * pzx_mat_p * ae_p)
-      r_it_p <- pi_s * pzx_mat_p * ae_p / q_i_p
-      score_matrix(r_it_p, pi_hat_p)
+      score_matrix(distal_lambda(records_at(pi_hat_p)$R, w.is_cc), pi_hat_p)
     }
 
     theta_hat <- as.vector(pi_hat)
-    r_it <- pi_s * pzx_mat * ae / q_i
-    Jac <- multinomial_ml_jacobian(pi_hat, r_it, Y_cat)
+    rec <- records_at(pi_hat)
+    Jac <- distal_multinomial_jacobian(pi_hat, rec, w.is_cc, Y_cat)
 
     H.3.inv <- tryCatch(
       qr.solve(-Jac),
@@ -877,7 +675,7 @@ lca_step3.distal.multinomial <- function(
     )
     res <- list(
       par = theta_hat,
-      value = -sum(log(pmax(q_i, 1e-300))),
+      value = -distal_loglik(rec$logM, w.is_cc),
       convergence = 0L
     )
   }
@@ -1042,24 +840,10 @@ lca_step3.distal <- function(
     }
 
     # ML score helper
-    score_nt_ml <- function(mu, pzx, sigma2 = 1) {
-      assignment_errors <- w.is_cc %*% pwx # N x T: P(W=s_i|X=t)
-      q_i <- rowSums(pi_s * pzx * assignment_errors) # N x 1
-
-      if (family == "gaussian") {
-        resid <- outer(Zo_cc, mu, "-")
-        pi_s * pzx * assignment_errors * resid / (q_i * sigma2)
-      } else if (family == "poisson") {
-        mu_val <- exp(mu)
-        score <- outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val)
-        pi_s * pzx * assignment_errors * score / q_i
-      } else if (family == "binomial") {
-        mu_val <- 1 / (1 + exp(-mu))
-        score <- outer(Zo_cc, rep(1, iT)) - outer(rep(1, N), mu_val)
-        pi_s * pzx * assignment_errors * score / q_i
-      }
-    }
-
+    # Three-step ML over the expanded data (R/distal-ml.R): the E-step
+    # weights lambda_it = sum_s w_is R_ist average the per-record posteriors,
+    # so proportional-assignment weights stay outside the log.
+    #
     # For the gaussian family the common within-class variance sigma2 is
     # estimated jointly with the class means (Bakk, Tekle & Vermunt 2013:
     # normal distal outcome with constant error variance). Unlike ordinary
@@ -1068,6 +852,8 @@ lca_step3.distal <- function(
     # bias the means whenever the true variance differs.
     gaussian <- family == "gaussian"
     theta_of <- function(mu, sigma2) if (gaussian) c(mu, sigma2) else mu
+    records_at <- function(theta) distal_records(p.zx(theta), pi_s, pwx)
+    derivs_at <- function(theta) distal_unit_derivs(theta, Zo_cc, iT, family)
 
     beta <- beta_init
     sigma2 <- if (gaussian) stats::var(Zo_cc) else NULL
@@ -1076,15 +862,12 @@ lca_step3.distal <- function(
 
     for (iter in seq_len(em.maxIter)) {
       theta <- theta_of(beta, sigma2)
-      pzx <- exp(pmax(p.zx(theta), -500))
-      joint <- pi_s * pzx * (w.is_cc %*% pwx)
-      w_tilde <- joint / rowSums(joint)
-      w_long <- as.vector(w_tilde)
+      lambda <- distal_lambda(records_at(theta)$R, w.is_cc)
 
-      fit <- glm(Z_long ~ X_long - 1, family = family, weights = w_long)
+      fit <- glm(Z_long ~ X_long - 1, family = family, weights = as.vector(lambda))
       beta_new <- coef(fit)
       sigma2_new <- if (gaussian) {
-        sum(w_tilde * outer(Zo_cc, beta_new, "-")^2) / sum(w_tilde)
+        sum(lambda * outer(Zo_cc, beta_new, "-")^2) / sum(lambda)
       } else {
         NULL
       }
@@ -1103,22 +886,12 @@ lca_step3.distal <- function(
     theta_hat <- theta_of(beta, sigma2)
     P <- length(theta_hat)
 
-    three_step.score <- if (gaussian) {
-      function(params) ml_score_distal_gaussian(params, pi_s, pwx, Zo_cc, w.is_cc, iT)
-    } else {
-      function(params) {
-        mu <- params[1:iT]
-        pzx <- exp(pmax(p.zx(params), -500))
-        score_nt_ml(mu, pzx, sigma2 = 1)
-      }
+    three_step.score <- function(params) {
+      distal_score(distal_lambda(records_at(params)$R, w.is_cc), derivs_at(params)$G)
     }
 
     H.3.inv <- tryCatch(
-      qr.solve(if (gaussian) {
-        ml_hessian_distal_gaussian(theta_hat, pi_s, pwx, Zo_cc, w.is_cc, iT)
-      } else {
-        ml_hessian_distal(beta, p.zx, pi_s, pwx, Zo_cc, w.is_cc, iT, family)
-      }),
+      qr.solve(distal_neg_hessian(records_at(theta_hat), w.is_cc, derivs_at(theta_hat))),
       error = function(e) {
         warning("Hessian inversion failed. SEs will be NA.")
         matrix(NA_real_, P, P)
@@ -1766,92 +1539,34 @@ lca_vcov_distal <- function(
     return(result)
   }
 
-  N <- nrow(w.is)
-  pwx <- p.wx_mat # T x T
-
-  # -- Quantities at converged mu_hat --------------------------------------------
-  pzx_mat <- exp(pmax(p.zx(mu_hat), -500)) # N x T: f(z_i|mu_t)
-  ae <- w.is %*% pwx # N x T: sum_s w_{is}*pwx[s,t]
-  q_i <- rowSums(pi_adj * pzx_mat * ae) # N: marginal density
-  r_it <- pi_adj * pzx_mat * ae / q_i # N x T: posterior r_{it}
-
-  # G[[p]][i, t] = d log f(z_i | X = t) / d theta_p. For one parameter per
-  # class, three_step.score[i, t] = r_it * g_it, so g_it = score / r_it.
-  G <- if (!is.null(unit_scores)) {
-    unit_scores(mu_hat)
-  } else {
-    g_it <- J.3 / pmax(r_it, 1e-300) # N x T
-    lapply(seq_len(iT), function(t) {
-      g <- matrix(0, N, iT)
-      g[, t] <- g_it[, t]
-      g
-    })
+  if (is.null(unit_scores)) {
+    stop("lca_vcov_distal(): `unit_scores` is required for ML uncertainty propagation.")
   }
-
-  # -- C1_mat: d/d theta2 [colSums(score_distal)]  (T x T*(T-1)) (checked with sympy) ----------------
-  # theta2 = off-diagonal log-ratios of pwx (column-softmax parameterzation).
-  # d ae_{i,t0}/d g_{s0,t0} = pwx[s0,t0] * (w_{i,s0} - ae_{i,t0})
-  # c_i = dae / ae_{i,t0}
-  # t==t0: dr_{i,t0} = r_{i,t0} * c_i * (1 - r_{i,t0})
-  # t!=t0: dr_{i,t}  = -r_{i,t} * r_{i,t0} * c_i
-  # C1[t, col] = sum_i dr_{it} * g_{it}
-
-  # C1[p, col] = sum_i sum_t dr_it * G[[p]][i, t]
-
-  n_theta2 <- iT * (iT - 1L)
-  C1_mat <- matrix(0, P, n_theta2)
-  col_idx <- 0L
-
-  for (t0 in seq_len(iT)) {
-    for (s0 in seq_len(iT)) {
-      if (s0 == t0) {
-        next
-      }
-      col_idx <- col_idx + 1L
-      v <- pwx[s0, t0]
-      dae <- v * (w.is[, s0] - ae[, t0]) # N
-      c_i <- dae / pmax(ae[, t0], 1e-300) # N
-      dr <- -r_it * r_it[, t0] * c_i # N x T, t != t0
-      dr[, t0] <- r_it[, t0] * c_i * (1 - r_it[, t0])
-      C1_mat[, col_idx] <- vapply(G, function(g) sum(dr * g), numeric(1L))
+  # Per-record posteriors and unit scores at the estimates; the Step-1 (C1)
+  # and Step-2 (C_mat) cross-derivatives are derived in R/distal-ml.R.
+  rec <- distal_records(p.zx(mu_hat), pi_adj, p.wx_mat)
+  cross <- distal_cross_derivs(
+    rec,
+    w.is,
+    p.wx_mat,
+    unit_scores(mu_hat),
+    Z_mat = if (!is.null(s3.par) && !is.null(p.xz.cov) && !is.null(Z_mat_cov)) {
+      Z_mat_cov
+    } else {
+      NULL
     }
-  }
+  )
 
-  step1.uncertainty <- C1_mat %*%
+  step1.uncertainty <- cross$C1 %*%
     s2$J.2 %*%
     Sigma.1 %*%
     t(s2$J.2) %*%
-    t(C1_mat)
+    t(cross$C1)
 
-  # -- C_mat: d/d gamma [colSums(score_distal)]  (T x Q*(T-1)) (checked with sympy) -----------------
-  # gamma enters through pi_adj = p.xz(gamma); pwx_adj treated as fixed.
-  # m_{it} = pzx_{it}*ae_i[t] / q_i   (proportional to r_{it}/pi_{it})
-  # A_{i,l} = pi_{i,l+1} * (m_{i,l+1} - sum_t' m_{it'}*pi_{it'})
-  # d r_{it}/d gamma_{q,l} = z_{iq} * [m_{it}*pi_{it}*(I(t==l+1)-pi_{i,l+1}) - r_{it}*A_{il}]
-  # C_mat[t, l*Q+q] = sum_i score_mu[it] * z_{iq} * (above)
-
-  step2.uncertainty <- matrix(0, P, P)
-
-  if (!is.null(s3.par) && !is.null(p.xz.cov) && !is.null(Z_mat_cov)) {
-    Q_cov <- ncol(Z_mat_cov)
-    C_mat <- matrix(0, P, (iT - 1L) * Q_cov)
-
-    m_it <- pzx_mat * ae / q_i # N x T
-    pi_cov <- p.xz.cov(matrix(s3.par, ncol = iT - 1L)) # N x T
-    m_pi_sum <- rowSums(m_it * pi_cov) # N: sum_t m_{it}*pi_{it}
-
-    for (l in seq_len(iT - 1L)) {
-      A_il <- pi_cov[, l + 1L] * (m_it[, l + 1L] - m_pi_sum) # N
-      # inner[, t] = d r_it / d gamma_{., l} (without the z_iq factor)
-      inner <- m_it * pi_cov * (-pi_cov[, l + 1L]) - r_it * A_il # N x T
-      inner[, l + 1L] <- inner[, l + 1L] + m_it[, l + 1L] * pi_cov[, l + 1L]
-      idx_l <- ((l - 1L) * Q_cov + 1L):(l * Q_cov)
-      for (p in seq_len(P)) {
-        C_mat[p, idx_l] <- colSums(rowSums(G[[p]] * inner) * Z_mat_cov)
-      }
-    }
-
-    step2.uncertainty <- C_mat %*% Sigma.3 %*% t(C_mat)
+  step2.uncertainty <- if (!is.null(cross$C_mat)) {
+    cross$C_mat %*% Sigma.3 %*% t(cross$C_mat)
+  } else {
+    matrix(0, P, P)
   }
 
   result <- H.3.inv %*%
@@ -1909,75 +1624,30 @@ lca_vcov_distal_multinomial <- function(
     return(H.3.inv %*% meat %*% H.3.inv)
   }
 
-  pwx <- p.wx_mat
   pi_hat <- matrix(theta_hat, nrow = iT, ncol = C)
-
-  pzx_mat <- t(pi_hat[, Y_cat, drop = FALSE]) # N x T
-  ae <- w.is %*% pwx # N x T
-  q_i <- rowSums(pi_adj * pzx_mat * ae)
-  r_it <- pi_adj * pzx_mat * ae / q_i # N x T
-
-  r_it_expanded <- r_it[, rep(seq_len(iT), times = C), drop = FALSE] # N x (iT*C)
-  g_it <- J.3 / pmax(r_it_expanded, 1e-300)
-
   n_par <- iT * C
-
-  # -- C1_mat: Step-1 measurement-uncertainty propagation (see lca_vcov_distal()) ----
-  n_theta2 <- iT * (iT - 1L)
-  C1_mat <- matrix(0, n_par, n_theta2)
-  col_idx <- 0L
-
-  for (t0 in seq_len(iT)) {
-    for (s0 in seq_len(iT)) {
-      if (s0 == t0) {
-        next
-      }
-      col_idx <- col_idx + 1L
-      v <- pwx[s0, t0]
-      dae <- v * (w.is[, s0] - ae[, t0])
-      c_i <- dae / pmax(ae[, t0], 1e-300)
-      for (tk in seq_len(n_par)) {
-        t <- ((tk - 1L) %% iT) + 1L
-        dr <- if (t == t0) {
-          r_it[, t0] * c_i * (1 - r_it[, t0])
-        } else {
-          -r_it[, t] * r_it[, t0] * c_i
-        }
-        C1_mat[tk, col_idx] <- sum(dr * g_it[, tk])
-      }
+  rec <- distal_records(
+    log(pmax(t(pi_hat[, Y_cat, drop = FALSE]), 1e-300)),
+    pi_adj,
+    p.wx_mat
+  )
+  cross <- distal_cross_derivs(
+    rec,
+    w.is,
+    p.wx_mat,
+    distal_unit_derivs(theta_hat, Y_cat, iT, "multinomial", C = C)$G,
+    Z_mat = if (!is.null(s3.par) && !is.null(p.xz.cov) && !is.null(Z_mat_cov)) {
+      Z_mat_cov
+    } else {
+      NULL
     }
-  }
+  )
 
-  step1.uncertainty <- C1_mat %*% s2$J.2 %*% Sigma.1 %*% t(s2$J.2) %*% t(C1_mat)
-
-  # -- C_mat: Step-3 covariate-uncertainty propagation (see lca_vcov_distal()) -------
-  # gamma enters through pi_adj = p.xz.cov(gamma); pwx (and hence r_it's
-  # dependence on it) is treated as fixed, exactly as in lca_vcov_distal().
-  step2.uncertainty <- matrix(0, n_par, n_par)
-
-  if (!is.null(s3.par) && !is.null(p.xz.cov) && !is.null(Z_mat_cov)) {
-    Q_cov <- ncol(Z_mat_cov)
-    C_mat <- matrix(0, n_par, (iT - 1L) * Q_cov)
-
-    m_it <- pzx_mat * ae / q_i # N x T (== r_it / pi_adj)
-    pi_cov <- p.xz.cov(matrix(s3.par, ncol = iT - 1L)) # N x T
-    m_pi_sum <- rowSums(m_it * pi_cov) # N: sum_t m_{it}*pi_{it}
-
-    for (l in seq_len(iT - 1L)) {
-      A_il <- pi_cov[, l + 1L] * (m_it[, l + 1L] - m_pi_sum) # N
-      idx_l <- ((l - 1L) * Q_cov + 1L):(l * Q_cov)
-      for (tk in seq_len(n_par)) {
-        t <- ((tk - 1L) %% iT) + 1L
-        delta_tl <- as.integer(t == l + 1L)
-        inner_t <- m_it[, t] *
-          pi_cov[, t] *
-          (delta_tl - pi_cov[, l + 1L]) -
-          r_it[, t] * A_il # N
-        C_mat[tk, idx_l] <- colSums(g_it[, tk] * inner_t * Z_mat_cov)
-      }
-    }
-
-    step2.uncertainty <- C_mat %*% Sigma.3 %*% t(C_mat)
+  step1.uncertainty <- cross$C1 %*% s2$J.2 %*% Sigma.1 %*% t(s2$J.2) %*% t(cross$C1)
+  step2.uncertainty <- if (!is.null(cross$C_mat)) {
+    cross$C_mat %*% Sigma.3 %*% t(cross$C_mat)
+  } else {
+    matrix(0, n_par, n_par)
   }
 
   H.3.inv %*% (meat + step1.uncertainty + step2.uncertainty) %*% H.3.inv
@@ -3099,11 +2769,11 @@ three_step <- function(
           -sum(w.it * p.zx(params))
         }
       } else {
+        # expanded-data log-likelihood, sum_i sum_s w_is log M_is
+        # (R/distal-ml.R)
         neg.ll <- function(params) {
-          pzx <- exp(pmax(p.zx(params), -500))
-          # classification error probabilities for each person's assignment
-          assignment_errors <- res_adj$w.is %*% res_adj$p.wx_mat
-          -sum(log(rowSums(pi_adj * pzx * assignment_errors)))
+          rec <- distal_records(p.zx(params), pi_adj, res_adj$p.wx_mat)
+          -distal_loglik(rec$logM, res_adj$w.is)
         }
       }
 
@@ -3175,10 +2845,8 @@ three_step <- function(
         iT = iT,
         use.simple.cov = use.simple.cov,
         use.bch = use.bch,
-        unit_scores = if (gaussian_ml) {
-          function(theta) unit_scores_distal_gaussian(theta, Zo_mat[, 1L], iT)
-        } else {
-          NULL
+        unit_scores = function(theta) {
+          distal_unit_derivs(theta, Zo_mat[, 1L], iT, family)$G
         }
       )
 
