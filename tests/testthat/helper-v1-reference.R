@@ -4,8 +4,9 @@
 # (tests/testthat/fixtures/v1_reference.rds), used by
 # test-regression-v1.R and by fixtures/make_v1_reference.R.
 #
-# The fixtures pin the numbers produced by tseLCA 1.1.1 so the 2.0 refactor
-# can be checked to leave estimates unchanged. `v1_fit()` builds each fit and
+# The fixtures pin the numbers produced by tseLCA 1.1.1, as amended by the
+# documented 2.0 bug fixes (see the header of fixtures/make_v1_reference.R),
+# so the 2.0 refactor can be checked to leave estimates unchanged. `v1_fit()` builds each fit and
 # `v1_extract()` pulls out the numbers to compare. When the object structure
 # changes during the refactor, update these two functions, not the fixtures.
 # Fixtures are regenerated only for deliberate numerical changes (bug fixes),
@@ -24,6 +25,23 @@ v1_poly_data <- function(n = 600L, seed = 11L) {
   )
   Y <- sapply(1:6, function(j) {
     vapply(X, function(x) sample(0:2, 1L, prob = probs[[x]]), integer(1))
+  })
+  colnames(Y) <- v1_items
+  d <- data.frame(Y, X = X)
+  d$Zp <- sample(1:5, n, replace = TRUE)
+  d
+}
+
+# Synthetic polytomous data where some item-response probabilities sit at
+# multilevLCA's 1e-5 floor (category 2 of Y1/Y2 is never chosen in class 1).
+v1_sparse_poly_data <- function(n = 800L, seed = 3L) {
+  set.seed(seed)
+  X <- sample.int(3L, n, replace = TRUE)
+  sparse <- list(c(.8, .2, 0), c(.2, .6, .2), c(.1, .2, .7))
+  dense <- list(c(.6, .3, .1), c(.1, .6, .3), c(.3, .1, .6))
+  Y <- sapply(1:6, function(j) {
+    pr <- if (j <= 2L) sparse else dense
+    vapply(X, function(x) sample(0:2, 1L, prob = pr[[x]]), integer(1))
   })
   colnames(Y) <- v1_items
   d <- data.frame(Y, X = X)
@@ -52,7 +70,7 @@ v1_data <- function() {
   for (j in 1:6) miss[[v1_items[j]]][M[, j]] <- NA
   list(
     cov_high = cov_high, cov_mid = cov_mid, dis = dis, both = both,
-    miss = miss, poly = v1_poly_data()
+    miss = miss, poly = v1_poly_data(), sparse = v1_sparse_poly_data()
   )
 }
 
@@ -70,6 +88,8 @@ v1_configs <- list(
   cov_twostep_vcov   = list(data = "cov_high", args = list(Zp.names = "Zp", get.twostep.vcov = TRUE)),
   cov_fiml           = list(data = "miss", args = list(Zp.names = "Zp", incomplete = TRUE, use.two.step = FALSE)),
   cov_poly           = list(data = "poly", args = list(Zp.names = "Zp", use.simple.cov = TRUE)),
+  cov_poly_corrected = list(data = "poly", args = list(Zp.names = "Zp")),
+  cov_sparse         = list(data = "sparse", args = list(Zp.names = "Zp")),
   dis_gauss_ml       = list(data = "dis", args = list(Zo.name = "Zo", use.modal.assignment = FALSE)),
   dis_gauss_bch      = list(data = "dis", args = list(Zo.name = "Zo", use.bch = TRUE)),
   dis_poisson        = list(data = "dis", args = list(Zo.name = "Zpois", family = "poisson")),
@@ -92,16 +112,15 @@ v1_fit <- function(cfg, data_list) {
   suppressWarnings(suppressMessages(do.call(three_step, args)))
 }
 
-# Extract the numbers to compare. Measurement-only `posteriors` and
-# `classifications` are deliberately excluded: in v1.1.1 they are not in
-# data-row order (bug fixed in 2.0; see NEWS.md).
+# Extract the numbers to compare.
 v1_extract <- function(fit) {
   strip <- function(x) if (is.null(x)) NULL else unclass(x)
   if (inherits(fit, "tseLCA_measurement")) {
     f0 <- fit$measurement_model$fit0
     return(list(
       llik = fit$llik, AIC = fit$AIC, BIC = fit$BIC, R2entr = fit$R2entr,
-      vPi = unname(f0$vPi), mPhi = unname(f0$mPhi)
+      vPi = unname(f0$vPi), mPhi = unname(f0$mPhi),
+      posteriors = unname(fit$posteriors)
     ))
   }
   structural <- function(x) {

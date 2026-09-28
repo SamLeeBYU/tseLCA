@@ -15,6 +15,29 @@
 - `plot()` now works on distal-outcome fits. These objects previously did
   not store the measurement model, so the plot failed.
 
+## Bug fixes
+
+- For measurement-only fits, `posterior()` / `$posteriors` and `classes()` /
+  `$classifications` were not in data-row order. They were read from
+  multilevLCA's `fit0$mU`, which is sorted by response pattern. They are now
+  computed from the Step-1 data in data-row order. Code that used
+  `$classifications` from a measurement model, e.g. as `startval`, received
+  mismatched rows in 1.1.x.
+- Polytomous indicators were decoded from `fit0$mU` as category 0 whenever
+  the measurement model was fitted with listwise deletion
+  (`incomplete = FALSE`). The Step-1 information matrix was then singular, so
+  `vcov()` of a polytomous measurement model and the Step-1-corrected Step-3
+  variance (`use.simple.cov = FALSE`) were entirely `NA`. The measurement
+  model now stores its Step-1 sample in data-row order and uses it for all
+  of these computations. The fallback decoder for objects without stored data
+  handles both of multilevLCA's codings.
+- Parameter counts behind the reported AIC/BIC were wrong. Covariate models
+  counted one-hot indicator columns rather than free item parameters (e.g.
+  40 instead of 22 for six binary items, three classes, one covariate).
+  Combined covariate + distal models counted class sizes instead of the
+  covariate coefficients. Reported `AIC`/`BIC` for these models change;
+  estimates and standard errors do not.
+
 ## Breaking changes
 
 - `coef()` returns a named vector whose names match `vcov()`, so

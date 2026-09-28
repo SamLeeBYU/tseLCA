@@ -6,6 +6,13 @@
 #
 # Originally generated from tseLCA 1.1.1 (commit b65d12d). Regenerate only for
 # deliberate numerical changes, and document each one in NEWS.md.
+#
+# Regenerations:
+#   - 2.0 Step 1b bug fixes. AIC/BIC of covariate and combined models change
+#     (corrected parameter counts). Measurement-only posteriors are now
+#     pinned (previously excluded: not in data-row order). New configurations
+#     cov_poly_corrected and cov_sparse pin polytomous corrected SEs (NA in
+#     1.1.1). All estimates and variances otherwise unchanged vs 1.1.1.
 
 pkgload::load_all(".", quiet = TRUE)
 source("tests/testthat/helper-v1-reference.R")

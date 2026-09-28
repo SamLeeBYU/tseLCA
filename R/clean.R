@@ -529,10 +529,21 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
       mY_int[, h] <- as.integer(mY_raw[, col])
       col <- col + 1L
     } else {
-      # K_h one-hot columns
+      # K_h columns per item. multilevLCA codes these two ways: one-hot
+      # (1 = observed category, all NA = missing item) on its FIML path, and
+      # 0 for the other categories with NA marking the observed category on
+      # its listwise path. Decode both.
       block <- mY_raw[, col:(col + K_h - 1L), drop = FALSE]
       mY_int[, h] <- apply(block, 1L, \(row) {
-        if (all(is.na(row))) NA_integer_ else which.max(row) - 1L
+        if (all(is.na(row))) {
+          NA_integer_
+        } else if (any(row == 1, na.rm = TRUE)) {
+          which(row == 1)[1L] - 1L
+        } else if (sum(is.na(row)) == 1L) {
+          which(is.na(row)) - 1L
+        } else {
+          NA_integer_
+        }
       })
       col <- col + K_h
     }

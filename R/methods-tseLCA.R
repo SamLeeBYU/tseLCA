@@ -424,26 +424,19 @@ vcov.tseLCA_structural <- function(
 #' @rdname vcov.tseLCA_structural
 #' @export
 vcov.tseLCA_measurement <- function(object, boundary.tol = 1e-2, ...) {
-  fit0 <- object$measurement_model$fit0
-  ivItemcat <- object$measurement_model$ivItemcat
-  if (is.null(fit0$mU)) {
+  s1 <- object$measurement_model
+  ref_idx <- if (!is.null(s1$ref_idx)) s1$ref_idx else 1L
+  sample1 <- step1_sample(s1, s1$ivItemcat, ref_idx)
+  if (is.null(sample1)) {
     stop(
-      "The Step-1 fit has no individual-level data (fit0$mU); ",
-      "re-estimate the measurement model to obtain its vcov.",
+      "The measurement model does not carry its Step-1 data; ",
+      "re-estimate it to obtain its vcov.",
       call. = FALSE
     )
   }
-  # Reorder u_post columns to match a rebased fit0.
-  ref_idx <- object$measurement_model$ref_idx
-  if (is.null(ref_idx)) ref_idx <- 1L
-  step1_Y <- extract_Y_from_mU(fit0, ivItemcat)
-  if (ref_idx != 1L) {
-    iT <- length(fit0$vPi)
-    step1_Y$u_post <- step1_Y$u_post[, c(ref_idx, seq_len(iT)[-ref_idx]), drop = FALSE]
-  }
   V <- lca_indiv_varmat(
-    step1_Y$Y.exp, step1_Y$mDesign, fit0, step1_Y$ivItemcat,
-    boundary.tol = boundary.tol, u_post = step1_Y$u_post
+    sample1$Y.exp, sample1$mDesign, s1$fit0, sample1$ivItemcat,
+    boundary.tol = boundary.tol, u_post = sample1$u_post
   )$Varmat
   nms <- names(.measurement_coef(object))
   dimnames(V) <- list(nms, nms)

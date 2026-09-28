@@ -182,6 +182,55 @@ compute_posteriors <- function(Y, mDesign, theta1, ivItemcat, iT) {
   exp(log_joint - log_denom)
 }
 
+#' Posterior class probabilities from a Step-1 fit, in data-row order
+#'
+#' P(X = t | Y_i) for the rows of `Y.exp` (one-hot expanded, as returned by
+#' clean_data()), using the item-response probabilities and class sizes in
+#' `fit0` as they stand (i.e. after any rebase permutation).
+#' @noRd
+step1_posteriors <- function(Y.exp, mDesign, fit0, ivItemcat) {
+  log_joint <- sweep(
+    log_lik_matrix(Y.exp, expand_Phi(fit0$mPhi, ivItemcat), mDesign),
+    2L,
+    log(fit0$vPi),
+    "+"
+  )
+  row_max <- apply(log_joint, 1L, max)
+  post <- exp(log_joint - (row_max + log(rowSums(exp(log_joint - row_max)))))
+  colnames(post) <- paste0("C", seq_len(ncol(post)))
+  post
+}
+
+#' Step-1 sample used for the measurement-model variance (Sigma.1)
+#'
+#' Prefers the data stored with the measurement model at fit time
+#' (`s1$Y.exp`, `s1$mDesign.exp`, in data-row order). Falls back to decoding
+#' multilevLCA's `fit0$mU` for measurement models that do not carry their
+#' data (e.g. raw lca_step1() output); `mU` is sorted by response pattern,
+#' which is harmless here because its rows are used consistently. Returns
+#' NULL if neither is available.
+#' @noRd
+step1_sample <- function(s1, ivItemcat, ref_idx = 1L) {
+  if (!is.null(s1$Y.exp)) {
+    return(list(
+      Y.exp = s1$Y.exp,
+      mDesign = s1$mDesign.exp,
+      ivItemcat = ivItemcat,
+      u_post = NULL
+    ))
+  }
+  fit0 <- s1$fit0
+  if (is.null(fit0$mU)) {
+    return(NULL)
+  }
+  raw <- extract_Y_from_mU(fit0, ivItemcat)
+  if (ref_idx != 1L) {
+    iT <- length(fit0$vPi)
+    raw$u_post <- raw$u_post[, c(ref_idx, seq_len(iT)[-ref_idx]), drop = FALSE]
+  }
+  raw
+}
+
 #' Compute classification-error matrix with optional covariate-adjusted prior
 #'
 #' Returns posteriors, modal/soft assignments (w.is), and the T x T
@@ -2276,19 +2325,20 @@ three_step <- function(
   s1$Y.names <- Y.names
   s1$ivItemcat <- ivItemcat
   s1$ref_idx <- ref_idx
+  # Keep the Step-1 sample, in data-row order, with the measurement model: it
+  # is needed for posteriors and for the Step-1 variance when this model is
+  # reused (possibly on another sample) through `step1`. multilevLCA's
+  # fit0$mU is not used as the data source because it is sorted by response
+  # pattern and its polytomous coding differs between the listwise and FIML
+  # paths.
+  if (is.null(step1)) {
+    s1$Y.exp <- Y.obs
+    s1$mDesign.exp <- mDesign
+  }
 
   # -- Early return if no covariates -------------------------------------------
   if (is.null(Zp.names) && is.null(Zo.name)) {
-    # Extract posteriors and modal classifications from fit0$mU
-    mU_posts <- if (!is.null(s1$fit0$mU)) {
-      K_total <- sum(ivItemcat)
-      n_mU_Y <- sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))
-      posts <- s1$fit0$mU[, (n_mU_Y + 1L):(n_mU_Y + n_classes), drop = FALSE]
-      mode(posts) <- "double"
-      posts
-    } else {
-      NULL
-    }
+    posts <- step1_posteriors(Y.obs, mDesign, s1$fit0, ivItemcat)
     return(structure(
       list(
         measurement_model = s1,
@@ -2299,8 +2349,8 @@ three_step <- function(
         n_classes = n_classes,
         npar = (n_classes - 1L) + n_classes * sum(ivItemcat - 1L),
         nobs = nrow(Y.obs),
-        posteriors = mU_posts,
-        classifications = if (!is.null(mU_posts)) max.col(mU_posts) else NULL
+        posteriors = posts,
+        classifications = max.col(posts)
       ),
       class = c("tseLCA_measurement", "tseLCA")
     ))
@@ -2401,17 +2451,15 @@ three_step <- function(
     NULL
   }
 
-  # Extract Step-1 sample inputs for Sigma.1. Uses fit0$mU when available.
-  step1_Y <- if (!is.null(fit0$mU)) {
-    raw <- extract_Y_from_mU(fit0, ivItemcat)
-    if (ref_idx != 1L) {
-      T_ <- n_classes
-      ord <- c(ref_idx, seq_len(T_)[-ref_idx])
-      raw$u_post <- raw$u_post[, ord, drop = FALSE]
-    }
-    raw
-  } else {
-    list(Y.exp = Y.obs, mDesign = mDesign, ivItemcat = ivItemcat, u_post = NULL)
+  # Step-1 sample inputs for Sigma.1.
+  step1_Y <- step1_sample(s1, ivItemcat, ref_idx)
+  if (is.null(step1_Y)) {
+    step1_Y <- list(
+      Y.exp = Y.obs,
+      mDesign = mDesign,
+      ivItemcat = ivItemcat,
+      u_post = NULL
+    )
   }
 
   #For covariate estimation
@@ -2575,7 +2623,9 @@ three_step <- function(
       coefs,
       mDes_cc
     )
-    total.k <- (iT * ncol(Y.obs)) + (Q * (iT - 1))
+    # Free parameters of the joint model: item-response log-ratios plus the
+    # multinomial-logit coefficients (whose intercepts replace class sizes).
+    total.k <- iT * sum(ivItemcat - 1L) + Q * (iT - 1L)
     total.AIC <- -2 * total.llik + 2 * total.k
     total.BIC <- -2 * total.llik + total.k * log(nrow(Y_cc))
 
@@ -2879,8 +2929,10 @@ three_step <- function(
         mDesign = mDes_dis
       )
 
-      n_meas_params <- (iT - 1L) +
-        sum(ifelse(ivItemcat == 2L, 1L, ivItemcat - 1L)) * iT
+      # Class sizes, or the covariate logit coefficients when the class
+      # prior depends on covariates (combined model), plus item parameters.
+      n_meas_params <- (if (!is.null(Z_mat)) ncol(Z_mat) * (iT - 1L) else iT - 1L) +
+        sum(ivItemcat - 1L) * iT
       n_distal_params <- iT * (C - 1L) # T x (C-1) free simplex parameters
       total.k.dis <- n_meas_params + n_distal_params
       N_dis <- length(keep_step3_Zo)
@@ -3039,8 +3091,10 @@ three_step <- function(
         mDesign = mDes_dis
       )
 
-      n_meas_params <- (iT - 1L) +
-        sum(ifelse(ivItemcat == 2L, 1L, ivItemcat - 1L)) * iT
+      # Class sizes, or the covariate logit coefficients when the class
+      # prior depends on covariates (combined model), plus item parameters.
+      n_meas_params <- (if (!is.null(Z_mat)) ncol(Z_mat) * (iT - 1L) else iT - 1L) +
+        sum(ivItemcat - 1L) * iT
       n_distal_params <- iT
       total.k.dis <- n_meas_params + n_distal_params
       N_dis <- length(keep_step3_Zo)
