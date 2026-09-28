@@ -1,5 +1,18 @@
 # tseLCA 2.0.0 (development)
 
+## Step-wise interface
+
+- New `tse_lca()` fits the Step-1 measurement model from a formula,
+  `cbind(Y1, Y2, ...) ~ 1`, with a `control = tse_control()` argument.
+  With several numbers of classes (e.g. `nclass = 1:6`) it returns a
+  `tseLCA_select` class-enumeration table: log-likelihood, parameters, AIC,
+  BIC, SABIC, entropy R^2, and smallest class. The table has `print()`,
+  `plot()`, `as.data.frame()`, `best_model()`, and `[[` methods. The
+  one-class (independence) model is fitted in closed form.
+- `predict()` for measurement models gives posterior class probabilities
+  (or modal classes) for new data, coded with the model's stored
+  categories. `fitted()`, `formula()`, and `update()` also work.
+
 ## Classes and methods
 
 - Fitted objects now share a class hierarchy. `tseLCA` is the parent class of

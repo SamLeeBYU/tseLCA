@@ -258,6 +258,9 @@ nobs.tseLCA <- function(object, ...) .fit_part(object)$nobs
 #' plot(fit_m, clab = c("Low", "Mixed", "High"))
 #' @export
 plot.tseLCA <- function(x, horiz = FALSE, clab = NULL, ...) {
+  if (x$n_classes < 2L) {
+    stop("Item-response profile plots need at least two classes.", call. = FALSE)
+  }
   plot(x$measurement_model$fit0, horiz = horiz, clab = clab, ...)
   invisible(NULL)
 }
@@ -283,7 +286,7 @@ plot.tseLCA <- function(x, horiz = FALSE, clab = NULL, ...) {
   first <- cumsum(c(1L, utils::head(ivItemcat, -1L)))
 
   est <- log(vPi[-1L] / vPi[1L])
-  nms <- paste0("log(pi_", cls[-1L], "/pi_", cls[1L], ")")
+  nms <- if (iT > 1L) paste0("log(pi_", cls[-1L], "/pi_", cls[1L], ")") else character(0)
   for (t in seq_len(iT)) {
     for (h in seq_len(H)) {
       for (k in seq_len(ivItemcat[h] - 1L)) {
@@ -424,6 +427,9 @@ vcov.tseLCA_structural <- function(
 #' @rdname vcov.tseLCA_structural
 #' @export
 vcov.tseLCA_measurement <- function(object, boundary.tol = 1e-2, ...) {
+  if (object$n_classes == 1L) {
+    return(.independence_vcov(object))
+  }
   s1 <- object$measurement_model
   ref_idx <- if (!is.null(s1$ref_idx)) s1$ref_idx else 1L
   sample1 <- step1_sample(s1, s1$ivItemcat, ref_idx)
@@ -438,6 +444,41 @@ vcov.tseLCA_measurement <- function(object, boundary.tol = 1e-2, ...) {
     sample1$Y.exp, sample1$mDesign, s1$fit0, sample1$ivItemcat,
     boundary.tol = boundary.tol, u_post = sample1$u_post
   )$Varmat
+  nms <- names(.measurement_coef(object))
+  dimnames(V) <- list(nms, nms)
+  attr(V, "parameterization") <- "log-ratio (unconstrained); NOT probabilities"
+  V
+}
+
+#' Variance of the one-class (independence) model's log-ratio parameters
+#'
+#' Item by item, the multinomial variance of log(p_k / p_0), k = 1..K-1, from
+#' the n_h rows where the item is observed:
+#' (diag(1 / p_1..p_{K-1}) + 1 / p_0) / n_h.
+#' @noRd
+.independence_vcov <- function(object) {
+  s1 <- object$measurement_model
+  ivItemcat <- s1$ivItemcat
+  Y <- s1$Y.exp
+  M <- if (!is.null(s1$mDesign.exp)) s1$mDesign.exp else matrix(1, nrow(Y), ncol(Y))
+  counts <- colSums(Y * M)
+  blocks <- list()
+  at <- 0L
+  for (h in seq_along(ivItemcat)) {
+    idx <- at + seq_len(ivItemcat[h])
+    n_h <- sum(counts[idx])
+    p <- counts[idx] / n_h
+    blocks[[h]] <- (diag(1 / p[-1L], ivItemcat[h] - 1L) + 1 / p[1L]) / n_h
+    at <- at + ivItemcat[h]
+  }
+  P <- sum(ivItemcat - 1L)
+  V <- matrix(0, P, P)
+  at <- 0L
+  for (b in blocks) {
+    idx <- at + seq_len(nrow(b))
+    V[idx, idx] <- b
+    at <- at + nrow(b)
+  }
   nms <- names(.measurement_coef(object))
   dimnames(V) <- list(nms, nms)
   attr(V, "parameterization") <- "log-ratio (unconstrained); NOT probabilities"
@@ -591,7 +632,7 @@ summary.tseLCA_measurement <- function(object, ...) {
     x$n_classes, as.numeric(x$logLik), attr(x$logLik, "df"), x$AIC, x$BIC,
     attr(x$logLik, "nobs")
   ))
-  if (!is.null(x$R2entr)) cat(sprintf("  Entropy R\u00b2: %.4f\n", x$R2entr))
+  if (!is.null(x$R2entr) && !is.na(x$R2entr)) cat(sprintf("  Entropy R\u00b2: %.4f\n", x$R2entr))
 }
 
 #' @rdname summary.tseLCA_structural
