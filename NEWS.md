@@ -64,6 +64,10 @@
   separation). Modal-assignment fits, whose single assignment makes the two
   forms identical, BCH, and covariate models are unchanged.
 
+- Covariate models with `include.intercept = FALSE` failed with a
+  "length of 'dimnames'" error. The coefficient rows were always labeled
+  with an `Intercept` row.
+
 ## Breaking changes
 
 - `coef()` returns a named vector whose names match `vcov()`, so

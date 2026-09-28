@@ -566,3 +566,45 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
     u_post = u_post
   )
 }
+
+#' Prepare the data for three_step()
+#'
+#' Encodes a multinomial distal outcome as 1..C (keeping its levels), then
+#' runs clean_data(). Returns clean_data()'s output plus `data` (with the
+#' encoded outcome), `zo_levels`, `Y.names`, `Zp.names`, and `Zo.name`.
+#' @noRd
+.prepare_data <- function(data, Y.names, Zp.names, Zo.name, family, opts) {
+  zo_levels <- NULL
+  if (!is.null(Zo.name) && family == "multinomial") {
+    zo_factor <- factor(data[[Zo.name]])
+    zo_levels <- levels(zo_factor)
+    if (length(zo_levels) < 2L) {
+      stop(
+        "`Zo.name` must have at least 2 distinct categories for ",
+        "family = \"multinomial\".",
+        call. = FALSE
+      )
+    }
+    data[[Zo.name]] <- as.integer(zo_factor)
+  }
+
+  cd <- clean_data(
+    data = data,
+    Y.names = Y.names,
+    Zp.names = Zp.names,
+    Zo.name = Zo.name,
+    incomplete = opts$incomplete,
+    include.intercept = opts$include.intercept,
+    verbose = opts$verbose
+  )
+  c(
+    cd,
+    list(
+      data = data,
+      zo_levels = zo_levels,
+      Y.names = Y.names,
+      Zp.names = Zp.names,
+      Zo.name = Zo.name
+    )
+  )
+}

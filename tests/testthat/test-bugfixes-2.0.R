@@ -128,3 +128,14 @@ test_that("parameter counts behind logLik/AIC/BIC", {
   expect_equal(AIC(fit), -2 * fit$llik + 2 * 22)
   expect_equal(BIC(fit), -2 * fit$llik + 22 * log(nobs(fit)))
 })
+
+test_that("covariate models without an intercept can be fitted", {
+  # 1.1.1 labeled the coefficient rows c("Intercept", Zp.names) regardless of
+  # include.intercept and failed with a dimnames error.
+  d <- generate_data(300L, "high", "covariate", seed = 1L)
+  set.seed(1L)
+  f <- three_step(d, v1_items, 3L, Zp.names = "Zp",
+                  include.intercept = FALSE, use.simple.cov = TRUE)
+  expect_equal(dimnames(coef(f, matrix = TRUE)), list("Zp", c("C2", "C3")))
+  expect_equal(names(coef(f)), rownames(vcov(f)))
+})

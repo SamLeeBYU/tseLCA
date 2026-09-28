@@ -279,3 +279,70 @@ lca_step2 <- function(
 bch_weight_matrix <- function(w.is, pwx) {
   w.is %*% t(qr.solve(pwx))
 }
+
+#' Restrict Step-2 output to the rows used by one Step-3 model
+#'
+#' Step 2 is estimated on every row with indicator data; each Step-3 model
+#' uses only the rows where its structural variables are observed. `rows`
+#' indexes those rows within the Step-2 sample. The Step-2 Jacobian (J.2)
+#' is recomputed on the subset when uncertainty propagation needs it.
+#' @noRd
+.subset_step2 <- function(s2, rows, dat, iT) {
+  J.2 <- if (!is.null(s2$compute_J_unc)) {
+    Y_sub <- dat$Y.obs[rows, , drop = FALSE]
+    mDes_sub <- if (!is.null(dat$mDesign)) {
+      dat$mDesign[rows, , drop = FALSE]
+    } else {
+      matrix(1L, nrow(Y_sub), ncol(Y_sub))
+    }
+    s2$compute_J_unc(
+      s2$p.xy[rows, , drop = FALSE],
+      Y_sub,
+      mDes_sub,
+      s2$theta1,
+      dat$ivItemcat,
+      iT
+    )
+  } else {
+    NULL
+  }
+
+  list(
+    theta1 = s2$theta1,
+    theta2 = s2$theta2,
+    p.wx_mat = s2$p.wx_mat,
+    gamma_vec_to_pwx = s2$gamma_vec_to_pwx,
+    theta2_from_theta1 = s2$theta2_from_theta1,
+    J.2 = J.2,
+    w.is = s2$w.is[rows, , drop = FALSE],
+    post = if (!is.null(s2$post)) s2$post[rows, , drop = FALSE] else NULL
+  )
+}
+
+#' Step 2 for three_step(): classification
+#'
+#' Posterior class probabilities, assignment weights, and the
+#' classification-error matrix on the Step-2 sample, plus their restrictions
+#' to the covariate-model (`$cov`) and distal-model (`$dis`) rows.
+#' @noRd
+.step2 <- function(dat, fit0, n_classes, opts) {
+  s2 <- lca_step2(
+    dat$Y.obs,
+    fit0,
+    n_classes,
+    opts$use.modal.assignment,
+    opts$boundary.tol,
+    opts$use.simple.cov || opts$use.bch,
+    ivItemcat = dat$ivItemcat,
+    mDesign = dat$mDesign
+  )
+  list(
+    all = s2,
+    cov = if (!is.null(dat$Z_mat)) {
+      .subset_step2(s2, dat$keep_step3_Z_in_Y, dat, n_classes)
+    },
+    dis = if (!is.null(dat$Zo_mat)) {
+      .subset_step2(s2, dat$keep_step3_Zo_in_Y, dat, n_classes)
+    }
+  )
+}

@@ -51,3 +51,106 @@ step1_sample <- function(s1, ivItemcat, ref_idx = 1L) {
   }
   raw
 }
+
+#' Step 1 for three_step(): the measurement model
+#'
+#' Uses a pre-fitted measurement model (`step1`: a tseLCA object or raw
+#' lca_step1() output), rebased so that class `ref_idx` is the reference, or
+#' fits one. When covariates are modeled and `opts$use.two.step` is TRUE,
+#' also attaches two-step starting values (`$fitZ`) with the measurement
+#' parameters held fixed.
+#' @noRd
+.fit_step1 <- function(data, Y.names, n_classes, Zp.names, step1, ref_idx, opts) {
+  if (!is.null(step1)) {
+    # Normalize: accept raw lca_step1() list or any tseLCA object
+    s1 <- if (inherits(step1, "tseLCA")) step1$measurement_model else step1
+    # Apply rebase permutation so the desired reference class is column 1.
+    s1$fit0 <- permute_fit0_classes(s1$fit0, ref_idx)
+    if (!is.null(s1$fitZ)) {
+      s1$fitZ <- normalize_fitZ_names(s1$fitZ, n_classes = n_classes)
+      s1$fitZ <- permute_fitZ_classes(s1$fitZ, ref_idx)
+    }
+  } else {
+    s1 <- lca_step1(
+      data,
+      Y.names,
+      n_classes,
+      Zp.names,
+      opts$maxIter.measurement,
+      opts$measurement.tol,
+      opts$covariate.tol,
+      opts$iter.measurement,
+      opts$R2.threshold,
+      opts$get.twostep.vcov,
+      incomplete = opts$incomplete,
+      include.intercept = opts$include.intercept,
+      rebase = opts$rebase,
+      startval = opts$startval,
+      n_init = opts$n_init,
+      verbose = opts$verbose
+    )
+  }
+
+  # Two-step coefficients with Step 1 held fixed, when not already computed
+  # (e.g. when step1 was passed in from a measurement-only fit).
+  if (opts$use.two.step && is.null(s1$fitZ) && !is.null(Zp.names)) {
+    s1$fitZ <- fitZ_from_fit0(
+      fit0 = s1$fit0,
+      data = data,
+      Y.names = Y.names,
+      Zp.names = Zp.names,
+      tol = opts$covariate.tol,
+      maxIter = opts$em.maxIter,
+      incomplete = opts$incomplete,
+      include.intercept = opts$include.intercept,
+      rebase = opts$rebase,
+      verbose = opts$verbose
+    )
+  }
+  s1
+}
+
+#' Attach the prepared Step-1 sample and bookkeeping to a measurement model
+#'
+#' The Step-1 sample is kept in data-row order: it is needed for posteriors
+#' and for the Step-1 variance when the model is reused (possibly on another
+#' sample) through `step1`. multilevLCA's fit0$mU is not used as the data
+#' source because it is sorted by response pattern and its polytomous coding
+#' differs between the listwise and FIML paths. A pre-fitted model keeps the
+#' sample it was estimated on.
+#' @noRd
+.attach_step1_data <- function(s1, dat, ref_idx, fitted_here) {
+  s1$Y.names <- dat$Y.names
+  s1$ivItemcat <- dat$ivItemcat
+  s1$ref_idx <- ref_idx
+  if (fitted_here) {
+    s1$Y.exp <- dat$Y.obs
+    s1$mDesign.exp <- dat$mDesign
+  }
+  s1
+}
+
+#' Step-1 variance matrix (Sigma.1) of a measurement model
+#'
+#' Computed on the Step-1 sample stored with the model (step1_sample()),
+#' falling back to the current sample.
+#' @noRd
+.step1_varmat <- function(s1, dat, ref_idx, boundary.tol) {
+  sample1 <- step1_sample(s1, dat$ivItemcat, ref_idx)
+  if (is.null(sample1)) {
+    sample1 <- list(
+      Y.exp = dat$Y.obs,
+      mDesign = dat$mDesign,
+      ivItemcat = dat$ivItemcat,
+      u_post = NULL
+    )
+  }
+  lca_indiv_varmat(
+    sample1$Y.exp,
+    sample1$mDesign,
+    s1$fit0,
+    sample1$ivItemcat,
+    boundary.tol = boundary.tol,
+    u_post = sample1$u_post
+  )$Varmat
+}

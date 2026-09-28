@@ -389,3 +389,341 @@ lca_step3.distal <- function(
     three_step.score = three_step.score
   ))
 }
+
+#' Step 3 for three_step(): distal outcome model
+#'
+#' Class-specific distal outcome parameters (BCH or ML) with their variance
+#' (Step-1 uncertainty propagated through `Sigma.1`, NULL for robust-only
+#' standard errors) and joint-model fit statistics. When covariates are also
+#' modeled (`cov`, the .fit_covariate() result), the class prior is the
+#' fitted P(X = t | Zp) and the covariate-model uncertainty is propagated too.
+#'
+#' @return The distal component: a list with `three_step`,
+#'   `three_step_vcov`, `three_step.llik`, `llik`, `AIC`, `BIC`, `npar`,
+#'   `nobs`, and `sigma2` (gaussian) or `zo_levels` (multinomial).
+#' @noRd
+.fit_distal <- function(dat, s1, s2, Sigma.1, cov, n_classes, family, opts) {
+  if (!(family %in% c("gaussian", "poisson", "binomial", "multinomial"))) {
+    message(
+      'Provided family is not one of "gaussian", "poisson", "binomial", nor "multinomial". Defaulting to family="gaussain".'
+    )
+  }
+  prior <- .distal_prior(dat, s1$fit0, s2$dis, cov, n_classes, opts)
+  cov_terms <- if (!is.null(cov)) {
+    list(
+      Sigma.3 = cov$Sigma.3,
+      s3.par = cov$par,
+      p.xz.cov = prior$p.xz.cov,
+      Z_mat_cov = prior$Z_mat_cov
+    )
+  } else {
+    list(Sigma.3 = NULL, s3.par = NULL, p.xz.cov = NULL, Z_mat_cov = NULL)
+  }
+  fit_fn <- if (family == "multinomial") .fit_distal_multinomial else .fit_distal_glm
+  fit_fn(dat, s1$fit0, s2$dis, prior, Sigma.1, cov_terms, n_classes, family, opts)
+}
+
+#' Class prior and assignment weights for the distal model
+#'
+#' Without covariates: the Step-1 class sizes and the Step-2 assignments. With
+#' covariates: the fitted P(X = t | Zp_i) as the prior, and assignment weights
+#' and classification errors recomputed with that covariate-adjusted prior.
+#'
+#' @return list(pi_adj = N x T prior, res_adj = list(w.is, p.wx_mat),
+#'   p.xz.cov = prior as a function of the covariate coefficients, Z_mat_cov =
+#'   covariate design on the distal rows); the last two are NULL without
+#'   covariates.
+#' @noRd
+.distal_prior <- function(dat, fit0, s2_for_dis, cov, n_classes, opts) {
+  iT <- n_classes
+  rows <- dat$keep_step3_Zo_in_Y
+  flat_prior <- matrix(fit0$vPi, nrow = length(rows), ncol = iT, byrow = TRUE)
+
+  if (is.null(cov)) {
+    return(list(
+      pi_adj = flat_prior,
+      res_adj = list(w.is = s2_for_dis$w.is, p.wx_mat = s2_for_dis$p.wx_mat),
+      p.xz.cov = NULL,
+      Z_mat_cov = NULL
+    ))
+  }
+
+  Z_mat_dis <- if (!is.null(dat$Z_mat) && length(dat$keep_step3_Zo) > 0L) {
+    Z_full <- as.matrix(dat$data[, dat$Zp.names, drop = FALSE])
+    if (opts$include.intercept) {
+      Z_full <- cbind(1, Z_full)
+      colnames(Z_full) <- c("Intercept", dat$Zp.names)
+    }
+    Z_full[dat$keep_step3_Zo, , drop = FALSE]
+  } else {
+    NULL
+  }
+
+  p.xz_dis <- NULL
+  if (!is.null(Z_mat_dis)) {
+    p.xz_dis <- function(params) {
+      eta_full <- cbind(0, Z_mat_dis %*% params)
+      row_max <- apply(eta_full, 1L, max)
+      exp_eta <- exp(eta_full - row_max)
+      exp_eta / rowSums(exp_eta)
+    }
+    pi_adj <- p.xz_dis(matrix(cov$par, ncol = iT - 1))
+  } else {
+    pi_adj <- flat_prior
+  }
+
+  res_adj <- compute_pwx_adj(
+    dat$Y.obs[rows, , drop = FALSE],
+    fit0,
+    dat$ivItemcat,
+    if (!is.null(dat$mDesign)) dat$mDesign[rows, , drop = FALSE] else NULL,
+    opts$use.modal.assignment,
+    pi_adj = pi_adj
+  )
+  list(
+    pi_adj = pi_adj,
+    res_adj = res_adj,
+    p.xz.cov = if (!is.null(p.xz_dis)) p.xz_dis else cov$p.xz,
+    Z_mat_cov = if (!is.null(Z_mat_dis)) Z_mat_dis else dat$Z_mat
+  )
+}
+
+#' Joint-model fit statistics of a distal outcome model
+#'
+#' Log-likelihood sum_i log sum_t P(X = t | Zp_i) P(Zo_i | X = t) P(Y_i | X = t)
+#' with Step-1 parameters fixed. Free parameters: class sizes (or the
+#' covariate logit coefficients, when the prior depends on covariates), item
+#' parameters, and the `n_distal_params` outcome parameters.
+#' @noRd
+.distal_fit_stats <- function(log_pZo_t, pi_adj, dat, fit0, n_classes, n_distal_params) {
+  iT <- n_classes
+  rows <- dat$keep_step3_Zo_in_Y
+  llik <- joint_log_lik_distal(
+    Y = dat$Y.obs[rows, , drop = FALSE],
+    mPhi = expand_Phi(fit0$mPhi, dat$ivItemcat),
+    log_pZo_t = log_pZo_t,
+    pi_mat = pi_adj,
+    mDesign = if (!is.null(dat$mDesign)) dat$mDesign[rows, , drop = FALSE] else NULL
+  )
+  n_meas_params <- (if (!is.null(dat$Z_mat)) ncol(dat$Z_mat) * (iT - 1L) else iT - 1L) +
+    sum(dat$ivItemcat - 1L) * iT
+  k <- n_meas_params + n_distal_params
+  n <- length(dat$keep_step3_Zo)
+  list(llik = llik, AIC = -2 * llik + 2 * k, BIC = -2 * llik + k * log(n), npar = k, nobs = n)
+}
+
+#' Distal model for a nominal outcome (family = "multinomial")
+#' @noRd
+.fit_distal_multinomial <- function(
+  dat,
+  fit0,
+  s2_for_dis,
+  prior,
+  Sigma.1,
+  cov_terms,
+  n_classes,
+  family,
+  opts
+) {
+  iT <- n_classes
+  Y_cat <- dat$Zo_mat[, 1L] # already 1..C integer-coded
+  zo_levels <- dat$zo_levels
+  C <- length(zo_levels)
+
+  s3.distal <- lca_step3.distal.multinomial(
+    Y_cat = Y_cat,
+    C = C,
+    iT = iT,
+    covariate.tol = opts$covariate.tol,
+    use.bch = opts$use.bch,
+    w.is_cc = prior$res_adj$w.is,
+    pwx = prior$res_adj$p.wx_mat,
+    em.maxIter = opts$em.maxIter,
+    vPi = fit0$vPi,
+    pi_mat = prior$pi_adj,
+    verbose = opts$verbose
+  )
+
+  V <- lca_vcov_distal_multinomial(
+    theta_hat = s3.distal$res$par,
+    three_step.score = s3.distal$three_step.score,
+    pi_adj = prior$pi_adj,
+    w.is = prior$res_adj$w.is,
+    p.wx_mat = prior$res_adj$p.wx_mat,
+    Y_cat = Y_cat,
+    C = C,
+    H.3.inv = s3.distal$H.3.inv,
+    Sigma.1 = Sigma.1,
+    s2 = s2_for_dis,
+    iT = iT,
+    use.simple.cov = opts$use.simple.cov,
+    use.bch = opts$use.bch,
+    Sigma.3 = cov_terms$Sigma.3,
+    s3.par = cov_terms$s3.par,
+    p.xz.cov = cov_terms$p.xz.cov,
+    Z_mat_cov = cov_terms$Z_mat_cov
+  )
+
+  class_labels <- paste0("C", seq_len(iT))
+  pi_hat <- matrix(s3.distal$res$par, nrow = iT, ncol = C)
+  dimnames(pi_hat) <- list(class_labels, zo_levels)
+  param_labels <- as.vector(outer(class_labels, zo_levels, paste, sep = ":"))
+  dimnames(V) <- list(param_labels, param_labels)
+
+  stats <- .distal_fit_stats(
+    log(pmax(t(pi_hat[, Y_cat, drop = FALSE]), 1e-300)),
+    prior$pi_adj,
+    dat,
+    fit0,
+    iT,
+    iT * (C - 1L) # T x (C-1) free simplex parameters
+  )
+  c(
+    list(
+      three_step = pi_hat,
+      three_step_vcov = V,
+      three_step.llik = -s3.distal$res$value
+    ),
+    stats,
+    list(zo_levels = zo_levels)
+  )
+}
+
+#' Distal model for a gaussian, poisson, or binomial outcome
+#' @noRd
+.fit_distal_glm <- function(
+  dat,
+  fit0,
+  s2_for_dis,
+  prior,
+  Sigma.1,
+  cov_terms,
+  n_classes,
+  family,
+  opts
+) {
+  iT <- n_classes
+  z <- dat$Zo_mat[, 1L]
+  pi_adj <- prior$pi_adj
+  res_adj <- prior$res_adj
+
+  # log f(z_i | X = t) as a function of the class parameters, and starting
+  # values from a GLM of Zo on the modal assignment
+  modal <- as.factor(max.col(res_adj$w.is))
+  if (family == "poisson") {
+    p.zx <- function(params) {
+      log_mu <- params[1:iT]
+      outer(z, log_mu, "*") - # N x T: z_i * log(mu_t)
+        outer(rep(1, length(z)), exp(log_mu), "*") - # N x T: mu_t
+        lgamma(z + 1L) # N x 1, recycled
+    }
+    beta_init <- coef(glm(z ~ -1 + modal, family = poisson()))
+  } else if (family == "binomial") {
+    # params: logit(mu_t)
+    p.zx <- function(params) {
+      mu <- 1 / (1 + exp(-params[1:iT]))
+      outer(z, log(mu), "*") + outer(1 - z, log(1 - mu), "*")
+    }
+    beta_init <- coef(glm(z ~ -1 + modal, family = binomial()))
+  } else {
+    # gaussian. params: class means, optionally followed by the common
+    # within-class variance sigma2 (defaults to 1 only when omitted, e.g. for
+    # the closed-form BCH means, which do not depend on it)
+    p.zx <- function(params) {
+      mu <- params[1:iT]
+      sigma2 <- if (length(params) > iT) params[iT + 1L] else 1
+      resid <- outer(z, mu, "-")
+      -0.5 * resid^2 / sigma2 - 0.5 * log(2 * pi * sigma2)
+    }
+    beta_init <- coef(lm(z ~ -1 + modal))
+  }
+
+  if (opts$use.bch) {
+    w.it <- bch_weight_matrix(res_adj$w.is, res_adj$p.wx_mat)
+    neg.ll <- function(params) -sum(w.it * p.zx(params))
+  } else {
+    # expanded-data log-likelihood, sum_i sum_s w_is log M_is (R/distal-ml.R)
+    neg.ll <- function(params) {
+      rec <- distal_records(p.zx(params), pi_adj, res_adj$p.wx_mat)
+      -distal_loglik(rec$logM, res_adj$w.is)
+    }
+  }
+
+  s3.distal <- lca_step3.distal(
+    neg.ll = neg.ll,
+    em.maxIter = opts$em.maxIter,
+    pwx = res_adj$p.wx_mat,
+    w.is_cc = res_adj$w.is,
+    Zo_cc = z,
+    use.bch = opts$use.bch,
+    covariate.tol = opts$covariate.tol,
+    iT = iT,
+    beta_init = beta_init,
+    family = family,
+    p.zx = p.zx,
+    vPi = fit0$vPi,
+    pi_mat = pi_adj
+  )
+
+  # Full Step-3 parameter vector: class parameters, plus sigma2 for the
+  # gaussian family (estimated jointly under ML; the BCH means do not depend
+  # on it and it is estimated from the weighted residuals).
+  gaussian_ml <- family == "gaussian" && !opts$use.bch
+  theta_zx <- if (family == "gaussian") {
+    c(s3.distal$res$par, s3.distal$res$sigma2)
+  } else {
+    s3.distal$res$par
+  }
+
+  V <- lca_vcov_distal(
+    mu_hat = if (gaussian_ml) theta_zx else s3.distal$res$par,
+    three_step.score = s3.distal$three_step.score,
+    pi_adj = pi_adj,
+    w.is = res_adj$w.is,
+    p.wx_mat = res_adj$p.wx_mat,
+    p.zx = p.zx,
+    family = family,
+    H.3.inv = s3.distal$H.3.inv,
+    Sigma.1 = Sigma.1,
+    s2 = s2_for_dis,
+    Sigma.3 = cov_terms$Sigma.3,
+    s3.par = cov_terms$s3.par,
+    p.xz.cov = cov_terms$p.xz.cov,
+    Z_mat_cov = cov_terms$Z_mat_cov,
+    iT = iT,
+    use.simple.cov = opts$use.simple.cov,
+    use.bch = opts$use.bch,
+    unit_scores = function(theta) distal_unit_derivs(theta, z, iT, family)$G
+  )
+
+  # Report the class parameters; keep sigma2 (and its SE under ML) separately.
+  sigma2_hat <- NULL
+  if (family == "gaussian") {
+    sigma2_hat <- c(
+      estimate = s3.distal$res$sigma2,
+      se = if (gaussian_ml) sqrt(V["sigma2", "sigma2"]) else NA_real_
+    )
+    V <- V[seq_len(iT), seq_len(iT), drop = FALSE]
+  }
+
+  par <- s3.distal$res$par
+  names(par) <- paste0("mu_C", seq_len(iT))
+
+  stats <- .distal_fit_stats(
+    p.zx(theta_zx),
+    pi_adj,
+    dat,
+    fit0,
+    iT,
+    iT + as.integer(family == "gaussian") # + sigma2
+  )
+  c(
+    list(
+      three_step = par,
+      three_step_vcov = V,
+      three_step.llik = -neg.ll(theta_zx)
+    ),
+    stats,
+    list(sigma2 = sigma2_hat)
+  )
+}

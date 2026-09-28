@@ -263,3 +263,295 @@ lca_step3 <- function(
 
 
 # -- Variance estimation (Bakk et al., 2014) ----------------------------------
+
+#' Step 3 for three_step(): covariate model
+#'
+#' Bias-adjusted multinomial logit of class on the covariates (BCH or ML),
+#' its variance with Step-1 uncertainty propagation (`Sigma.1`, NULL for
+#' robust-only standard errors), joint-model fit statistics, the optional
+#' two-step variance, and the covariate-adjusted entropy R^2.
+#'
+#' @return list(fit = the tseLCA_covariate object, s1 = the measurement
+#'   model (its `$fitZ` may be filled in by `get.twostep.vcov`), par = the
+#'   Step-3 coefficient vector, Sigma.3 = its variance, p.xz = the class-prior
+#'   function of the coefficients).
+#' @noRd
+.fit_covariate <- function(dat, s1, s2, Sigma.1, n_classes, opts) {
+  iT <- n_classes
+  Z_mat <- dat$Z_mat
+  Q <- ncol(Z_mat)
+  s2_for_cov <- s2$cov
+  fit0 <- s1$fit0
+  fitZ <- s1$fitZ
+
+  p.xz <- function(params) {
+    eta_full <- cbind(0, Z_mat %*% params)
+    row_max <- apply(eta_full, 1, max)
+    exp_eta <- exp(eta_full - row_max)
+    exp_eta / rowSums(exp_eta)
+  }
+
+  if (opts$use.bch) {
+    w.it <- bch_weight_matrix(s2_for_cov$w.is, s2_for_cov$p.wx_mat)
+
+    neg.ll <- function(params) {
+      beta.cur <- matrix(params, ncol = iT - 1)
+      -sum(w.it * log(pmax(p.xz(beta.cur), 1e-6)))
+    }
+
+    # (pwx is unused by BCH; kept so both estimators share one signature)
+    three_step.grad <- function(params, pwx = s2_for_cov$p.wx_mat) {
+      beta.cur <- matrix(params, ncol = iT - 1)
+      pi_ <- p.xz(beta.cur)
+      resid <- w.it[, -1L, drop = FALSE] -
+        pi_[, -1L, drop = FALSE] * rowSums(w.it)
+      -as.vector(t(Z_mat) %*% resid)
+    }
+
+    three_step.score <- function(params, pwx = s2_for_cov$p.wx_mat) {
+      beta.cur <- matrix(params, ncol = iT - 1)
+      pi_ <- p.xz(beta.cur)
+      resid <- w.it[, -1L, drop = FALSE] -
+        pi_[, -1L, drop = FALSE] * rowSums(w.it)
+      resid[, rep(seq_len(iT - 1L), each = Q)] *
+        Z_mat[, rep(seq_len(Q), iT - 1L)]
+    }
+  } else {
+    three_step.ll <- function(params, pwx = s2_for_cov$p.wx_mat) {
+      probs <- p.xz(matrix(params, ncol = iT - 1))
+      rowSums(s2_for_cov$w.is * log(probs %*% t(pwx)))
+    }
+
+    three_step.grad <- function(params, pwx = s2_for_cov$p.wx_mat) {
+      beta <- matrix(params, ncol = iT - 1)
+      p <- p.xz(beta)
+      q <- p %*% t(pwx)
+      r <- s2_for_cov$w.is / q
+      grad <- matrix(0, nrow = iT - 1, ncol = Q)
+      for (k in seq_len(iT - 1L)) {
+        score_i <- p[, k + 1L] *
+          (r %*% pwx[, k + 1L] - rowSums(s2_for_cov$w.is))
+        grad[k, ] <- t(Z_mat) %*% score_i
+      }
+      as.vector(t(grad))
+    }
+
+    three_step.score <- function(params, pwx = s2_for_cov$p.wx_mat) {
+      beta <- matrix(params, ncol = iT - 1)
+      p <- p.xz(beta)
+      q <- p %*% t(pwx)
+      r <- s2_for_cov$w.is / q
+      score_ik <- matrix(0, nrow = nrow(Z_mat), ncol = iT - 1)
+      for (k in seq_len(iT - 1L)) {
+        score_ik[, k] <- p[, k + 1L] *
+          (r %*% pwx[, k + 1L] - rowSums(s2_for_cov$w.is))
+      }
+      score_ik[, rep(seq_len(iT - 1L), each = Q)] *
+        Z_mat[, rep(seq_len(Q), iT - 1L)]
+    }
+
+    neg.ll <- function(params) -sum(three_step.ll(params))
+  }
+
+  gamma_init <- if (!is.null(fitZ$mGamma) && opts$use.two.step) {
+    c(fitZ$mGamma)
+  } else {
+    rep(0, Q * (iT - 1))
+  }
+
+  s3 <- lca_step3(
+    neg.ll,
+    gamma_init,
+    Q,
+    iT,
+    opts$covariate.tol,
+    gradient = three_step.grad,
+    use.bch = opts$use.bch,
+    Z_mat_cc = Z_mat,
+    w.is_cc = s2_for_cov$w.is,
+    p.xz = p.xz,
+    pwx = s2_for_cov$p.wx_mat,
+    em.maxIter = opts$em.maxIter,
+    verbose = opts$verbose,
+    correct.spec = opts$correct.spec
+  )
+  if (
+    (opts$correct.spec && !opts$use.bch) ||
+      is.null(s3$H.3.inv) ||
+      any(is.na(s3$H.3.inv))
+  ) {
+    s3$H.3.inv <- qr.solve(crossprod(three_step.score(s3$res$par)))
+  }
+
+  coefs <- matrix(s3$res$par, ncol = iT - 1)
+  ref_idx <- parse_rebase(opts$rebase, iT)
+  colnames(coefs) <- paste0("C", seq_len(iT)[-ref_idx])
+  rownames(coefs) <- colnames(Z_mat)
+
+  # -- Variance ---------------------------------------------------------------
+  Sigma.3 <- lca_vcov(
+    coefs = coefs,
+    three_step.score = three_step.score,
+    H.3.inv = s3$H.3.inv,
+    Sigma.1 = Sigma.1,
+    J.2 = s2_for_cov$J.2,
+    p.wx_mat = s2_for_cov$p.wx_mat,
+    w.is = s2_for_cov$w.is,
+    Z_mat = Z_mat,
+    n_classes = n_classes,
+    p.xz = p.xz,
+    s2 = s2_for_cov,
+    use.simple.cov = opts$use.simple.cov || opts$use.bch
+  )
+
+  # -- Model fit --------------------------------------------------------------
+  rows <- dat$keep_step3_Z_in_Y
+  Y_cc <- dat$Y.obs[rows, , drop = FALSE]
+  mDes_cc <- if (!is.null(dat$mDesign)) dat$mDesign[rows, , drop = FALSE] else NULL
+  total.llik <- joint_log_lik(
+    Y_cc,
+    Z_mat,
+    expand_Phi(fit0$mPhi, dat$ivItemcat),
+    coefs,
+    mDes_cc
+  )
+  # Free parameters of the joint model: item-response log-ratios plus the
+  # multinomial-logit coefficients (whose intercepts replace class sizes).
+  total.k <- iT * sum(dat$ivItemcat - 1L) + Q * (iT - 1L)
+
+  # -- Optional two-step variance ---------------------------------------------
+  tsv <- .two_step_vcov(fitZ, dat, n_classes, opts)
+  if (is.null(fitZ) && !is.null(tsv$fitZ)) {
+    fitZ <- tsv$fitZ
+    s1$fitZ <- tsv$fitZ
+  }
+
+  # -- Covariate-adjusted entropy R^2 -----------------------------------------
+  entropy.R2 <- .covariate_entropy_R2(
+    p.xz(matrix(s3$res$par, ncol = iT - 1L)),
+    Y_cc,
+    fit0,
+    dat$ivItemcat,
+    mDes_cc
+  )
+
+  fit <- structure(
+    list(
+      measurement_model = s1,
+      two_step = if (!is.null(fitZ)) fitZ$mGamma else NULL,
+      two_step_vcov = tsv$vcov,
+      three_step = coefs,
+      three_step_vcov = Sigma.3,
+      three_step.llik = -s3$res$value,
+      neg.ll = neg.ll,
+      llik = total.llik,
+      AIC = -2 * total.llik + 2 * total.k,
+      BIC = -2 * total.llik + total.k * log(nrow(Y_cc)),
+      npar = total.k,
+      nobs = nrow(Y_cc),
+      n_classes = iT,
+      estimator = if (opts$use.bch) "BCH" else "ML",
+      entropy.R2 = entropy.R2,
+      posteriors = s2$all$p.xy,
+      classifications = max.col(s2$all$p.xy)
+    ),
+    class = c("tseLCA_covariate", "tseLCA_structural", "tseLCA")
+  )
+  list(fit = fit, s1 = s1, par = s3$res$par, Sigma.3 = Sigma.3, p.xz = p.xz)
+}
+
+#' Two-step variance (multilevLCA's bias-corrected Varmat) for the covariate
+#' model
+#'
+#' A Varmat_cor already attached to `fitZ` is always returned: at
+#' fitZ$Varmat_cor (plain multiLCA output) or fitZ$raw_fit$Varmat_cor
+#' (fitZ_from_multiLCA() output). Otherwise, with `get.twostep.vcov = TRUE`,
+#' the two-step model is re-estimated with multiLCA(); fitZ_from_fit0() output
+#' carries no Varmat_cor.
+#'
+#' @return list(vcov = named variance matrix or NULL, fitZ = the
+#'   re-estimated two-step fit, if any).
+#' @noRd
+.two_step_vcov <- function(fitZ, dat, n_classes, opts) {
+  extract_varmat <- function(fZ) {
+    if (is.null(fZ)) {
+      return(NULL)
+    }
+    if (!is.null(fZ$Varmat_cor)) {
+      return(fZ$Varmat_cor)
+    }
+    if (!is.null(fZ$raw_fit$Varmat_cor)) {
+      return(fZ$raw_fit$Varmat_cor)
+    }
+    if (!is.null(fZ$raw_fit$SEs_cor_gamma)) {
+      return(diag(as.vector(fZ$raw_fit$SEs_cor_gamma)^2))
+    }
+    NULL
+  }
+  name_varmat <- function(V, fZ) {
+    if (is.null(V) || is.null(fZ$mGamma)) {
+      return(V)
+    }
+    nms <- as.vector(outer(rownames(fZ$mGamma), colnames(fZ$mGamma), paste, sep = ":"))
+    dimnames(V) <- list(nms, nms)
+    V
+  }
+
+  existing <- extract_varmat(fitZ)
+  if (!is.null(existing)) {
+    return(list(vcov = name_varmat(existing, fitZ), fitZ = NULL))
+  }
+  if (!opts$get.twostep.vcov) {
+    return(list(vcov = NULL, fitZ = NULL))
+  }
+  fZ_ml <- fitZ_from_multiLCA(
+    data = dat$data,
+    Y.names = dat$Y.names,
+    n_classes = n_classes,
+    Zp.names = dat$Zp.names,
+    maxIter.measurement = opts$maxIter.measurement,
+    measurement.tol = opts$measurement.tol,
+    covariate.tol = opts$covariate.tol,
+    iter.measurement = opts$iter.measurement,
+    R2.threshold = opts$R2.threshold,
+    incomplete = opts$incomplete,
+    rebase = opts$rebase,
+    startval = opts$startval,
+    n_init = opts$n_init,
+    verbose = opts$verbose
+  )
+  raw <- extract_varmat(fZ_ml)
+  if (is.null(raw)) {
+    warning("get.twostep.vcov: neither Varmat_cor nor SEs_cor_gamma found.")
+  }
+  list(vcov = name_varmat(raw, fZ_ml), fitZ = fZ_ml)
+}
+
+#' Covariate-adjusted entropy R^2
+#'
+#' How much the indicators reduce classification uncertainty beyond what the
+#' covariates already explain: (H(X|Z) - H(X|Y,Z)) / H(X|Z), with H(X|Z) the
+#' average entropy of the fitted class priors P(X|Z_i) and H(X|Y,Z) that of
+#' the covariate-adjusted posteriors (soft assignment).
+#' @noRd
+.covariate_entropy_R2 <- function(pi_adj, Y_cc, fit0, ivItemcat, mDes_cc) {
+  h <- function(p) {
+    p <- p[p > sqrt(.Machine$double.eps)]
+    -sum(p * log(p))
+  }
+  error_prior <- mean(apply(pi_adj, 1L, h))
+  adj_res <- compute_pwx_adj(
+    Y.obs = Y_cc,
+    fit0 = fit0,
+    ivItemcat = ivItemcat,
+    mDesign = mDes_cc,
+    use.modal.assignment = FALSE,
+    pi_adj = pi_adj
+  )
+  error_post <- mean(apply(adj_res$post, 1L, h))
+  if (error_prior > 1e-8) {
+    (error_prior - error_post) / error_prior
+  } else {
+    1.0 # covariates already explain all class membership
+  }
+}
