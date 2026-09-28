@@ -15,7 +15,8 @@ fitZ_from_fit0(
   include.intercept = TRUE,
   rebase = "C1",
   starting_val = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  Y.levels = NULL
 )
 }
 \arguments{
@@ -44,6 +45,10 @@ is consistent.}
 \item{starting_val}{Optional Q x (T-1) starting value matrix for \code{mGamma}.}
 
 \item{verbose}{Logical. Print convergence messages. Default \code{FALSE}.}
+
+\item{Y.levels}{Optional named list of indicator categories when \code{data}
+holds 0-based codes (as stored with a fitted measurement model); \code{NULL}
+derives them from \code{data}.}
 }
 \value{
 A list with the following elements:

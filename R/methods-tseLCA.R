@@ -29,7 +29,7 @@
 .flatten_coef <- function(m) {
   rn <- rownames(m)
   if (is.null(rn)) rn <- paste0("V", seq_len(nrow(m)))
-  rn[rn == ""] <- "Intercept"
+  rn[rn == ""] <- "(Intercept)"
   cn <- colnames(m)
   if (is.null(cn)) cn <- paste0("C", seq_len(ncol(m)) + 1L)
   stats::setNames(as.vector(m), as.vector(outer(rn, cn, paste, sep = ":")))

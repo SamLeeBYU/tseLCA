@@ -699,6 +699,9 @@ lca_step1 <- function(
 #'   Must match the `rebase` used in `lca_step1()` so class column ordering
 #'   is consistent.
 #' @param starting_val Optional Q x (T-1) starting value matrix for `mGamma`.
+#' @param Y.levels Optional named list of indicator categories when `data`
+#'   holds 0-based codes (as stored with a fitted measurement model); `NULL`
+#'   derives them from `data`.
 #' @param verbose Logical. Print convergence messages. Default `FALSE`.
 #'
 #' @return A list with the following elements:
@@ -749,7 +752,8 @@ fitZ_from_fit0 <- function(
   include.intercept = TRUE,
   rebase = "C1",
   starting_val = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  Y.levels = NULL
 ) {
   cd <- clean_data(
     data = data,
@@ -757,7 +761,8 @@ fitZ_from_fit0 <- function(
     Zp.names = Zp.names,
     incomplete = incomplete,
     include.intercept = include.intercept,
-    verbose = verbose
+    verbose = verbose,
+    Y.levels = Y.levels
   )
   mY <- cd$Y.obs # expanded N_Y x K
   mDesign <- cd$mDesign
@@ -1120,7 +1125,7 @@ fitZ_from_multiLCA <- function(
 
   raw <- initial
   mGamma <- raw$mGamma
-  rownames(mGamma) <- c("Intercept", Zp.names)
+  rownames(mGamma) <- c("(Intercept)", Zp.names)
   ref_idx <- parse_rebase(rebase, n_classes)
   non_ref_classes <- seq_len(n_classes)[-ref_idx]
   colnames(mGamma) <- paste0("C", non_ref_classes)

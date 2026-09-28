@@ -91,13 +91,13 @@ test_that("coef.tseLCA_covariate returns a vector named like vcov()", {
   expect_false(is.matrix(co))
   expect_length(co, 4L) # Q=2 (Intercept+Zp) x T-1=2
   expect_equal(names(co), rownames(vcov(fit_cov)))
-  expect_equal(names(co), c("Intercept:C2", "Zp:C2", "Intercept:C3", "Zp:C3"))
+  expect_equal(names(co), c("(Intercept):C2", "Zp:C2", "(Intercept):C3", "Zp:C3"))
 })
 
 test_that("coef(matrix = TRUE) returns the Q x (T-1) matrix", {
   co <- coef(fit_cov, matrix = TRUE)
   expect_true(is.matrix(co))
-  expect_equal(dimnames(co), list(c("Intercept", "Zp"), c("C2", "C3")))
+  expect_equal(dimnames(co), list(c("(Intercept)", "Zp"), c("C2", "C3")))
   expect_equal(as.vector(co), unname(coef(fit_cov)))
 })
 
@@ -255,7 +255,7 @@ test_that("p-value significance stars appear when SE is tiny", {
   obj <- fit_cov
   obj$three_step_vcov <- diag(rep(1e-8, 4L))
   rownames(obj$three_step_vcov) <- colnames(obj$three_step_vcov) <-
-    c("Intercept:C2", "Zp:C2", "Intercept:C3", "Zp:C3")
+    c("(Intercept):C2", "Zp:C2", "(Intercept):C3", "Zp:C3")
   out <- capture_output(print(obj))
   expect_match(out, "*", fixed = TRUE)
 })

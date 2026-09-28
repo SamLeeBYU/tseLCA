@@ -15,6 +15,24 @@
 - `plot()` now works on distal-outcome fits. These objects previously did
   not store the measurement model, so the plot failed.
 
+## Data input
+
+- Indicators can be factors, logicals, character, or numeric codes in any
+  coding (e.g. 1..K). They are recoded to 0..K-1 internally, and their
+  categories are stored with the measurement model
+  (`$measurement_model$Y.levels`). Previously they had to be integers
+  starting at 0. Codes such as 1..K were accepted but silently misread: the
+  highest category was never matched.
+- A measurement model reused through `step1` applies its own categories to
+  new data. The new data may omit categories, and values outside them are
+  an error.
+- Covariate designs are built with `model.frame()`/`model.matrix()`, so
+  factor covariates are dummy coded and unused factor levels are dropped.
+  The intercept is named `"(Intercept)"` (was `"Intercept"`).
+- Distal outcomes are validated for their family. Binomial outcomes may also
+  be logical or two-category factors/characters.
+- New `tse_control()` collects the numerical estimation settings.
+
 ## Bug fixes
 
 - For measurement-only fits, `posterior()` / `$posteriors` and `classes()` /
@@ -68,6 +86,10 @@
   "length of 'dimnames'" error. The coefficient rows were always labeled
   with an `Intercept` row.
 
+- In combined covariate + distal models, rows with a missing covariate but
+  an observed distal outcome were kept in the distal model with `NA` class
+  priors. The distal model now uses rows with complete covariates.
+
 ## Breaking changes
 
 - `coef()` returns a named vector whose names match `vcov()`, so
@@ -76,6 +98,8 @@
 - `coef()` on a measurement model returns the log-ratio parameters that
   `vcov()` describes. The previous list is now available as
   `class_sizes()` and `item_probs()`.
+- Covariate coefficient names use `"(Intercept)"` instead of `"Intercept"`,
+  e.g. `"(Intercept):C2"`.
 - The `which` argument of `coef()` and `vcov()` is replaced by
   `component` (`"covariate"` or `"distal"`) and `step` (`"two_step"`).
   Passing `which` gives an error, so old code cannot silently return a

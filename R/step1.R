@@ -60,7 +60,8 @@ step1_sample <- function(s1, ivItemcat, ref_idx = 1L) {
 #' also attaches two-step starting values (`$fitZ`) with the measurement
 #' parameters held fixed.
 #' @noRd
-.fit_step1 <- function(data, Y.names, n_classes, Zp.names, step1, ref_idx, opts) {
+.fit_step1 <- function(data, Y.names, n_classes, Zp.names, step1, ref_idx, opts,
+                       Y.levels = NULL) {
   if (!is.null(step1)) {
     # Normalize: accept raw lca_step1() list or any tseLCA object
     s1 <- if (inherits(step1, "tseLCA")) step1$measurement_model else step1
@@ -104,7 +105,8 @@ step1_sample <- function(s1, ivItemcat, ref_idx = 1L) {
       incomplete = opts$incomplete,
       include.intercept = opts$include.intercept,
       rebase = opts$rebase,
-      verbose = opts$verbose
+      verbose = opts$verbose,
+      Y.levels = Y.levels
     )
   }
   s1
@@ -122,6 +124,7 @@ step1_sample <- function(s1, ivItemcat, ref_idx = 1L) {
 .attach_step1_data <- function(s1, dat, ref_idx, fitted_here) {
   s1$Y.names <- dat$Y.names
   s1$ivItemcat <- dat$ivItemcat
+  s1$Y.levels <- dat$Y.levels
   s1$ref_idx <- ref_idx
   if (fitted_here) {
     s1$Y.exp <- dat$Y.obs
@@ -153,4 +156,18 @@ step1_sample <- function(s1, ivItemcat, ref_idx = 1L) {
     boundary.tol = boundary.tol,
     u_post = sample1$u_post
   )$Varmat
+}
+
+#' Indicator categories stored with a measurement model
+#'
+#' `step1` is a tseLCA object, raw lca_step1() output, or NULL. Returns NULL
+#' when no categories are stored (NULL input, or a model fitted before they
+#' were recorded), in which case they are derived from the data.
+#' @noRd
+.measurement_levels <- function(step1) {
+  if (is.null(step1)) {
+    return(NULL)
+  }
+  s1 <- if (inherits(step1, "tseLCA")) step1$measurement_model else step1
+  s1$Y.levels
 }

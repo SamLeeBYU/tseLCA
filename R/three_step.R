@@ -366,9 +366,15 @@ three_step <- function(
   )
   ref_idx <- parse_rebase(rebase, n_classes)
 
+  # Indicators as 0-based codes; a reused measurement model brings its own
+  # categories.
+  rec <- .recode_indicators(data, Y.names, .measurement_levels(step1))
+  data <- rec$data
+
   # -- Step 1: measurement model ----------------------------------------------
-  s1 <- .fit_step1(data, Y.names, n_classes, Zp.names, step1, ref_idx, opts)
-  dat <- .prepare_data(data, Y.names, Zp.names, Zo.name, family, opts)
+  s1 <- .fit_step1(data, Y.names, n_classes, Zp.names, step1, ref_idx, opts,
+                   Y.levels = rec$levels)
+  dat <- .prepare_data(data, Y.names, Zp.names, Zo.name, family, opts, rec$levels)
   s1 <- .attach_step1_data(s1, dat, ref_idx, fitted_here = is.null(step1))
 
   if (is.null(Zp.names) && is.null(Zo.name)) {

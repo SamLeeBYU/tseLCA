@@ -18,7 +18,8 @@
 #   Restrict to rows that (a) passed the Y filter AND (b) have complete Z.
 #
 # Step 3 distal:
-#   Restrict to rows that (a) passed the Y filter AND (b) have complete Zo.
+#   Restrict to rows that (a) passed the Y filter AND (b) have complete Zo
+#   (and, when covariates are also modeled, complete covariates).
 
 #' Prepare and validate data for tseLCA estimation
 #'
@@ -27,21 +28,35 @@
 #' @param data       A data.frame.
 #' @param Y.names    Character vector of item column names.
 #' @param Zp.names   Character vector of covariate column names, or `NULL`.
+#'   Ignored when `Zp.formula` is given.
 #' @param Zo.name    Single distal outcome column name, or `NULL`.
 #' @param incomplete Logical. If `TRUE`, use FIML for partially-observed Y.
-#' @param include.intercept Logical. Prepend intercept column to Z.
+#' @param include.intercept Logical. Include an intercept in the covariate
+#'   design built from `Zp.names`.
 #' @param verbose    Logical. Print row-drop messages.
+#' @param Zp.formula One-sided formula for the covariate design (e.g.
+#'   `~ age + factor(region)`), or `NULL` to build one from `Zp.names`.
+#' @param Y.levels   Named list of indicator categories, as returned by
+#'   `.recode_indicators()`, when `data` already holds 0-based codes; `NULL`
+#'   recodes the indicators here.
 #'
 #' @return A named list with:
 #' \describe{
 #'   \item{Y.obs}{N_Y x K expanded one-hot indicator matrix for Steps 1 & 2.}
-#'   \item{mDesign}{N_Y x K design/mask matrix (all 1s when incomplete = FALSE).}
+#'   \item{mDesign}{N_Y x K design/mask matrix (NULL when incomplete = FALSE).}
 #'   \item{ivItemcat}{Integer vector of category counts per item.}
+#'   \item{Y.levels}{Named list of the categories of each item.}
 #'   \item{keep_Y}{Integer indices of rows kept for Steps 1 & 2 (into original N).}
 #'   \item{Z_mat}{N_Z x Q covariate design matrix, or NULL.}
+#'   \item{Zp.formula, Z_terms, Z_xlevels}{The covariate formula, its terms,
+#'     and the factor levels used, or NULL.}
 #'   \item{keep_step3_Z_in_Y}{Positions of Z-complete rows within keep_Y.}
 #'   \item{Zo_mat}{N_Zo x 1 distal outcome matrix, or NULL.}
 #'   \item{keep_step3_Zo_in_Y}{Positions of Zo-complete rows within keep_Y.}
+#'   \item{keep_step3_Zo}{Indices of Zo-complete rows (into original N).}
+#'   \item{keep_step3_Zo_in_Z}{With covariates, positions of the distal rows
+#'     within the covariate rows (distal rows then also need complete
+#'     covariates); otherwise NULL.}
 #' }
 clean_data <- function(
   data,
@@ -50,12 +65,17 @@ clean_data <- function(
   Zo.name = NULL,
   incomplete = FALSE,
   include.intercept = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  Zp.formula = NULL,
+  Y.levels = NULL
 ) {
+  if (is.null(Y.levels)) {
+    rec <- .recode_indicators(data, Y.names)
+    data <- rec$data
+    Y.levels <- rec$levels
+  }
   Y_raw <- as.matrix(data[, Y.names, drop = FALSE])
-  N_full <- nrow(Y_raw)
-
-  ivItemcat <- apply(Y_raw, 2L, \(x) length(na.omit(unique(x))))
+  ivItemcat <- lengths(Y.levels)[Y.names]
 
   # ---- Y row filter -----------------------------------------------------------
   all_Y_missing <- rowSums(!is.na(Y_raw)) == 0L
@@ -89,30 +109,47 @@ clean_data <- function(
   }
 
   # ---- Covariate design matrix ------------------------------------------------
-  if (!is.null(Zp.names)) {
-    Z_mat_full <- if (include.intercept) {
-      m <- cbind(1, as.matrix(data[, Zp.names, drop = FALSE]))
-      colnames(m) <- c("Intercept", Zp.names)
-      m
-    } else {
-      as.matrix(data[, Zp.names, drop = FALSE])
+  Zp.formula <- .covariate_formula(Zp.formula, Zp.names, include.intercept)
+  Z_mat <- Z_terms <- Z_xlevels <- NULL
+  keep_step3_Z <- NULL
+  if (!is.null(Zp.formula)) {
+    Z_vars <- all.vars(Zp.formula)
+    absent <- setdiff(Z_vars, names(data))
+    if (length(absent) > 0L) {
+      stop(
+        "Covariate(s) not found in `data`: ",
+        paste(absent, collapse = ", "),
+        call. = FALSE
+      )
     }
-    any_Z_missing_full <- !complete.cases(Z_mat_full)
+    any_Z_missing_full <- !stats::complete.cases(data[, Z_vars, drop = FALSE])
 
     drop_step3_Z <- drop_Y | any_Z_missing_full
     keep_step3_Z <- which(!drop_step3_Z)
-    Z_mat <- Z_mat_full[keep_step3_Z, , drop = FALSE]
     keep_step3_Z_in_Y <- match(keep_step3_Z, keep_Y)
-
-    if (any(is.na(keep_step3_Z_in_Y))) {
-      stop("Internal error: Z rows not a subset of Y rows.", call. = FALSE)
-    }
 
     if (sum(any_Z_missing_full[keep_Y]) > 0L && verbose) {
       message(sprintf(
         "%d row(s) excluded from covariate step (missing Z).",
         sum(any_Z_missing_full[keep_Y])
       ))
+    }
+
+    # Design on the covariate-complete rows; unused factor levels dropped
+    # (as lm() does).
+    mf <- stats::model.frame(
+      Zp.formula,
+      data[keep_step3_Z, , drop = FALSE],
+      drop.unused.levels = TRUE
+    )
+    Z_terms <- stats::terms(mf)
+    Z_xlevels <- stats::.getXlevels(Z_terms, mf)
+    Z_mat <- stats::model.matrix(Z_terms, mf)
+    attr(Z_mat, "assign") <- NULL
+    attr(Z_mat, "contrasts") <- NULL
+    rownames(Z_mat) <- NULL
+    if (ncol(Z_mat) == 0L) {
+      stop("The covariate formula has no terms.", call. = FALSE)
     }
 
     # Check for linear dependence
@@ -131,28 +168,33 @@ clean_data <- function(
       )
     }
   } else {
-    Z_mat <- NULL
     keep_step3_Z_in_Y <- seq_along(keep_Y)
   }
 
   # ---- Distal outcome matrix --------------------------------------------------
+  keep_step3_Zo_in_Z <- NULL
   if (!is.null(Zo.name)) {
+    if (!Zo.name %in% names(data)) {
+      stop(sprintf("Distal outcome `%s` not found in `data`.", Zo.name), call. = FALSE)
+    }
     Zo_mat_full <- as.matrix(data[, Zo.name, drop = FALSE])
-    any_Zo_missing_full <- !complete.cases(Zo_mat_full)
+    # With covariates, the distal model's class prior P(X | Zp) needs them too.
+    needed <- c(Zo.name, if (!is.null(Zp.formula)) all.vars(Zp.formula))
+    any_Zo_missing_full <- !stats::complete.cases(data[, needed, drop = FALSE])
 
     drop_step3_Zo <- drop_Y | any_Zo_missing_full
     keep_step3_Zo <- which(!drop_step3_Zo)
     Zo_mat <- Zo_mat_full[keep_step3_Zo, , drop = FALSE]
     keep_step3_Zo_in_Y <- match(keep_step3_Zo, keep_Y)
-
-    if (any(is.na(keep_step3_Zo_in_Y))) {
-      stop("Internal error: Zo rows not a subset of Y rows.", call. = FALSE)
+    if (!is.null(keep_step3_Z)) {
+      keep_step3_Zo_in_Z <- match(keep_step3_Zo, keep_step3_Z)
     }
 
     if (sum(any_Zo_missing_full[keep_Y]) > 0L && verbose) {
       message(sprintf(
-        "%d row(s) excluded from distal step (missing Zo).",
-        sum(any_Zo_missing_full[keep_Y])
+        "%d row(s) excluded from distal step (missing %s).",
+        sum(any_Zo_missing_full[keep_Y]),
+        if (length(needed) > 1L) "Zo or covariates" else "Zo"
       ))
     }
   } else {
@@ -164,15 +206,100 @@ clean_data <- function(
     Y.obs = Y.obs_exp,
     mDesign = mDesign,
     ivItemcat = ivItemcat,
+    Y.levels = Y.levels,
     keep_Y = keep_Y,
     Z_mat = Z_mat,
+    Zp.formula = Zp.formula,
+    Z_terms = Z_terms,
+    Z_xlevels = Z_xlevels,
     keep_step3_Z_in_Y = keep_step3_Z_in_Y,
     Zo_mat = Zo_mat,
     keep_step3_Zo_in_Y = keep_step3_Zo_in_Y,
-    keep_step3_Zo = if (!is.null(Zo.name)) keep_step3_Zo else integer(0L)
+    keep_step3_Zo = if (!is.null(Zo.name)) keep_step3_Zo else integer(0L),
+    keep_step3_Zo_in_Z = keep_step3_Zo_in_Z
   )
 }
 
+#' Covariate formula from a formula or a vector of column names
+#' @noRd
+.covariate_formula <- function(Zp.formula, Zp.names, include.intercept) {
+  if (!is.null(Zp.formula)) {
+    if (!inherits(Zp.formula, "formula") || length(Zp.formula) != 2L) {
+      stop("The covariate formula must be one-sided, e.g. `~ x1 + x2`.", call. = FALSE)
+    }
+    return(Zp.formula)
+  }
+  if (is.null(Zp.names)) {
+    return(NULL)
+  }
+  stats::reformulate(
+    sprintf("`%s`", Zp.names),
+    intercept = include.intercept,
+    env = globalenv()
+  )
+}
+
+#' Categories of one indicator
+#'
+#' Factors keep their level order (unused levels dropped); logical, character,
+#' and numeric indicators are sorted.
+#' @noRd
+.indicator_levels <- function(x, name) {
+  lev <- if (is.factor(x)) {
+    levels(droplevels(x))
+  } else {
+    sort(unique(x[!is.na(x)]))
+  }
+  if (length(lev) < 2L) {
+    stop(
+      sprintf("Indicator `%s` has fewer than two observed categories.", name),
+      call. = FALSE
+    )
+  }
+  lev
+}
+
+#' Recode indicators to 0-based integer category codes
+#'
+#' Indicators may be factors, logicals, character, or numeric codes (any
+#' coding, e.g. 1..K). Each is recoded to 0, ..., K-1 following its
+#' categories, which are derived from the data unless `levels` (a named list,
+#' e.g. from a previously fitted measurement model) is supplied.
+#'
+#' @return list(data = `data` with recoded indicator columns, levels = named
+#'   list of the categories of each indicator).
+#' @noRd
+.recode_indicators <- function(data, Y.names, levels = NULL) {
+  absent <- setdiff(Y.names, names(data))
+  if (length(absent) > 0L) {
+    stop(
+      "Indicator(s) not found in `data`: ",
+      paste(absent, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  out <- stats::setNames(vector("list", length(Y.names)), Y.names)
+  for (nm in Y.names) {
+    x <- data[[nm]]
+    lev <- if (!is.null(levels)) levels[[nm]] else .indicator_levels(x, nm)
+    code <- match(as.character(x), as.character(lev)) - 1L
+    unknown <- !is.na(x) & is.na(code)
+    if (any(unknown)) {
+      stop(
+        sprintf(
+          "Indicator `%s` has values outside its categories (%s): %s.",
+          nm,
+          paste(lev, collapse = ", "),
+          paste(utils::head(unique(as.character(x[unknown])), 5L), collapse = ", ")
+        ),
+        call. = FALSE
+      )
+    }
+    data[[nm]] <- code
+    out[[nm]] <- lev
+  }
+  list(data = data, levels = out)
+}
 
 #' Parse and validate the rebase argument
 #'
@@ -238,9 +365,11 @@ normalize_fitZ_names <- function(fitZ, Zp.names = NULL, n_classes = NULL) {
     rn_clean <- sub("^gamma\\((.+)\\|C\\)$", "\\1", rn)
     # Also handle "gamma(X)" without the |C suffix
     rn_clean <- sub("^gamma\\((.+)\\)$", "\\1", rn_clean)
+    # multilevLCA labels the intercept "Intercept"; use R's "(Intercept)"
+    rn_clean[rn_clean == "Intercept"] <- "(Intercept)"
     rownames(mG) <- rn_clean
   } else if (!is.null(Zp.names)) {
-    rownames(mG) <- c("Intercept", Zp.names)
+    rownames(mG) <- c("(Intercept)", Zp.names)
   }
 
   # ---- Normalize colnames ----------------------------------------------------
@@ -569,23 +698,30 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
 
 #' Prepare the data for three_step()
 #'
-#' Encodes a multinomial distal outcome as 1..C (keeping its levels), then
-#' runs clean_data(). Returns clean_data()'s output plus `data` (with the
-#' encoded outcome), `zo_levels`, `Y.names`, `Zp.names`, and `Zo.name`.
+#' Validates the distal outcome for its family and encodes it (see
+#' .encode_distal()), then runs clean_data() on data whose indicators are
+#' already recoded to 0-based codes with categories `Y.levels`. Returns
+#' clean_data()'s output plus `data` (with the encoded outcome),
+#' `zo_levels`, `Y.names`, `Zp.names`, and `Zo.name`.
 #' @noRd
-.prepare_data <- function(data, Y.names, Zp.names, Zo.name, family, opts) {
+.prepare_data <- function(
+  data,
+  Y.names,
+  Zp.names,
+  Zo.name,
+  family,
+  opts,
+  Y.levels,
+  Zp.formula = NULL
+) {
   zo_levels <- NULL
-  if (!is.null(Zo.name) && family == "multinomial") {
-    zo_factor <- factor(data[[Zo.name]])
-    zo_levels <- levels(zo_factor)
-    if (length(zo_levels) < 2L) {
-      stop(
-        "`Zo.name` must have at least 2 distinct categories for ",
-        "family = \"multinomial\".",
-        call. = FALSE
-      )
+  if (!is.null(Zo.name)) {
+    if (!Zo.name %in% names(data)) {
+      stop(sprintf("Distal outcome `%s` not found in `data`.", Zo.name), call. = FALSE)
     }
-    data[[Zo.name]] <- as.integer(zo_factor)
+    enc <- .encode_distal(data[[Zo.name]], Zo.name, family)
+    data[[Zo.name]] <- enc$z
+    zo_levels <- enc$levels
   }
 
   cd <- clean_data(
@@ -595,7 +731,9 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
     Zo.name = Zo.name,
     incomplete = opts$incomplete,
     include.intercept = opts$include.intercept,
-    verbose = opts$verbose
+    verbose = opts$verbose,
+    Zp.formula = Zp.formula,
+    Y.levels = Y.levels
   )
   c(
     cd,
@@ -607,4 +745,44 @@ extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {
       Zo.name = Zo.name
     )
   )
+}
+
+#' Validate and encode a distal outcome for its family
+#'
+#' * gaussian: numeric.
+#' * poisson: non-negative whole numbers.
+#' * binomial: 0/1 numeric, logical, or a two-category factor/character
+#'   (its second category is coded 1).
+#' * multinomial: any categorical variable with at least two categories,
+#'   coded 1..C (`levels` records the categories).
+#' @return list(z = encoded outcome, levels = categories or NULL).
+#' @noRd
+.encode_distal <- function(z, name, family) {
+  obs <- z[!is.na(z)]
+  fail <- function(what) {
+    stop(sprintf("Distal outcome `%s` must be %s for family = \"%s\".", name, what, family),
+         call. = FALSE)
+  }
+  if (family == "multinomial") {
+    f <- factor(z)
+    if (nlevels(f) < 2L) fail("categorical with at least 2 distinct categories")
+    return(list(z = as.integer(f), levels = levels(f)))
+  }
+  if (family == "binomial") {
+    if (is.logical(z)) {
+      return(list(z = as.integer(z), levels = NULL))
+    }
+    if (is.factor(z) || is.character(z)) {
+      f <- droplevels(factor(z))
+      if (nlevels(f) != 2L) fail("binary (two categories)")
+      return(list(z = as.integer(f) - 1L, levels = levels(f)))
+    }
+    if (!is.numeric(z) || !all(obs %in% c(0, 1))) fail("binary (0/1, logical, or two categories)")
+    return(list(z = z, levels = NULL))
+  }
+  if (!is.numeric(z)) fail("numeric")
+  if (family == "poisson" && !all(obs >= 0 & obs == round(obs))) {
+    fail("a count (non-negative whole numbers)")
+  }
+  list(z = z, levels = NULL)
 }

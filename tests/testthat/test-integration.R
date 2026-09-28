@@ -33,7 +33,7 @@ test_that("lca_step1 with Zp returns fitZ with named mGamma", {
   expect_false(is.null(s1$fitZ))
   #mGamma: Q x (T-1) = 2 x 2
   expect_equal(dim(s1$fitZ$mGamma), c(2L, 2L))
-  expect_equal(rownames(s1$fitZ$mGamma)[1L], "Intercept")
+  expect_equal(rownames(s1$fitZ$mGamma)[1L], "(Intercept)")
   expect_equal(colnames(s1$fitZ$mGamma), c("C2", "C3"))
 })
 
@@ -365,7 +365,7 @@ test_that("three_step covariate returns tseLCA_covariate with correct structure"
   #Coefficient matrix: Q x (T-1) = 2 x 2
   co <- fit$three_step
   expect_equal(dim(co), c(2L, 2L))
-  expect_equal(rownames(co)[1L], "Intercept")
+  expect_equal(rownames(co)[1L], "(Intercept)")
   expect_equal(colnames(co), c("C2", "C3"))
 
   #Vcov: Q(T-1) x Q(T-1) = 4 x 4
@@ -479,7 +479,7 @@ test_that("three_step BCH covariate recovers true DGP slopes and intercepts", {
 
   ses <- sqrt(diag(fit$three_step_vcov))
 
-  est_int <- fit$three_step["Intercept", ord]
+  est_int <- fit$three_step["(Intercept)", ord]
   est_slope <- fit$three_step["Zp", ord]
   se_int <- ses[c(1L, 3L)][ord]
   se_slope <- ses[c(2L, 4L)][ord]
@@ -1063,7 +1063,7 @@ test_that("covariate estimates are within 2 SEs of true slopes and intercepts", 
 
   ses <- sqrt(diag(fit$three_step_vcov))
 
-  est_int <- fit$three_step["Intercept", ord]
+  est_int <- fit$three_step["(Intercept)", ord]
   est_slope <- fit$three_step["Zp", ord]
   se_int <- ses[c(1L, 3L)][ord] # Intercept SEs
   se_slope <- ses[c(2L, 4L)][ord] # Zp SEs

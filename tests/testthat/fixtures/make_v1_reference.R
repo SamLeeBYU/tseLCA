@@ -21,6 +21,9 @@
 #     assignment weights outside the log, Bakk, Tekle & Vermunt 2013).
 #     Proportional-assignment ML distal fits (dis_gauss_ml, both_ml_prop)
 #     change; modal-assignment, BCH, and covariate fits are unchanged.
+#   - 2.0 Step 3: covariate designs built with model.matrix(); the intercept
+#     is named "(Intercept)" instead of "Intercept". Names only; all numbers
+#     unchanged.
 
 pkgload::load_all(".", quiet = TRUE)
 source("tests/testthat/helper-v1-reference.R")

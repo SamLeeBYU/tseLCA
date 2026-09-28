@@ -341,7 +341,13 @@ lca_step3.distal <- function(
       theta <- theta_of(beta, sigma2)
       lambda <- distal_lambda(records_at(theta)$R, w.is_cc)
 
-      fit <- glm(Z_long ~ X_long - 1, family = family, weights = as.vector(lambda))
+      # quasibinomial: same estimates as binomial, without glm's warning about
+      # the fractional E-step weights
+      fit <- glm(
+        Z_long ~ X_long - 1,
+        family = if (family == "binomial") stats::quasibinomial() else family,
+        weights = as.vector(lambda)
+      )
       beta_new <- coef(fit)
       sigma2_new <- if (gaussian) {
         sum(lambda * outer(Zo_cc, beta_new, "-")^2) / sum(lambda)
@@ -448,13 +454,9 @@ lca_step3.distal <- function(
     ))
   }
 
+  # Covariate design on the distal rows (which also have complete covariates)
   Z_mat_dis <- if (!is.null(dat$Z_mat) && length(dat$keep_step3_Zo) > 0L) {
-    Z_full <- as.matrix(dat$data[, dat$Zp.names, drop = FALSE])
-    if (opts$include.intercept) {
-      Z_full <- cbind(1, Z_full)
-      colnames(Z_full) <- c("Intercept", dat$Zp.names)
-    }
-    Z_full[dat$keep_step3_Zo, , drop = FALSE]
+    dat$Z_mat[dat$keep_step3_Zo_in_Z, , drop = FALSE]
   } else {
     NULL
   }
