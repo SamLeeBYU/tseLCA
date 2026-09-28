@@ -618,6 +618,24 @@ print.tseLCA_measurement <- function(x, ...) {
 
 # -- omnibus test --------------------------------------------------------------------
 
+#' Moore-Penrose pseudo-inverse and numerical rank with SVD
+#'
+#' Used by the omnibus class-equality Wald test (`omnibus_test()`), whose
+#' contrast covariance is rank-deficient for the multinomial family (each
+#' class's C-vector of category probabilities sums to 1, so a difference of
+#' two classes' full probability vectors always sums to 0 across
+#' categories) and may be for other families too under boundary/near-
+#' collinear fits. `qr()`-based rank/solve is avoided because it is less
+#' numerically stable than SVD for a covariance matrix that is exactly
+#' singular by construction, not just ill-conditioned.
+#' @noRd
+pinv_rank <- function(M, tol = sqrt(.Machine$double.eps)) {
+  s <- svd(M)
+  keep <- s$d > (tol * max(s$d))
+  d_inv <- ifelse(keep, 1 / s$d, 0)
+  list(pinv = s$v %*% (d_inv * t(s$u)), rank = sum(keep))
+}
+
 #' Build a between-class contrast matrix and run a generalized Wald test
 #'
 #' Tests \eqn{H_0: \theta_1 = \theta_2 = \dots = \theta_T}, where
