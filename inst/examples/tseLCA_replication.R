@@ -498,7 +498,7 @@ elec.three_step <- three_step(
 
 party.x <- seq(from = 1, to = 7, length.out = 101)
 pidmat <- cbind(1, party.x)
-exb.tse <- exp(pidmat %*% coef(elec.three_step))
+exb.tse <- exp(pidmat %*% coef(elec.three_step, matrix = TRUE))
 probs.tse <- (cbind(1, exb.tse)) / (1 + rowSums(exb.tse))
 
 f.party <- cbind(
@@ -636,7 +636,7 @@ d.distal.three_step.multi <- three_step(
   family = "multinomial"
 )
 #coef() returns a T x C matrix of category probabilities (rows sum to 1)
-coef(d.distal.three_step.multi)
+coef(d.distal.three_step.multi, matrix = TRUE)
 summary(d.distal.three_step.multi)
 
 ###################################################

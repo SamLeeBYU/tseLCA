@@ -1,3 +1,36 @@
+# tseLCA 2.0.0 (development)
+
+## Classes and methods
+
+- Fitted objects now share a class hierarchy. `tseLCA` is the parent class of
+  every fit; `tseLCA_structural` is the parent of `tseLCA_covariate`,
+  `tseLCA_distal`, and `tseLCA_both`. Methods are defined once on the parent
+  classes instead of separately for each subclass.
+- New methods on all fits: `logLik()` (with `df` and `nobs`, so `AIC()`
+  and `BIC()` work), `nobs()`, `posterior()`, `classes()`,
+  `class_sizes()`, and `item_probs()`.
+- `summary()` now returns a `summary.tseLCA_structural` or
+  `summary.tseLCA_measurement` object. Its tables print with
+  `printCoefmat()` and are extracted with `coef(summary(fit))`.
+- `plot()` now works on distal-outcome fits. These objects previously did
+  not store the measurement model, so the plot failed.
+
+## Breaking changes
+
+- `coef()` returns a named vector whose names match `vcov()`, so
+  `confint()` works. `coef(fit, matrix = TRUE)` gives the previous
+  Q x (T-1) (covariate) or T x C (multinomial distal) layout.
+- `coef()` on a measurement model returns the log-ratio parameters that
+  `vcov()` describes. The previous list is now available as
+  `class_sizes()` and `item_probs()`.
+- The `which` argument of `coef()` and `vcov()` is replaced by
+  `component` (`"covariate"` or `"distal"`) and `step` (`"two_step"`).
+  Passing `which` gives an error, so old code cannot silently return a
+  different quantity.
+- `vcov()` on a `tseLCA_both` object returns one matrix. The covariate
+  and distal blocks are on the diagonal; the cross-covariances are not
+  computed and are `NA`.
+
 # tseLCA 1.1.1
 
 - Corrected Jay Goodliffe's role in `Authors@R` from contributor (`"ctb"`) to

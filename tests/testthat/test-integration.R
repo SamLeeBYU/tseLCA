@@ -628,7 +628,7 @@ test_that("three_step multinomial BCH returns a T x C probability matrix", {
   )
 
   expect_s3_class(fit, "tseLCA_distal")
-  pi_hat <- coef(fit)
+  pi_hat <- coef(fit, matrix = TRUE)
   expect_equal(dim(pi_hat), c(3L, 4L))
   expect_equal(rowSums(pi_hat), setNames(rep(1, 3), rownames(pi_hat)))
   expect_true(all(pi_hat >= 0 & pi_hat <= 1))
@@ -764,7 +764,7 @@ test_that("multinomial with C=2 matches the existing binomial family exactly", {
   )
 
   mu_bin <- 1 / (1 + exp(-coef(fit_bin)))
-  pi_multi <- coef(fit_multi)[, "1"]
+  pi_multi <- coef(fit_multi, matrix = TRUE)[, "1"]
   # Both estimators solve the same weighted-proportion closed form, but
   # binomial's BCH path gets there with Newton-Raphson (converged to within
   # covariate.tol on the parameter step, default 1e-6) while multinomial's
@@ -783,7 +783,7 @@ test_that("multinomial recovers the true category probability structure", {
     family = "multinomial",
     use.simple.cov = TRUE
   )
-  pi_hat <- coef(fit)
+  pi_hat <- coef(fit, matrix = TRUE)
   # Each class should have exactly one dominant (> 0.5) category.
   dominant <- apply(pi_hat, 1L, max)
   expect_true(all(dominant > 0.5))
@@ -822,7 +822,7 @@ test_that("combined Zp.names + family = \"multinomial\" works under full propaga
     use.simple.cov = FALSE
   )
   expect_s3_class(fit_full, "tseLCA_both")
-  V_full <- vcov(fit_full, which = "distal")
+  V_full <- vcov(fit_full, component = "distal")
   expect_true(all(is.finite(diag(V_full))))
   expect_true(all(diag(V_full) > 0))
 
@@ -839,7 +839,7 @@ test_that("combined Zp.names + family = \"multinomial\" works under full propaga
   # Full Step-1/Step-2 propagation should add uncertainty on top of the
   # robust sandwich, not remove it (same check as the distal-only case).
   se_full <- sqrt(diag(V_full))
-  se_simple <- sqrt(diag(vcov(fit_simple, which = "distal")))
+  se_simple <- sqrt(diag(vcov(fit_simple, component = "distal")))
   expect_true(all(se_full >= se_simple - 1e-8))
 })
 
@@ -918,7 +918,7 @@ test_that("Step-2 covariate-uncertainty propagation is actually wired through fo
     # Sigma.3/s3.par/p.xz.cov/Z_mat_cov omitted -> step1 term only
   )
 
-  V_full <- vcov(fit, which = "distal")
+  V_full <- vcov(fit, component = "distal")
   expect_false(isTRUE(all.equal(diag(V_step1_only), diag(V_full))))
   # Adding the step-2 term should increase (not decrease) the variance.
   expect_true(all(diag(V_full) >= diag(V_step1_only) - 1e-10))

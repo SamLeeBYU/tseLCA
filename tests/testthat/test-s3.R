@@ -86,18 +86,26 @@ test_that("measurement-only fit has posteriors from mU", {
 
 # ---- coef() ------------------------------------------------------------------
 
-test_that("coef.tseLCA_covariate returns Q x (T-1) matrix by default", {
+test_that("coef.tseLCA_covariate returns a vector named like vcov()", {
   co <- coef(fit_cov)
-  expect_true(is.matrix(co))
-  expect_equal(dim(co), c(2L, 2L)) # Q=2 (Intercept+Zp), T-1=2
-  expect_equal(rownames(co), c("Intercept", "Zp"))
-  expect_equal(colnames(co), c("C2", "C3"))
+  expect_false(is.matrix(co))
+  expect_length(co, 4L) # Q=2 (Intercept+Zp) x T-1=2
+  expect_equal(names(co), rownames(vcov(fit_cov)))
+  expect_equal(names(co), c("Intercept:C2", "Zp:C2", "Intercept:C3", "Zp:C3"))
 })
 
-test_that("coef.tseLCA_covariate returns two_step when requested", {
-  co <- coef(fit_cov, which = "two_step")
+test_that("coef(matrix = TRUE) returns the Q x (T-1) matrix", {
+  co <- coef(fit_cov, matrix = TRUE)
   expect_true(is.matrix(co))
-  expect_equal(dim(co), c(2L, 2L))
+  expect_equal(dimnames(co), list(c("Intercept", "Zp"), c("C2", "C3")))
+  expect_equal(as.vector(co), unname(coef(fit_cov)))
+})
+
+test_that("coef.tseLCA_covariate returns two-step estimates when requested", {
+  co <- coef(fit_cov, step = "two_step")
+  expect_length(co, 4L)
+  expect_equal(names(co), names(coef(fit_cov)))
+  expect_equal(dim(coef(fit_cov, step = "two_step", matrix = TRUE)), c(2L, 2L))
 })
 
 test_that("coef.tseLCA_distal returns named length-T vector", {
@@ -106,22 +114,35 @@ test_that("coef.tseLCA_distal returns named length-T vector", {
   expect_true(all(grepl("^mu_C", names(co))))
 })
 
-test_that("coef.tseLCA_both dispatches correctly", {
-  expect_identical(
-    coef(fit_both, which = "covariate"),
-    fit_both$covariate$three_step
-  )
-  expect_identical(coef(fit_both, which = "distal"), fit_both$distal$three_step)
+test_that("coef.tseLCA_both selects components", {
+  expect_equal(names(coef(fit_both, component = "covariate")), names(coef(fit_cov)))
+  expect_equal(unname(coef(fit_both, component = "distal")), unname(fit_both$distal$three_step))
   both <- coef(fit_both)
-  expect_named(both, c("covariate", "distal"))
+  expect_length(both, 4L + 3L)
+  expect_equal(names(both), rownames(vcov(fit_both)))
+  expect_named(coef(fit_both, matrix = TRUE), c("covariate", "distal"))
 })
 
-test_that("coef.tseLCA_measurement returns prevalences and item_probs", {
+test_that("coef() rejects the tseLCA 1.x `which` argument", {
+  expect_error(coef(fit_cov, which = "two_step"), regexp = "replaced in tseLCA 2.0")
+  expect_error(vcov(fit_both, which = "distal"), regexp = "replaced in tseLCA 2.0")
+})
+
+test_that("coef.tseLCA_measurement returns log-ratio parameters named like vcov()", {
   co <- coef(fit_meas)
-  expect_named(co, c("prevalences", "item_probs"))
-  expect_length(co$prevalences, 3L)
-  expect_true(all(co$prevalences >= 0 & co$prevalences <= 1))
-  expect_equal(sum(co$prevalences), 1, tolerance = 1e-6)
+  expect_length(co, 2L + 3L * 6L)
+  expect_equal(names(co), rownames(vcov(fit_meas)))
+  pi <- class_sizes(fit_meas)
+  expect_equal(unname(co[1:2]), log(unname(pi[2:3]) / unname(pi[1])))
+})
+
+test_that("class_sizes() and item_probs() return the measurement model", {
+  pi <- class_sizes(fit_meas)
+  expect_named(pi, c("C1", "C2", "C3"))
+  expect_equal(sum(pi), 1, tolerance = 1e-6)
+  expect_equal(dim(item_probs(fit_meas)), c(6L, 3L))
+  expect_length(class_sizes(fit_cov), 3L) # available on structural fits
+  expect_equal(dim(item_probs(fit_dis)), c(6L, 3L))
 })
 
 # ---- vcov() ------------------------------------------------------------------
@@ -136,7 +157,7 @@ test_that("vcov.tseLCA_covariate returns Q(T-1) x Q(T-1) matrix", {
 
 test_that("vcov.tseLCA_covariate errors informatively for missing two_step vcov", {
   # two_step_vcov is NULL unless get.twostep.vcov = TRUE
-  expect_error(vcov(fit_cov, which = "two_step"), regexp = "get.twostep.vcov")
+  expect_error(vcov(fit_cov, step = "two_step"), regexp = "get.twostep.vcov")
 })
 
 test_that("vcov.tseLCA_distal returns T x T matrix", {
@@ -146,13 +167,16 @@ test_that("vcov.tseLCA_distal returns T x T matrix", {
   expect_true(all(diag(V) >= 0))
 })
 
-test_that("vcov.tseLCA_both dispatches correctly", {
-  V_cov <- vcov(fit_both, which = "covariate")
-  V_dis <- vcov(fit_both, which = "distal")
-  expect_true(is.matrix(V_cov))
-  expect_true(is.matrix(V_dis))
-  both <- vcov(fit_both)
-  expect_named(both, c("covariate", "distal"))
+test_that("vcov.tseLCA_both returns components and a block matrix", {
+  V_cov <- vcov(fit_both, component = "covariate")
+  V_dis <- vcov(fit_both, component = "distal")
+  expect_equal(dim(V_cov), c(4L, 4L))
+  expect_equal(dim(V_dis), c(3L, 3L))
+  V <- vcov(fit_both)
+  expect_equal(dim(V), c(7L, 7L))
+  expect_equal(V[1:4, 1:4], V_cov, ignore_attr = TRUE)
+  expect_equal(V[5:7, 5:7], V_dis, ignore_attr = TRUE)
+  expect_true(all(is.na(V[1:4, 5:7]))) # cross-covariances not computed
 })
 
 # ---- llik / AIC / BIC --------------------------------------------------------
@@ -188,16 +212,17 @@ test_that("estimator field is 'ML' for default fits", {
   expect_equal(fit_both$estimator, "ML")
 })
 
-# ---- print() and summary() smoke tests ---------------------------------------
+# ---- print() and summary() -----------------------------------------------------
 
 test_that("print.tseLCA_measurement produces output", {
-  expect_output(print(fit_meas), regexp = "tseLCA")
+  expect_output(print(fit_meas), regexp = "measurement model")
 })
 
-test_that("print.tseLCA_covariate shows llik and estimator", {
+test_that("print.tseLCA_covariate shows fit and coefficient table", {
   out <- capture_output(print(fit_cov))
   expect_match(out, "Estimator")
   expect_match(out, "Estimate")
+  expect_match(out, "Pr(>|z|)", fixed = TRUE)
 })
 
 test_that("print.tseLCA_distal shows llik", {
@@ -206,15 +231,23 @@ test_that("print.tseLCA_distal shows llik", {
   expect_match(out, "Estimate")
 })
 
-test_that("print.tseLCA_both produces output for both branches", {
+test_that("print.tseLCA_both produces output for both components", {
   out <- capture_output(print(fit_both))
   expect_match(out, "Covariate")
   expect_match(out, "Distal")
 })
 
-test_that("summary.tseLCA_distal shows llik", {
-  out <- capture_output(summary(fit_dis))
-  expect_match(out, "Log-likelihood")
+test_that("summary() returns a summary object with a printCoefmat-ready table", {
+  s <- summary(fit_dis)
+  expect_s3_class(s, "summary.tseLCA_structural")
+  expect_match(capture_output(print(s)), "Log-lik")
+  cm <- coef(summary(fit_cov))
+  expect_equal(colnames(cm), c("Estimate", "Std. Error", "z value", "Pr(>|z|)"))
+  expect_equal(unname(cm[, "Estimate"]), unname(coef(fit_cov)))
+  expect_output(printCoefmat(cm), "Estimate")
+  expect_equal(nrow(coef(summary(fit_both))), 7L)
+  expect_s3_class(summary(fit_meas), "summary.tseLCA_measurement")
+  expect_output(print(summary(fit_meas)), "Item-response probabilities")
 })
 
 test_that("p-value significance stars appear when SE is tiny", {
@@ -224,5 +257,5 @@ test_that("p-value significance stars appear when SE is tiny", {
   rownames(obj$three_step_vcov) <- colnames(obj$three_step_vcov) <-
     c("Intercept:C2", "Zp:C2", "Intercept:C3", "Zp:C3")
   out <- capture_output(print(obj))
-  expect_match(out, "\\*")
+  expect_match(out, "*", fixed = TRUE)
 })
