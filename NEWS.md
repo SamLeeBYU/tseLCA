@@ -38,6 +38,19 @@
   covariate coefficients. Reported `AIC`/`BIC` for these models change;
   estimates and standard errors do not.
 
+- Gaussian distal outcomes: the within-class variance was fixed at
+  sigma2 = 1 in the Step-3 likelihood. Three-step ML now estimates a common
+  sigma2 jointly with the class means, as in Bakk, Tekle & Vermunt (2013).
+  Unlike ordinary regression, sigma2 does not factor out of the mean
+  estimates here: it enters the posterior weights P(X = t | W, Zo). With the
+  variance fixed at 1, ML class means were biased whenever the outcome's
+  variance differed from 1 (e.g. roughly 3.5x too far apart for a residual SD
+  of 3) and were not equivariant to rescaling the outcome. The Hessian,
+  score, and Step-1/Step-2 uncertainty propagation now include sigma2. It is
+  reported as `$sigma2` (estimate and, under ML, standard error), and counted
+  in the log-likelihood's degrees of freedom. BCH class means were
+  unaffected; their log-likelihood now uses the estimated variance.
+
 ## Breaking changes
 
 - `coef()` returns a named vector whose names match `vcov()`, so

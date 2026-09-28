@@ -127,7 +127,7 @@ v1_extract <- function(fit) {
     list(
       est = strip(x$three_step), vcov = strip(x$three_step_vcov),
       two_step = strip(x$two_step), two_step_vcov = strip(x$two_step_vcov),
-      llik = x$llik, AIC = x$AIC, BIC = x$BIC
+      llik = x$llik, AIC = x$AIC, BIC = x$BIC, sigma2 = x$sigma2
     )
   }
   out <- if (inherits(fit, "tseLCA_both")) {

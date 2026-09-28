@@ -13,6 +13,10 @@
 #     pinned (previously excluded: not in data-row order). New configurations
 #     cov_poly_corrected and cov_sparse pin polytomous corrected SEs (NA in
 #     1.1.1). All estimates and variances otherwise unchanged vs 1.1.1.
+#   - 2.0 Step 1c: gaussian distal outcomes estimate the within-class
+#     variance sigma2 (fixed at 1 in 1.1.1). Gaussian ML distal estimates and
+#     variances, and gaussian log-likelihoods/AIC/BIC (ML and BCH), change;
+#     sigma2 is now pinned. Other families unchanged.
 
 pkgload::load_all(".", quiet = TRUE)
 source("tests/testthat/helper-v1-reference.R")

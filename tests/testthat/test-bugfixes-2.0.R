@@ -117,11 +117,13 @@ test_that("parameter counts behind logLik/AIC/BIC", {
   # covariate: item parameters + Q * (T-1) logit coefficients (Q = 2)
   expect_equal(attr(logLik(cfg("cov_ml_modal")), "df"), 3 * n_items + 2 * 2)
   expect_equal(attr(logLik(cfg("cov_poly")), "df"), 3 * 2 * n_items + 2 * 2)
-  # distal: class sizes + item parameters + T class means
-  expect_equal(attr(logLik(cfg("dis_gauss_ml")), "df"), 2 + 3 * n_items + 3)
+  # distal: class sizes + item parameters + T class means (+ sigma2 for
+  # the gaussian family)
+  expect_equal(attr(logLik(cfg("dis_gauss_ml")), "df"), 2 + 3 * n_items + 3 + 1)
+  expect_equal(attr(logLik(cfg("dis_poisson")), "df"), 2 + 3 * n_items + 3)
   expect_equal(attr(logLik(cfg("dis_multinomial")), "df"), 2 + 3 * n_items + 3 * 2)
   # combined: covariate coefficients replace class sizes
-  expect_equal(attr(logLik(cfg("both_ml_prop")), "df"), 2 * 2 + 3 * n_items + 3)
+  expect_equal(attr(logLik(cfg("both_ml_prop")), "df"), 2 * 2 + 3 * n_items + 3 + 1)
   fit <- cfg("cov_ml_modal")
   expect_equal(AIC(fit), -2 * fit$llik + 2 * 22)
   expect_equal(BIC(fit), -2 * fit$llik + 22 * log(nobs(fit)))
