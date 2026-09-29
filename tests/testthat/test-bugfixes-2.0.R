@@ -205,3 +205,71 @@ test_that("a singular Step-1 information matrix falls back to robust SEs, with a
   expect_warning(fd <- tse_distal(cld, Zo ~ 1, family = "gaussian"), "robust standard errors")
   expect_equal(vcov(fd), vcov(tse_distal(cld, Zo ~ 1, family = "gaussian", se = "robust")))
 })
+
+test_that("class labels do not depend on the reference class of the covariate model", {
+  skip_on_cran()
+  d <- generate_data(600, "high", "distal", seed = 2)
+  set.seed(3)
+  d$Zp <- rnorm(600)
+  d$Zm <- factor(sample(c("a", "b", "c"), 600, TRUE))
+  set.seed(1)
+  m <- tse_lca(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1, data = d, nclass = 3)
+  cl <- tse_classify(m, assignment = "proportional")
+  fd <- tse_distal(cl, Zo ~ 1)
+  b1 <- tse_distal(tse_covariate(cl, ~ Zp), Zo ~ 1)
+  bm1 <- tse_distal(tse_covariate(cl, ~ Zp), Zm ~ 1, family = "multinomial")
+  for (r in 2:3) {
+    fc <- tse_covariate(cl, ~ Zp, ref = r)
+    expect_equal(posterior(fc), posterior(cl))
+    expect_equal(classes(fc), classes(cl))
+    expect_equal(item_probs(fc), item_probs(m))
+    expect_equal(class_sizes(fc), class_sizes(m))
+
+    # combined models: distal parameters of class t are those of class t
+    br <- tse_distal(fc, Zo ~ 1)
+    mu <- grep("^mu_", names(coef(br)), value = TRUE)
+    expect_equal(coef(br)[mu], coef(b1)[mu], tolerance = 1e-5)
+    expect_equal(vcov(br)[mu, mu], vcov(b1)[mu, mu], tolerance = 1e-3)
+    expect_equal(coef(br)[mu], coef(fd)[mu], tolerance = 0.05)
+    expect_equal(posterior(br), posterior(cl))
+    bmr <- tse_distal(fc, Zm ~ 1, family = "multinomial")
+    pk <- grep("^C[0-9]:", names(coef(bmr)), value = TRUE)
+    expect_equal(coef(bmr)[pk], coef(bm1)[pk], tolerance = 1e-5)
+    expect_equal(vcov(bmr)[pk, pk], vcov(bm1)[pk, pk], tolerance = 1e-4)
+  }
+})
+
+test_that("the Step-2 Jacobian matches finite differences (modal and proportional)", {
+  set.seed(1)
+  d <- generate_data(400, "mid", "distal", seed = 5)
+  m <- tse_lca(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1, data = d, nclass = 3)
+  fit0 <- m$measurement_model$fit0
+  iT <- 3L
+  Y <- as.matrix(d[paste0("Y", 1:6)])
+  Y <- do.call(cbind, lapply(seq_len(ncol(Y)), function(j) cbind(1 - Y[, j], Y[, j])))
+  ivI <- rep(2L, 6)
+  D1 <- matrix(1L, nrow(Y), ncol(Y))
+  # parameters in the order of the Step-1 variance: class-size log-ratios, then
+  # class by class, item by item, logit P(Y = 1 | class)
+  u0 <- c(log(fit0$vPi[-1] / fit0$vPi[1]), stats::qlogis(as.vector(fit0$mPhi)))
+  for (modal in c(FALSE, TRUE)) {
+    s2 <- lca_step2(Y, fit0, iT, modal, 1e-2, FALSE, ivI)
+    w0 <- s2$w.is
+    f <- function(u) {
+      p <- exp(c(0, u[1:2]))
+      post <- compute_posteriors(Y, D1, c((p / sum(p))[-1], stats::plogis(u[-(1:2)])), ivI, iT)
+      w <- if (modal) w0 else post
+      pj <- t(w) %*% post
+      pwx <- sweep(pj, 2, colSums(pj), "/")
+      g <- sweep(log(pwx), 2, log(diag(pwx)), "-")
+      g[row(g) != col(g)]
+    }
+    h <- 1e-5
+    J_num <- sapply(seq_along(u0), function(j) {
+      e <- replace(numeric(length(u0)), j, h)
+      (f(u0 + e) - f(u0 - e)) / (2 * h)
+    })
+    J <- s2$compute_J_unc(s2$p.xy, Y, D1, s2$theta1, ivI, iT)
+    expect_equal(J, J_num, tolerance = 1e-5, ignore_attr = TRUE)
+  }
+})

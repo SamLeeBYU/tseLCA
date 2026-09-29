@@ -223,6 +223,7 @@ tse_distal <- function(
 
   dis <- .fit_distal(setup$dat, setup$s1, setup$s2, setup$Sigma.1, cov,
                      classify$n_classes, family, setup$opts)
+  dis <- .distal_original_order(dis, setup$ref_idx, classify$n_classes)
   fit <- .new_structural_fit(setup$s1, setup$s2, cov_fit, dis, classify$n_classes,
                              family, setup$opts$use.bch,
                              estimator = .estimator_label(setup$opts))
@@ -519,6 +520,29 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   list(mGamma = new, vcov = A %*% V %*% t(A))
 }
 
+#' Distal parameters in the measurement model's class order
+#'
+#' A combined model is estimated with the classes rebased to the covariate
+#' model's reference class (reference first, then the others in order). Put
+#' the class-specific distal parameters, and their variance, back in the
+#' original class order, so that `C<t>` means class t as everywhere else.
+#' @noRd
+.distal_original_order <- function(dis, ref_idx, K) {
+  if (ref_idx == 1L) {
+    return(dis)
+  }
+  back <- match(seq_len(K), c(ref_idx, seq_len(K)[-ref_idx]))
+  if (is.matrix(dis$three_step)) { # multinomial: classes x categories
+    idx <- as.vector(outer(back, (seq_len(ncol(dis$three_step)) - 1L) * K, "+"))
+    dis$three_step[] <- dis$three_step[back, , drop = FALSE]
+  } else {
+    idx <- back
+    dis$three_step[] <- dis$three_step[back]
+  }
+  dis$three_step_vcov[] <- dis$three_step_vcov[idx, idx, drop = FALSE]
+  dis
+}
+
 #' Record the specification on a fitted Step-3 object
 #' @noRd
 .finish_structural <- function(fit, cl, setup, method, se, classify, formula = NULL) {
@@ -534,6 +558,12 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   fit$assignment <- classify$assignment
   fit$ref <- paste0("C", setup$ref_idx)
   fit$classification <- classify
+  # The model was estimated with the classes rebased to `ref`; report the
+  # measurement model and the Step-2 posteriors in the original class order,
+  # so that class t is the same class in every accessor.
+  fit$measurement_model <- classify$measurement_model
+  fit$posteriors <- classify$posteriors
+  fit$classifications <- classify$classifications
   fit
 }
 

@@ -87,6 +87,22 @@
 
 ## Bug fixes
 
+- Corrected (ML) standard errors: the Jacobian of the classification-error
+  matrix with respect to the Step-1 parameters, which carries the Step-1
+  uncertainty into Step 3, had its item-parameter columns ordered item by
+  item, while the Step-1 variance is ordered class by class; with modal
+  assignment it also differentiated the assignment as if it were the
+  posterior probabilities. Both are fixed (checked against numerical
+  derivatives). Point estimates, robust, and BCH standard errors are
+  unchanged; corrected covariate standard errors typically increase by a
+  few percent, and corrected standard errors no longer depend on the
+  choice of reference class.
+- Structural models with a reference class other than the first
+  (`ref =`): `posterior()`, `classes()`, `item_probs()`, `class_sizes()`, and
+  `plot()` reported the classes in the rebased order under the original
+  labels, and in combined covariate + distal models the distal parameters
+  of class t belonged to another class. All now use the measurement
+  model's class order.
 - Step-1 variance of polytomous indicators when the first (reference)
   category of an item has a boundary probability in some class: the free
   parameters of that item are log-ratios against this category, and their

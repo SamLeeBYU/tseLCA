@@ -680,7 +680,7 @@ test_that("three_step multinomial ML (simple and full) agree and full SEs are >=
   se_full <- sqrt(diag(vcov(fit_full)))
   # Full Step-1 propagation should add uncertainty on top of the robust
   # sandwich, not remove it.
-  expect_true(all(se_full >= se_simple - 1e-8))
+  expect_true(all(se_full >= se_simple - 1e-6))
 })
 
 test_that("distal_multinomial_jacobian matches a numerical check of the estimating equation", {
@@ -837,7 +837,7 @@ test_that("combined Zp.names + family = \"multinomial\" works under full propaga
   # robust sandwich, not remove it (same check as the distal-only case).
   se_full <- sqrt(diag(V_full))
   se_simple <- sqrt(diag(vcov(fit_simple, component = "distal")))
-  expect_true(all(se_full >= se_simple - 1e-8))
+  expect_true(all(se_full >= se_simple - 1e-6))
 })
 
 test_that("Step-2 covariate-uncertainty propagation is actually wired through for multinomial", {

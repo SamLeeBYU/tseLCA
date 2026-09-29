@@ -162,7 +162,20 @@ lca_step2 <- function(
     ) {
       N <- nrow(p_ik)
 
-      A <- t(p_ik) %*% p_ik
+      # gamma_st = log(sum_i w_is p_it) - log(sum_i w_it p_it), with w the
+      # assignment weights: the posteriors themselves (proportional; they
+      # depend on the parameters too) or the modal assignment (held fixed).
+      # With dp_it/du_c = p_it (1(t = c) - p_ic) g_ic, where g_ic is 1 for a
+      # class-size parameter and (Y - phi) for an item parameter of class c,
+      # d gamma_st / du_c = sum_i Q_stc,i g_ic below.
+      w_ik <- if (use.modal.assignment) {
+        w <- matrix(0, N, T_classes)
+        w[cbind(seq_len(N), max.col(p_ik))] <- 1
+        w
+      } else {
+        p_ik
+      }
+      A <- t(w_ik) %*% p_ik
       A[A < 1e-12] <- 1e-12
 
       #Extract item probabilities to match the free parameter structure
@@ -197,24 +210,28 @@ lca_step2 <- function(
         }
       }
 
+      n_free_phi <- sum(ivItemcat - 1L)
       for (t in seq_len(T_classes)) {
-        P_tt <- (p_ik[, t]^2) / A[t, t]
+        P_tt <- (w_ik[, t] * p_ik[, t]) / A[t, t]
 
         for (s in seq_len(T_classes)) {
           if (s == t) {
             next
           }
           row_J <- st_map[s, t]
-          P_st <- (p_ik[, s] * p_ik[, t]) / A[s, t]
+          P_st <- (w_ik[, s] * p_ik[, t]) / A[s, t]
 
           for (c_prime in seq_len(T_classes)) {
             I_s <- if (s == c_prime) 1.0 else 0.0
             I_t <- if (t == c_prime) 1.0 else 0.0
 
             #shared derivative component for class c_prime
-            Q_stc <- P_st *
-              (I_s + I_t - 2 * p_ik[, c_prime]) -
-              2 * P_tt * (I_t - p_ik[, c_prime])
+            Q_stc <- if (use.modal.assignment) {
+              (P_st - P_tt) * (I_t - p_ik[, c_prime])
+            } else {
+              P_st * (I_s + I_t - 2 * p_ik[, c_prime]) -
+                2 * P_tt * (I_t - p_ik[, c_prime])
+            }
 
             sum_Q <- sum(Q_stc)
 
@@ -240,7 +257,9 @@ lca_step2 <- function(
                 c_prime
               ]
 
-              col_J_start <- L_rho + item_offsets[h] + (c_prime - 1L) * n_free
+              # columns in the order of the Step-1 variance: class by class,
+              # item by item within a class
+              col_J_start <- L_rho + (c_prime - 1L) * n_free_phi + phi_row_start - 1L
 
               for (k in seq_len(n_free)) {
                 Y_col <- Y_cols[k]

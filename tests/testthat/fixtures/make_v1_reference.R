@@ -24,6 +24,14 @@
 #   - 2.0 Step 3: covariate designs built with model.matrix(); the intercept
 #     is named "(Intercept)" instead of "Intercept". Names only; all numbers
 #     unchanged.
+#   - 2.0 Step 11b: Step-2 Jacobian J.2 = d theta2 / d theta1 in the
+#     corrected (Step-1 uncertainty) variance. Its item-parameter columns
+#     were ordered item by item while the Step-1 variance is ordered class by
+#     class, and under modal assignment it differentiated the assignment
+#     weights as if they were posteriors. Both checked against numerical
+#     Jacobians. Corrected ML variances change (covariate SEs +0-12% here;
+#     distal barely); estimates, robust/BCH variances, and fit statistics are
+#     unchanged.
 
 pkgload::load_all(".", quiet = TRUE)
 source("tests/testthat/helper-v1-reference.R")
