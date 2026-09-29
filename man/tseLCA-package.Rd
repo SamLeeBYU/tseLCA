@@ -2,7 +2,6 @@
 % Please edit documentation in R/tseLCA-package.R
 \docType{package}
 \name{tseLCA-package}
-\alias{tseLCA}
 \alias{tseLCA-package}
 \title{tseLCA: Three-Step Estimation for Latent Class Analysis}
 \description{

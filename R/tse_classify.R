@@ -93,6 +93,7 @@ tse_classify <- function(
   structure(
     list(
       measurement_model = s1,
+      measurement = object,
       step2 = s2,
       data = data,
       rows = dat$keep_Y,

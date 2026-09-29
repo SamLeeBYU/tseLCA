@@ -27,6 +27,11 @@
     model it fits the combined model.
   - `tse_twostep()` gives two-step estimates (Bakk & Kuha 2018). With
     `se = TRUE` they come with multilevLCA's corrected standard errors.
+- New `tseLCA()` fits a whole model in one call:
+  `cbind(indicators) ~ covariates | distal outcome` (Formula package). It
+  chains the step-wise functions. Accessors `measurement()`,
+  `classification()`, `covariate()`, and `distal()` extract the components
+  of any fitted model.
 - `omnibus_test()` returns a standard `htest` object.
 - `predict()` for measurement models gives posterior class probabilities
   (or modal classes) for new data, coded with the model's stored

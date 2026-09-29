@@ -174,7 +174,7 @@ tse_distal <- function(
   Zo.name <- .distal_outcome_from_formula(formula)
 
   if (inherits(object, "tseLCA_covariate")) {
-    classify <- object$classification
+    classify <- object[["classification", exact = TRUE]]
     if (is.null(classify)) {
       stop("The covariate model must come from tse_covariate().", call. = FALSE)
     }
@@ -537,7 +537,7 @@ predict.tseLCA_covariate <- function(object, newdata = NULL, type = c("prob", "c
   if (is.null(object$terms)) {
     stop("predict() needs a model fitted with tse_covariate().", call. = FALSE)
   }
-  if (is.null(newdata)) newdata <- object$classification$data
+  if (is.null(newdata)) newdata <- object[["classification", exact = TRUE]]$data
   tt <- stats::delete.response(object$terms)
   mf <- stats::model.frame(tt, newdata, xlev = object$xlevels, na.action = stats::na.pass)
   Z <- stats::model.matrix(tt, mf)
@@ -566,11 +566,11 @@ predict.tseLCA_covariate <- function(object, newdata = NULL, type = c("prob", "c
 #' coef(stats::relevel(fit, ref = "C3"))
 #' @export
 relevel.tseLCA_covariate <- function(x, ref, ...) {
-  if (is.null(x$classification)) {
+  if (is.null(x[["classification", exact = TRUE]])) {
     stop("relevel() needs a model fitted with tse_covariate().", call. = FALSE)
   }
   call <- x$call
-  call$object <- x$classification
+  call$object <- x[["classification", exact = TRUE]]
   call$ref <- ref
   eval(call, parent.frame())
 }
@@ -596,7 +596,7 @@ anova.tseLCA_covariate <- function(object, ...) {
   }
   tt <- object$terms
   labels <- attr(tt, "term.labels")
-  mf <- stats::model.frame(stats::delete.response(tt), object$classification$data,
+  mf <- stats::model.frame(stats::delete.response(tt), object[["classification", exact = TRUE]]$data,
                            xlev = object$xlevels)
   assign <- attr(stats::model.matrix(tt, mf), "assign")
   b <- coef(object)

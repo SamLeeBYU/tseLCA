@@ -159,7 +159,13 @@ posterior <- function(object, ...) UseMethod("posterior")
 
 #' @rdname posterior
 #' @export
-posterior.tseLCA <- function(object, ...) object$posteriors
+posterior.tseLCA <- function(object, ...) {
+  p <- object$posteriors
+  if (!is.null(p) && is.null(colnames(p))) {
+    colnames(p) <- paste0("C", seq_len(ncol(p)))
+  }
+  p
+}
 
 #' @rdname posterior
 #' @export
