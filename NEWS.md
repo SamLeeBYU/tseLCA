@@ -87,6 +87,10 @@
 
 ## Bug fixes
 
+- `tse_twostep(se = TRUE)` with a reference class other than the first
+  returned the class-1-reference estimates and variance under the new class
+  labels. They are now transformed to the requested reference class. It also
+  no longer warns, wrongly, that multilevLCA's measurement model differs.
 - For measurement-only fits, `posterior()` / `$posteriors` and `classes()` /
   `$classifications` were not in data-row order. They were read from
   multilevLCA's `fit0$mU`, which is sorted by response pattern. They are now

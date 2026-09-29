@@ -463,13 +463,15 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
     iter.measurement = opts$iter.measurement,
     R2.threshold = opts$R2.threshold,
     incomplete = opts$incomplete,
-    rebase = ref,
     startval = start,
     verbose = opts$verbose
   )
+  # multilevLCA starts from `object`'s classes in their original order and
+  # uses class 1 as the reference; compare with that order, then move the
+  # estimates to `ref`.
   phi_ml <- fz$raw_fit$mPhi
   if (!is.null(phi_ml) && !isTRUE(all.equal(unname(as.matrix(phi_ml)),
-                                            unname(as.matrix(setup$s1$fit0$mPhi)),
+                                            unname(as.matrix(object$measurement_model$fit0$mPhi)),
                                             tolerance = 1e-3))) {
     warning(
       "multilevLCA's two-step measurement model differs from `object`; ",
@@ -478,11 +480,33 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
     )
   }
   est <- fz$mGamma
-  rownames(est) <- colnames(Z)
   V <- fz$Varmat_cor
   if (is.null(V)) V <- fz$raw_fit$Varmat_cor
   if (is.null(V)) V <- matrix(NA_real_, length(est), length(est))
-  list(mGamma = est, vcov = V)
+  moved <- .rebase_logit(est, V, setup$ref_idx)
+  rownames(moved$mGamma) <- colnames(Z)
+  moved
+}
+
+#' Change the reference class of multinomial logit coefficients
+#'
+#' `est` is Q x (K-1) with class 1 as the reference and `V` the variance of
+#' `vec(est)`. Returns the coefficients against class `ref` (columns: the
+#' other classes in their original order) and the transformed variance.
+#' @noRd
+.rebase_logit <- function(est, V, ref) {
+  K <- ncol(est) + 1L
+  Q <- nrow(est)
+  M <- matrix(0, K - 1L, K - 1L) # new non-reference classes x old classes 2..K
+  for (i in seq_len(K - 1L)) {
+    t <- seq_len(K)[-ref][i]
+    if (t != 1L) M[i, t - 1L] <- 1
+    if (ref != 1L) M[i, ref - 1L] <- -1
+  }
+  A <- kronecker(M, diag(Q))
+  new <- matrix(A %*% as.vector(est), Q, K - 1L,
+                dimnames = list(rownames(est), paste0("C", seq_len(K)[-ref])))
+  list(mGamma = new, vcov = A %*% V %*% t(A))
 }
 
 #' Record the specification on a fitted Step-3 object

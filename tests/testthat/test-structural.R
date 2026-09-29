@@ -173,6 +173,14 @@ test_that("tse_twostep(se = TRUE) uses multilevLCA's corrected variance", {
   expect_false(anyNA(V))
   expect_true(all(diag(V) > 0))
   expect_equal(coef(ft), coef(tse_twostep(m, ~ Zp)), tolerance = 0.05)
+
+  # another reference class re-parameterizes the estimates and their variance
+  f3 <- expect_no_warning(tse_twostep(m, ~ Zp, ref = 3, se = TRUE))
+  expect_equal(coef(f3), coef(tse_twostep(m, ~ Zp, ref = 3)), tolerance = 0.05)
+  b <- coef(ft)
+  expect_equal(unname(coef(f3)), unname(c(-b[3:4], b[1:2] - b[3:4])), tolerance = 1e-8)
+  expect_equal(unname(sqrt(diag(vcov(f3)))[1:2]), unname(sqrt(diag(V))[3:4]), tolerance = 1e-8)
+  expect_equal(unname(vcov(f3)[4, 4]), V[2, 2] + V[4, 4] - 2 * V[2, 4], tolerance = 1e-8)
 })
 
 test_that("predict(), anova(), and omnibus_test() on Step-3 models", {
