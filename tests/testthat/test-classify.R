@@ -90,3 +90,21 @@ test_that("methods and input checks", {
   expect_error(tse_classify(m, newdata = as.matrix(d)), "data frame")
   expect_error(tse_classify(m, assignment = "random"))
 })
+
+test_that("Step-3 models accept the classified data with added columns", {
+  cl <- tse_classify(m)
+  d2 <- d
+  d2$group <- factor(ifelse(d2$Zp > 3, "high", "low"))
+  expect_error(tse_covariate(cl, ~ Zp + group), "not found")
+  fit <- tse_covariate(cl, ~ Zp + group, data = d2)
+  expect_equal(rownames(coef(fit, matrix = TRUE)), c("(Intercept)", "Zp", "grouplow"))
+  expect_equal(nrow(predict(fit)), nrow(d2))
+  d2$Zo2 <- rnorm(nrow(d2))
+  expect_s3_class(tse_distal(cl, Zo2 ~ 1, data = d2), "tseLCA_distal")
+  expect_s3_class(tse_distal(fit, Zo2 ~ 1, data = d2), "tseLCA_both")
+  # other rows are rejected
+  expect_error(tse_covariate(cl, ~ Zp, data = d2[-1, ]), "same rows")
+  bad <- d2
+  bad$Y1 <- 1 - bad$Y1
+  expect_error(tse_covariate(cl, ~ Zp, data = bad), "same rows")
+})

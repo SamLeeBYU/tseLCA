@@ -11,7 +11,8 @@ tse_covariate(
   se = c("corrected", "robust"),
   ref = 1,
   start = NULL,
-  control = NULL
+  control = NULL,
+  data = NULL
 )
 }
 \arguments{
@@ -33,6 +34,10 @@ label such as \code{"C2"}.}
 
 \item{control}{Estimation settings; default: those of the measurement
 model. See \code{\link[=tse_control]{tse_control()}}.}
+
+\item{data}{Optional data frame with the covariates: the classified data
+(the same rows, in the same order) with any additional columns. Omitted:
+the data stored in \code{object}.}
 }
 \value{
 A \code{tseLCA_covariate} object; see \code{\link[=coef.tseLCA_structural]{coef.tseLCA_structural()}},

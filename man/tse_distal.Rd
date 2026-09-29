@@ -10,7 +10,8 @@ tse_distal(
   family = "gaussian",
   method = NULL,
   se = NULL,
-  control = NULL
+  control = NULL,
+  data = NULL
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ outcome), or the corresponding family object (\code{gaussian()},
 default to those of the covariate model.}
 
 \item{control}{Estimation settings; default: those of \code{object}.}
+
+\item{data}{Optional data frame with the distal outcome, as in
+\code{\link[=tse_covariate]{tse_covariate()}}.}
 }
 \value{
 A \code{tseLCA_distal} object, or a \code{tseLCA_both} object when \code{object}

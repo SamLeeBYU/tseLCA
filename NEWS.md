@@ -32,7 +32,13 @@
   chains the step-wise functions. Accessors `measurement()`,
   `classification()`, `covariate()`, and `distal()` extract the components
   of any fitted model.
+- `tse_covariate()` and `tse_distal()` accept `data`: the classified data
+  (same rows) with additional columns, e.g. variables created after
+  classification.
 - `omnibus_test()` returns a standard `htest` object.
+- The vignette, README, package help page, and pkgdown reference index are
+  rewritten for the step-wise interface. The vignette ends with a table
+  mapping `three_step()` arguments to the new functions.
 - `predict()` for measurement models gives posterior class probabilities
   (or modal classes) for new data, coded with the model's stored
   categories. `fitted()`, `formula()`, and `update()` also work.

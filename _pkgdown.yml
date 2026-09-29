@@ -2,3 +2,70 @@ url: https://samleebyu.github.io/tseLCA/
 template:
   bootstrap: 5
 
+reference:
+- title: One-call interface
+  desc: Fit a complete three-step model from one formula.
+  contents:
+  - tseLCA
+  - measurement
+
+- title: "Step 1: measurement model"
+  desc: Estimate the latent classes and choose the number of classes.
+  contents:
+  - tse_lca
+  - best_model
+  - predict.tseLCA_measurement
+  - class_sizes
+
+- title: "Step 2: classification"
+  desc: Assign observations to classes and estimate the classification error.
+  contents:
+  - tse_classify
+  - posterior
+
+- title: "Step 3: structural models"
+  desc: Relate the classes to covariates and distal outcomes.
+  contents:
+  - tse_covariate
+  - tse_distal
+  - tse_twostep
+  - predict.tseLCA_covariate
+  - relevel.tseLCA_covariate
+  - anova.tseLCA_covariate
+  - omnibus_test
+
+- title: Methods for fitted models
+  contents:
+  - summary.tseLCA_structural
+  - coef.tseLCA_structural
+  - vcov.tseLCA_structural
+  - logLik.tseLCA
+  - plot.tseLCA
+
+- title: Estimation settings
+  contents:
+  - tse_control
+
+- title: Simulation
+  desc: Data from the design of Bakk and Kuha (2018), used in the simulation study.
+  contents:
+  - generate_data
+  - generate_all_conditions
+  - bk2018_params
+  - starts_with("draw_")
+  - make_rho
+  - mnl_probs
+
+- title: Deprecated
+  desc: The tseLCA 1.x interface. These functions keep working but will be removed in a future version.
+  contents:
+  - three_step
+  - lca_step1
+  - fitZ_from_fit0
+  - fitZ_from_multiLCA
+
+articles:
+- title: Getting started
+  navbar: ~
+  contents:
+  - tseLCA-workflow

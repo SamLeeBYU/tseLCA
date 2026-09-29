@@ -40,6 +40,9 @@
 #'   (Bakk and Kuha 2018) are used.
 #' @param control Estimation settings; default: those of the measurement
 #'   model. See [tse_control()].
+#' @param data Optional data frame with the covariates: the classified data
+#'   (the same rows, in the same order) with any additional columns. Omitted:
+#'   the data stored in `object`.
 #'
 #' @return A `tseLCA_covariate` object; see [coef.tseLCA_structural()],
 #'   [summary.tseLCA_structural()], [predict.tseLCA_covariate()], and
@@ -85,7 +88,8 @@ tse_covariate <- function(
   se = c("corrected", "robust"),
   ref = 1,
   start = NULL,
-  control = NULL
+  control = NULL,
+  data = NULL
 ) {
   cl <- match.call()
   if (!inherits(object, "tseLCA_classify")) {
@@ -94,6 +98,7 @@ tse_covariate <- function(
   method <- match.arg(method)
   se <- match.arg(se)
   formula <- .covariate_formula(formula, NULL, TRUE)
+  object <- .with_data(object, data)
   setup <- .structural_setup(object, formula, NULL, "gaussian", ref, method, se, control)
   K <- object$n_classes
   opts <- setup$opts
@@ -144,6 +149,8 @@ tse_covariate <- function(
 #' @param method,se As for [tse_covariate()]. For a combined model they
 #'   default to those of the covariate model.
 #' @param control Estimation settings; default: those of `object`.
+#' @param data Optional data frame with the distal outcome, as in
+#'   [tse_covariate()].
 #'
 #' @return A `tseLCA_distal` object, or a `tseLCA_both` object when `object`
 #'   is a covariate model.
@@ -167,7 +174,8 @@ tse_distal <- function(
   family = "gaussian",
   method = NULL,
   se = NULL,
-  control = NULL
+  control = NULL,
+  data = NULL
 ) {
   cl <- match.call()
   family <- .distal_family(family)
@@ -178,6 +186,7 @@ tse_distal <- function(
     if (is.null(classify)) {
       stop("The covariate model must come from tse_covariate().", call. = FALSE)
     }
+    classify <- .with_data(classify, data)
     method <- .match_or_inherit(method, object$method, c("ML", "BCH", "none"), "method")
     se <- .match_or_inherit(se, object$se_requested, c("corrected", "robust"), "se")
     if (method != object$method) {
@@ -198,7 +207,7 @@ tse_distal <- function(
     )
     cov_fit <- object
   } else if (inherits(object, "tseLCA_classify")) {
-    classify <- object
+    classify <- .with_data(object, data)
     method <- .match_or_inherit(method, "ML", c("ML", "BCH", "none"), "method")
     se <- .match_or_inherit(se, "corrected", c("corrected", "robust"), "se")
     setup <- .structural_setup(classify, NULL, Zo.name, family, 1, method, se, control)
@@ -308,6 +317,38 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
 }
 
 # -- internals ---------------------------------------------------------------------
+
+#' Use a data frame with the classified rows (and possibly more columns)
+#'
+#' `data` must hold the rows of the classification's data, in the same order,
+#' with the same indicator values; other columns may be added.
+#' @noRd
+.with_data <- function(classify, data) {
+  if (is.null(data)) {
+    return(classify)
+  }
+  if (!is.data.frame(data)) {
+    stop("`data` must be a data frame.", call. = FALSE)
+  }
+  old <- classify$data
+  items <- classify$measurement_model$Y.names
+  same <- nrow(data) == nrow(old) && all(items %in% names(data)) &&
+    isTRUE(all.equal(
+      lapply(data[items], as.character),
+      lapply(old[items], as.character),
+      check.attributes = FALSE
+    ))
+  if (!same) {
+    stop(
+      "`data` must contain the classified data (same rows, in the same order, ",
+      "with the same indicator values), possibly with additional columns. To ",
+      "classify other data, use tse_classify(newdata = ).",
+      call. = FALSE
+    )
+  }
+  classify$data <- data
+  classify
+}
 
 #' Common set-up of a Step-3 model on a classification
 #'
