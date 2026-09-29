@@ -415,6 +415,9 @@ run_measurement_fit_random_restarts <- function(
 #'                       startval = phi)
 #' }
 #' @keywords internal
+#' @section Deprecated:
+#' Deprecated as of tseLCA 2.0.0: use [tse_lca()] instead. It keeps
+#' working and warns once per session when called directly.
 #' @export
 lca_step1_startval <- function(
   data,
@@ -427,6 +430,7 @@ lca_step1_startval <- function(
   rebase = "C1",
   verbose = FALSE
 ) {
+  .tse_deprecated_external("lca_step1_startval()", "tse_lca(start = )", parent.frame())
   fit0 <- run_measurement_fit_startval(
     data = data,
     Y.names = Y.names,
@@ -517,6 +521,9 @@ lca_step1_startval <- function(
 #' s1r <- lca_step1(d, Y.names = paste0("Y", 1:6), n_classes = 3,
 #'                  n_init = 20L, verbose = TRUE)
 #' }
+#' @section Deprecated:
+#' Deprecated as of tseLCA 2.0.0: use [tse_lca()] instead. It keeps
+#' working and warns once per session when called directly.
 #' @export
 lca_step1 <- function(
   data,
@@ -538,6 +545,7 @@ lca_step1 <- function(
   n_init = NULL,
   verbose = FALSE
 ) {
+  .tse_deprecated_external("lca_step1()", "tse_lca()", parent.frame())
   if (!is.null(startval) && !is.null(n_init)) {
     stop(
       "`startval` and `n_init` are mutually exclusive ways of controlling ",
@@ -742,6 +750,9 @@ lca_step1 <- function(
 #' fZ$mGamma   # Q x (T-1) coefficient matrix
 #' fZ$converged
 #' }
+#' @section Deprecated:
+#' Deprecated as of tseLCA 2.0.0: use [tse_twostep()] instead. It keeps
+#' working and warns once per session when called directly.
 #' @export
 fitZ_from_fit0 <- function(
   fit0,
@@ -758,6 +769,7 @@ fitZ_from_fit0 <- function(
   Y.levels = NULL,
   Zp.formula = NULL
 ) {
+  .tse_deprecated_external("fitZ_from_fit0()", "tse_twostep()", parent.frame())
   cd <- clean_data(
     data = data,
     Y.names = Y.names,
@@ -969,6 +981,9 @@ fitZ_from_fit0 <- function(
 #' fZ_ml$mGamma           # two-step estimates
 #' fZ_ml$raw_fit$Varmat_cor   # multilevLCA corrected vcov
 #' }
+#' @section Deprecated:
+#' Deprecated as of tseLCA 2.0.0: use [tse_twostep()] instead. It keeps
+#' working and warns once per session when called directly.
 #' @export
 fitZ_from_multiLCA <- function(
   data,
@@ -986,6 +1001,7 @@ fitZ_from_multiLCA <- function(
   n_init = NULL,
   verbose = FALSE
 ) {
+  .tse_deprecated_external("fitZ_from_multiLCA()", "tse_twostep(se = TRUE)", parent.frame())
   if (!is.null(startval) && !is.null(n_init)) {
     stop(
       "`startval` and `n_init` are mutually exclusive ways of controlling ",

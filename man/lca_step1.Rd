@@ -95,6 +95,12 @@ Estimates the latent class measurement model with \pkg{multilevLCA} and
 optionally, fixes \code{mPhi} and estimates covariate effects (two-step
 initialization) with \code{fitZ_from_fit0()}.
 }
+\section{Deprecated}{
+
+Deprecated as of tseLCA 2.0.0: use \code{\link[=tse_lca]{tse_lca()}} instead. It keeps
+working and warns once per session when called directly.
+}
+
 \examples{
 \donttest{
 d <- generate_data(200, "high", "covariate", seed = 1)

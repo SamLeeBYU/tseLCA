@@ -80,6 +80,12 @@ listwise deletion on covariates.}
 Fixes \code{mPhi} at \code{fit0$mPhi} and estimates multinomial logit coefficients
 \code{mGamma} (Q x (T-1)) with an EM algorithm using a BFGS M-step.
 }
+\section{Deprecated}{
+
+Deprecated as of tseLCA 2.0.0: use \code{\link[=tse_twostep]{tse_twostep()}} instead. It keeps
+working and warns once per session when called directly.
+}
+
 \examples{
 \donttest{
 d  <- generate_data(200, "high", "covariate", seed = 1)

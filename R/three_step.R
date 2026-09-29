@@ -18,7 +18,8 @@
 #'
 #' @param data A data.frame containing all columns referenced by \code{Y.names},
 #'   \code{Zp.names}, and \code{Zo.name}.
-#' @param Y.names Character vector of indicator column names. Need to be coded as consecutive integers with base level starting at `0`.
+#' @param Y.names Character vector of indicator column names. Indicators
+#'   may be factors, logicals, character, or numeric codes (see [tse_lca()]).
 #' @param n_classes Integer. Number of latent classes.
 #' @param Zp.names Character vector of covariate column names, or \code{NULL}
 #'   for a measurement-only fit. Default \code{NULL}.
@@ -302,6 +303,27 @@
 #' # Plot item-response profiles from the measurement model
 #' plot(fit)
 #'
+#' @section Deprecated:
+#' Deprecated as of tseLCA 2.0.0. It keeps working (and gives the same
+#' estimates) but warns once per session; set
+#' `options(tseLCA.warn.deprecated = FALSE)` to silence the warning. Use
+#' [tseLCA()] or the step-wise functions instead:
+#'
+#' | `three_step()` | tseLCA 2.0 |
+#' |---|---|
+#' | `Y.names`, `n_classes` | `tse_lca(cbind(...) ~ 1, nclass = )` |
+#' | `Zp.names` | `tse_covariate(, ~ ...)` or `tseLCA(... ~ covariates)` |
+#' | `Zo.name`, `family` | `tse_distal(, outcome ~ 1, family = )`, or [tseLCA()] with the outcome after the bar |
+#' | `step1` (measurement model from another sample) | `tse_classify(, newdata = )` |
+#' | `startval` | `tse_lca(start = )` |
+#' | `use.modal.assignment` | `tse_classify(assignment = )` |
+#' | `use.bch` | `method = "BCH"` |
+#' | `use.simple.cov` | `se = "robust"` |
+#' | `rebase` | `ref` argument, or `relevel()` |
+#' | `incomplete` | `tse_lca(missing = "fiml")` |
+#' | `n_init`, `maxIter.measurement`, `measurement.tol`, `iter.measurement`, `R2.threshold`, `em.maxIter`, `covariate.tol`, `boundary.tol`, `correct.spec` | [tse_control()] |
+#' | `get.twostep.vcov` | `tse_twostep(se = TRUE)` |
+#'
 #' @export
 three_step <- function(
   data,
@@ -331,6 +353,10 @@ three_step <- function(
   correct.spec = FALSE,
   verbose = FALSE
 ) {
+  .tse_deprecated(
+    "three_step()",
+    "tseLCA() or the step-wise tse_lca(), tse_classify(), tse_covariate(), and tse_distal()"
+  )
   n_step1_inputs <- sum(!is.null(step1), !is.null(startval), !is.null(n_init))
   if (n_step1_inputs > 1L) {
     stop(

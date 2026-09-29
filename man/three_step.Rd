@@ -37,7 +37,8 @@ three_step(
 \item{data}{A data.frame containing all columns referenced by \code{Y.names},
 \code{Zp.names}, and \code{Zo.name}.}
 
-\item{Y.names}{Character vector of indicator column names. Need to be coded as consecutive integers with base level starting at \code{0}.}
+\item{Y.names}{Character vector of indicator column names. Indicators
+may be factors, logicals, character, or numeric codes (see \code{\link[=tse_lca]{tse_lca()}}).}
 
 \item{n_classes}{Integer. Number of latent classes.}
 
@@ -268,6 +269,28 @@ means following Bakk, Tekle & Vermunt (2013), with the ML correction (Vermunt, 2
 \code{vignette("tseLCA", package = "tseLCA")} for a worked example.
 }
 }
+\section{Deprecated}{
+
+Deprecated as of tseLCA 2.0.0. It keeps working (and gives the same
+estimates) but warns once per session; set
+\code{options(tseLCA.warn.deprecated = FALSE)} to silence the warning. Use
+\code{\link[=tseLCA]{tseLCA()}} or the step-wise functions instead:\tabular{ll}{
+   \code{three_step()} \tab tseLCA 2.0 \cr
+   \code{Y.names}, \code{n_classes} \tab \code{tse_lca(cbind(...) ~ 1, nclass = )} \cr
+   \code{Zp.names} \tab \code{tse_covariate(, ~ ...)} or \code{tseLCA(... ~ covariates)} \cr
+   \code{Zo.name}, \code{family} \tab \code{tse_distal(, outcome ~ 1, family = )}, or \code{\link[=tseLCA]{tseLCA()}} with the outcome after the bar \cr
+   \code{step1} (measurement model from another sample) \tab \code{tse_classify(, newdata = )} \cr
+   \code{startval} \tab \code{tse_lca(start = )} \cr
+   \code{use.modal.assignment} \tab \code{tse_classify(assignment = )} \cr
+   \code{use.bch} \tab \code{method = "BCH"} \cr
+   \code{use.simple.cov} \tab \code{se = "robust"} \cr
+   \code{rebase} \tab \code{ref} argument, or \code{relevel()} \cr
+   \code{incomplete} \tab \code{tse_lca(missing = "fiml")} \cr
+   \code{n_init}, \code{maxIter.measurement}, \code{measurement.tol}, \code{iter.measurement}, \code{R2.threshold}, \code{em.maxIter}, \code{covariate.tol}, \code{boundary.tol}, \code{correct.spec} \tab \code{\link[=tse_control]{tse_control()}} \cr
+   \code{get.twostep.vcov} \tab \code{tse_twostep(se = TRUE)} \cr
+}
+}
+
 \examples{
 d <- generate_data(n = 200, separation = "high",
                    scenario = "covariate", seed = 1)

@@ -91,6 +91,12 @@ fit the two-step covariate model.  This is the original multilevLCA approach
 and is used when \code{get.twostep.vcov = TRUE} in \code{\link[=three_step]{three_step()}} to obtain
 multilevLCA's corrected standard errors for the two-step gamma estimates.
 }
+\section{Deprecated}{
+
+Deprecated as of tseLCA 2.0.0: use \code{\link[=tse_twostep]{tse_twostep()}} instead. It keeps
+working and warns once per session when called directly.
+}
+
 \examples{
 \donttest{
 d <- generate_data(200, "high", "covariate", seed = 1)

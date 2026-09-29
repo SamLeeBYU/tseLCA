@@ -94,6 +94,12 @@ model as \code{$measurement_model$fit0} / \code{$fit0} respectively. This
 function is documented mainly to describe what \code{startval} accepts and
 how it is used internally.
 }
+\section{Deprecated}{
+
+Deprecated as of tseLCA 2.0.0: use \code{\link[=tse_lca]{tse_lca()}} instead. It keeps
+working and warns once per session when called directly.
+}
+
 \examples{
 \donttest{
 d <- generate_data(200, "high", "covariate", seed = 1)

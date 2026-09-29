@@ -127,6 +127,16 @@
   an observed distal outcome were kept in the distal model with `NA` class
   priors. The distal model now uses rows with complete covariates.
 
+## Deprecated
+
+- `three_step()` is deprecated in favor of `tseLCA()` and the step-wise
+  functions. It keeps working, with the same estimates, and warns once per
+  session. Its help page maps each argument to the 2.0 interface.
+- `lca_step1()`, `lca_step1_startval()`, `fitZ_from_fit0()`, and
+  `fitZ_from_multiLCA()` are deprecated in favor of `tse_lca()` and
+  `tse_twostep()`. They warn once per session when called directly.
+- `options(tseLCA.warn.deprecated = FALSE)` silences these warnings.
+
 ## Breaking changes
 
 - `coef()` returns a named vector whose names match `vcov()`, so
