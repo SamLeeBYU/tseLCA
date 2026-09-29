@@ -4,7 +4,6 @@
 \alias{omnibus_test}
 \alias{omnibus_test.tseLCA_distal}
 \alias{omnibus_test.tseLCA_both}
-\alias{print.tseLCA_omnibus}
 \title{Omnibus Wald test of class equality for a distal outcome}
 \usage{
 omnibus_test(object, ...)
@@ -12,23 +11,17 @@ omnibus_test(object, ...)
 \method{omnibus_test}{tseLCA_distal}(object, ...)
 
 \method{omnibus_test}{tseLCA_both}(object, ...)
-
-\method{print}{tseLCA_omnibus}(x, digits = 4, ...)
 }
 \arguments{
 \item{object}{A \code{tseLCA_distal} object, or a \code{tseLCA_both}
 object (tests its distal component).}
 
 \item{...}{Unused; present for S3 method consistency.}
-
-\item{x}{A \code{tseLCA_omnibus} object.}
-
-\item{digits}{Integer. Number of decimal places for the test statistic.}
 }
 \value{
-An object of class \code{"tseLCA_omnibus"}: a list with
-\code{$statistic} (the Wald chi-squared statistic), \code{$df}, and
-\code{$p.value}.
+A standard \code{"htest"} object: the Wald chi-squared
+\code{$statistic}, its degrees of freedom \code{$parameter} (also
+\code{$df}), and the \code{$p.value}.
 }
 \description{
 Tests whether the distal outcome distribution differs across latent

@@ -15,6 +15,19 @@
   entropy R^2. With `newdata` it classifies another sample, replacing the
   `step1 =` route for using a measurement model from one sample on another.
   `tse_lca()` models now keep their `data` for this purpose.
+- New Step-3 functions:
+  - `tse_covariate()` fits the multinomial logit of class membership on a
+    covariate formula (factors, interactions, transformations). Arguments:
+    `method = "ML"`, `"BCH"`, or `"none"` (the uncorrected three-step
+    estimator, for comparison); `se = "corrected"` or `"robust"`; `ref`
+    (reference class); `start`. Methods: `predict()` (class probabilities
+    given covariates), `relevel()`, and `anova()` (Wald tests per term).
+  - `tse_distal()` fits a distal outcome (`Zo ~ 1`, any supported
+    `family`, as a string or family object). Given a `tse_covariate()`
+    model it fits the combined model.
+  - `tse_twostep()` gives two-step estimates (Bakk & Kuha 2018). With
+    `se = TRUE` they come with multilevLCA's corrected standard errors.
+- `omnibus_test()` returns a standard `htest` object.
 - `predict()` for measurement models gives posterior class probabilities
   (or modal classes) for new data, coded with the model's stored
   categories. `fitted()`, `formula()`, and `update()` also work.

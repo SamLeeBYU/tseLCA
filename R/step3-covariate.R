@@ -353,7 +353,11 @@ lca_step3 <- function(
     neg.ll <- function(params) -sum(three_step.ll(params))
   }
 
-  gamma_init <- if (!is.null(fitZ$mGamma) && opts$use.two.step) {
+  # exact matching: `opts$start` would partially match `opts$startval`
+  gamma_start <- opts[["gamma_start", exact = TRUE]]
+  gamma_init <- if (!is.null(gamma_start)) {
+    c(gamma_start)
+  } else if (!is.null(fitZ$mGamma) && opts$use.two.step) {
     c(fitZ$mGamma)
   } else {
     rep(0, Q * (iT - 1))
@@ -450,7 +454,7 @@ lca_step3 <- function(
       npar = total.k,
       nobs = nrow(Y_cc),
       n_classes = iT,
-      estimator = if (opts$use.bch) "BCH" else "ML",
+      estimator = .estimator_label(opts),
       entropy.R2 = entropy.R2,
       posteriors = s2$all$p.xy,
       classifications = max.col(s2$all$p.xy)

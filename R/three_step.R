@@ -432,8 +432,8 @@ three_step <- function(
 #' `cov_fit` is the tseLCA_covariate object from .fit_covariate() and `dis`
 #' the distal component from .fit_distal(); either may be NULL.
 #' @noRd
-.new_structural_fit <- function(s1, s2, cov_fit, dis, n_classes, family, use.bch) {
-  estimator <- if (use.bch) "BCH" else "ML"
+.new_structural_fit <- function(s1, s2, cov_fit, dis, n_classes, family, use.bch,
+                                estimator = if (use.bch) "BCH" else "ML") {
   if (is.null(dis)) {
     return(cov_fit)
   }
@@ -452,4 +452,10 @@ three_step <- function(
   out <- c(list(measurement_model = s1, covariate = cov_fit, distal = dis), shared)
   class(out) <- c("tseLCA_both", "tseLCA_structural", "tseLCA")
   out
+}
+
+#' Label of the Step-3 estimator
+#' @noRd
+.estimator_label <- function(opts) {
+  if (isTRUE(opts$uncorrected)) "uncorrected" else if (opts$use.bch) "BCH" else "ML"
 }

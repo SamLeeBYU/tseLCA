@@ -543,11 +543,14 @@ coef.summary.tseLCA_structural <- function(object, ...) {
 }
 
 .structural_header <- function(x) {
-  title <- switch(
-    x$type,
-    covariate = "Three-step latent class model: covariates",
-    distal = "Three-step latent class model: distal outcome",
-    both = "Three-step latent class model: covariates and distal outcome"
+  title <- paste(
+    if (identical(x$estimator, "two-step")) "Two-step" else "Three-step",
+    switch(
+      x$type,
+      covariate = "latent class model: covariates",
+      distal = "latent class model: distal outcome",
+      both = "latent class model: covariates and distal outcome"
+    )
   )
   cat(title, "\n", sep = "")
   info <- sprintf("  Classes: %d   Estimator: %s", x$n_classes, x$estimator)
@@ -742,9 +745,9 @@ wald_class_equality <- function(theta, V, iT) {
 #'   object (tests its distal component).
 #' @param ... Unused; present for S3 method consistency.
 #'
-#' @return An object of class \code{"tseLCA_omnibus"}: a list with
-#'   \code{$statistic} (the Wald chi-squared statistic), \code{$df}, and
-#'   \code{$p.value}.
+#' @return A standard \code{"htest"} object: the Wald chi-squared
+#'   \code{$statistic}, its degrees of freedom \code{$parameter} (also
+#'   \code{$df}), and the \code{$p.value}.
 #' @examples
 #' \donttest{
 #' d <- generate_data(300, "high", "distal", seed = 1)
@@ -776,35 +779,19 @@ omnibus_test.tseLCA_both <- function(object, ...) {
   iT <- n_classes
 
   test <- wald_class_equality(theta, V, iT)
-  result <- list(
-    statistic = test$statistic,
-    df = test$df,
-    p.value = test$p.value,
-    family = if (!is.null(family)) family else "gaussian",
-    n_classes = iT
+  family <- if (!is.null(family)) family else "gaussian"
+  structure(
+    list(
+      statistic = c(W = test$statistic),
+      parameter = c(df = test$df),
+      p.value = test$p.value,
+      method = "Wald test of equal distal outcome distributions across latent classes",
+      data.name = sprintf("%s distal outcome, %d classes", family, iT),
+      df = test$df,
+      family = family,
+      n_classes = iT
+    ),
+    class = "htest"
   )
-  class(result) <- "tseLCA_omnibus"
-  result
 }
 
-#' @rdname omnibus_test
-#' @param x A \code{tseLCA_omnibus} object.
-#' @param digits Integer. Number of decimal places for the test statistic.
-#' @export
-print.tseLCA_omnibus <- function(x, digits = 4, ...) {
-  cat("Omnibus Wald test of class equality (distal outcome)\n")
-  cat(sprintf("  Family: %s   Classes: %d\n", x$family, x$n_classes))
-  p_str <- if (x$p.value < 0.001) {
-    "< 0.001"
-  } else {
-    sprintf("%.4f", x$p.value)
-  }
-  cat(sprintf(
-    "  W(%d) = %.*f, p %s\n",
-    x$df,
-    digits,
-    x$statistic,
-    if (startsWith(p_str, "<")) p_str else paste0("= ", p_str)
-  ))
-  invisible(x)
-}

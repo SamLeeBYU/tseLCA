@@ -934,7 +934,7 @@ test_that("omnibus_test degrees of freedom match theory for multinomial and scal
     use.simple.cov = TRUE
   )
   ob_multi <- omnibus_test(fit_multi)
-  expect_s3_class(ob_multi, "tseLCA_omnibus")
+  expect_s3_class(ob_multi, "htest")
   # (T-1)*(C-1) = 2*3 = 6, the textbook df for a T x C homogeneity test.
   expect_equal(ob_multi$df, 6L)
   expect_true(ob_multi$p.value < 0.001)
@@ -996,7 +996,7 @@ test_that("omnibus_test works on a tseLCA_both object's distal component", {
     use.simple.cov = TRUE
   )
   ob <- omnibus_test(fit_both)
-  expect_s3_class(ob, "tseLCA_omnibus")
+  expect_s3_class(ob, "htest")
   expect_equal(ob$df, 6L)
 })
 

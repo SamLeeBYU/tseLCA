@@ -16,7 +16,8 @@ fitZ_from_fit0(
   rebase = "C1",
   starting_val = NULL,
   verbose = FALSE,
-  Y.levels = NULL
+  Y.levels = NULL,
+  Zp.formula = NULL
 )
 }
 \arguments{
@@ -49,6 +50,9 @@ is consistent.}
 \item{Y.levels}{Optional named list of indicator categories when \code{data}
 holds 0-based codes (as stored with a fitted measurement model); \code{NULL}
 derives them from \code{data}.}
+
+\item{Zp.formula}{Optional one-sided formula for the covariate design, used
+instead of \code{Zp.names} and \code{include.intercept}.}
 }
 \value{
 A list with the following elements:

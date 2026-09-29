@@ -702,6 +702,8 @@ lca_step1 <- function(
 #' @param Y.levels Optional named list of indicator categories when `data`
 #'   holds 0-based codes (as stored with a fitted measurement model); `NULL`
 #'   derives them from `data`.
+#' @param Zp.formula Optional one-sided formula for the covariate design, used
+#'   instead of `Zp.names` and `include.intercept`.
 #' @param verbose Logical. Print convergence messages. Default `FALSE`.
 #'
 #' @return A list with the following elements:
@@ -753,7 +755,8 @@ fitZ_from_fit0 <- function(
   rebase = "C1",
   starting_val = NULL,
   verbose = FALSE,
-  Y.levels = NULL
+  Y.levels = NULL,
+  Zp.formula = NULL
 ) {
   cd <- clean_data(
     data = data,
@@ -762,6 +765,7 @@ fitZ_from_fit0 <- function(
     incomplete = incomplete,
     include.intercept = include.intercept,
     verbose = verbose,
+    Zp.formula = Zp.formula,
     Y.levels = Y.levels
   )
   mY <- cd$Y.obs # expanded N_Y x K

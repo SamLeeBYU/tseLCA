@@ -482,6 +482,9 @@ lca_step3.distal <- function(
     opts$use.modal.assignment,
     pi_adj = pi_adj
   )
+  if (isTRUE(opts$uncorrected)) {
+    res_adj$p.wx_mat <- diag(iT)
+  }
   list(
     pi_adj = pi_adj,
     res_adj = res_adj,
