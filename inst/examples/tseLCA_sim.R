@@ -1,961 +1,295 @@
 #####################################################
-### Simulation Script for the tseLCA package:
+### Simulation study for the tseLCA package
 ### tseLCA: Three-Step Estimation for Latent Class Analysis
 ### -------------------------------------------------
-### By: Sam Lee
-### E-Mail: samlee@arizona.edu
+### By: Sam Lee (samlee@arizona.edu)
 #####################################################
+#
+# Reproduces the simulation study (Section 2.4) and its tables: bias, and
+# coverage with SE/SD ratios, for the covariate and distal-outcome scenarios,
+# with the three-step BCH and ML estimators under modal and proportional
+# assignment, and the two-step estimator for covariates.
+#
+# Run in batch mode from a directory of your choice:
+#   Rscript --vanilla tseLCA_sim.R
+# or: source(system.file("examples", "tseLCA_sim.R", package = "tseLCA"))
+#
+# Settings (environment variables; defaults in parentheses):
+#   TSELCA_SIM_QUICK      TRUE runs 25 replications per condition instead of
+#                         500, for a quick check of the pipeline (FALSE).
+#   TSELCA_SIM_SCENARIOS  "covariate", "distal", or both ("covariate,distal").
+#   TSELCA_SIM_DIR        Directory for the simulated data, Step-1 models, and
+#                         results ("tseLCA_sim_output").
+#   TSELCA_SIM_CORES      Parallel workers (number of cores - 1).
+#
+# The computational cost is dominated by Step 1 (500 replications x 18
+# conditions, each measurement model fitted from 20 random starts), which
+# takes several hours on one core. The data and Step-1 models are saved in
+# TSELCA_SIM_DIR and reused when the script is run again; runs are resumed
+# condition by condition. Results for each replication are saved as well, and
+# the tables are printed from them at the end.
+#
+# Monte Carlo error: with 500 replications the standard error of a coverage
+# rate near .95 is about .01, and that of the bias is reported next to it.
 
-# Run this script with:
-# source(system.file("examples", "tseLCA_sim.R", package = "tseLCA"))
+library(tseLCA)
+library(parallel)
+
+QUICK <- isTRUE(as.logical(Sys.getenv("TSELCA_SIM_QUICK", "FALSE")))
+SCENARIOS <- strsplit(Sys.getenv("TSELCA_SIM_SCENARIOS", "covariate,distal"), ",")[[1]]
+OUT_DIR <- Sys.getenv("TSELCA_SIM_DIR", "tseLCA_sim_output")
+N_CORES <- as.integer(Sys.getenv("TSELCA_SIM_CORES", max(1L, detectCores() - 1L)))
+
+N_REP <- if (QUICK) 25L else 500L
+SEP_LEVELS <- c("low", "mid", "high")
+SAMPLE_SIZES <- c("500", "1000", "2000")
+F_ITEMS <- cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1
+TRUTH <- c(covariate = 1, distal = 0) # Zp:C3 slope; mu_C3
+TARGET <- c(covariate = "Zp:C3", distal = "mu_C3")
+ALPHA <- 0.05
+
+dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
+cat(sprintf(
+  "tseLCA %s simulation: %s, %d replications per condition, %d worker(s), output in %s\n",
+  as.character(packageVersion("tseLCA")), paste(SCENARIOS, collapse = " + "),
+  N_REP, N_CORES, normalizePath(OUT_DIR)
+))
 
 ###################################################
-### preliminaries
+### 1. Simulated data
 ###################################################
 
-# rm(list = ls())
-# gc()
-# r_opts <- options(
-#   prompt = "R> ",
-#   continue = "+  ",
-#   width = 77,
-#   digits = 4,
-#   useFancyQuotes = FALSE,
-#   warn = 1
-# )
-
-# Loading libraries and installing if unavailable
-
-# Install the development version from GitHub
-# if (!require("tseLCA")) {
-#   if (!require("pak")) {
-#     install.packages("pak")
-#   }
-#   pak::pak("SamLeeBYU/tseLCA")
-# }
-
-devtools::load_all() #library(tseLCA)
-
-###################################################
-### generate all simulation conditions
-###################################################
-
-output.dir <- tempdir()
-dataset_path <- file.path(output.dir, "sim_datasets.rds")
-
-if (!dir.exists(output.dir)) {
-  dir.create(output.dir, recursive = TRUE)
-}
-
-if (!file.exists(dataset_path)) {
-  message("Generating simulation data (this will take a few minutes)...")
-
+# 500 replications of each condition (scenario x separation x n) of the
+# Bakk and Kuha (2018) design; QUICK mode uses the first N_REP of them.
+data_path <- file.path(OUT_DIR, "sim_datasets.rds")
+if (file.exists(data_path)) {
+  datasets <- readRDS(data_path)
+} else {
   datasets <- generate_all_conditions(
-    n_rep = 500L,
-    base_seed = 06262026L,
-    sep_levels = c("low", "mid", "high")
+    n_rep = 500L, base_seed = 06262026L, sep_levels = SEP_LEVELS, verbose = FALSE
   )
-  saveRDS(datasets, file = dataset_path)
-  message("Completed data generation and saved datasets to: ", dataset_path)
-} else {
-  message("Loading existing simulation data from: ", dataset_path)
-  datasets <- readRDS(dataset_path)
+  saveRDS(datasets, data_path)
 }
+
+conditions <- expand.grid(
+  scenario = SCENARIOS, separation = SEP_LEVELS, n = SAMPLE_SIZES,
+  stringsAsFactors = FALSE
+)
 
 ###################################################
-### obtain measurement models for all conditions
+### 2. Step 1: measurement models
 ###################################################
 
-# Pre-computing measurement models for each replicate saves time when
-# comparing estimators (BCH vs ML, proportional/modal assignment) because
-# lca_step1() is the computational bottleneck.
+# Each measurement model is fitted from 20 random starts (keeping the best).
+# Only its parameters are stored; later steps rebuild it with as_tse_lca().
+# For the covariate scenario, the two-step estimates and their corrected
+# variance are obtained from multilevLCA (Lyrvall et al. 2025), initialized at
+# the classes implied by this measurement model and the two-step coefficients.
 #
-# We call multiLCA to obtain two-step vcov estimates.
-# While multiLCA cannot accomodate fixed parameter values as input,
-# we create covariate-adjusted predictions for the latent class (passed in as starting values) to obtain
-# consistent results for multiLCA in the presence of low-separation.
-#
-# The alternative would be to call multiLCA a bunch of times and take the model
-# with the best log-likelihood (which is what we already do for the measurement model with three_step()'s n_init argument -- see below).
-# This saves some computation time.
-#
-# We fit the Step-1 measurement model with n_init = 20L independent
-# uniform-random-classification restarts (bypassing multilevLCA's default
-# k-means-on-principal-components initialization) and keep the
-# highest-log-likelihood fit when entropy R^2 already looks
-# low. Restarting unconditionally guards against Step-1 settling into a local
-# optimum of the log-likelihood that nonetheless has acceptable entropy --
-# especially relevant in the low-separation conditions here.
-#
-# Also note that the warning, "Measurement model still failed to converge even after running more iterations. Consider increasing maxIter.measurement and or measurement.tol"
-# may trigger in the low separation cases. This is not an issue (this just means that *one* out of the 20 restarts didn't meet the convergence criterion).
-# as long as at least one (and preferably the other 19) models converge, we should settle on a well-converged measurement model for step 1.
-#
-# A poorly converged measurement model can severely bias two-step and three-step estimates.
-#
-# Structure mirrors datasets: measurement_models[[scenario]][[sep]][[n]][[rep]]
+# Models saved by tseLCA 1.x (lists with fit0 = list(vPi, mPhi) and fitZ) are
+# read as well.
 
-measurement_path <- file.path(output.dir, "measurement_models.rds")
-
-scenarios <- c("covariate", "distal")
-sep_levels <- c("low", "mid", "high")
-sample_sizes <- c("500", "1000", "2000")
-
-if (file.exists(measurement_path)) {
-  cli::cli_alert_info(
-    "Loading existing measurement models from: {measurement_path}"
+model_params <- function(x) {
+  if (is.null(x)) return(NULL)
+  if (!is.null(x$class_sizes)) return(x)
+  list(
+    class_sizes = as.vector(x$fit0$vPi),
+    item_probs = x$fit0$mPhi,
+    two_step = if (!is.null(x$fitZ)) list(coef = x$fitZ$mGamma, vcov = x$fitZ$Varmat_cor),
+    converged = !isFALSE(x$fitZ_converged)
   )
-  measurement_models <- readRDS(measurement_path)
-} else {
-  measurement_models <- list()
 }
 
-# Identify which (sc, sep, nn) conditions still need work
-n_rep <- length(datasets[[scenarios[1]]][[sep_levels[1]]][[sample_sizes[1]]])
-
-pending <- list()
-for (sc in scenarios) {
-  for (sep in sep_levels) {
-    for (nn in sample_sizes) {
-      existing <- measurement_models[[sc]][[sep]][[nn]]
-      n_done <- if (is.null(existing)) {
-        0L
-      } else {
-        sum(!vapply(existing, is.null, logical(1L)))
-      }
-      if (n_done < n_rep) {
-        pending[[length(pending) + 1L]] <- list(
-          sc = sc,
-          sep = sep,
-          nn = nn,
-          n_done = n_done
-        )
-      }
-    }
-  }
-}
-
-if (length(pending) == 0L) {
-  cli::cli_alert_success("All conditions complete. Nothing to run.")
-} else {
-  cli::cli_alert_info(
-    "Found {length(pending)} condition(s) with incomplete reps. Resuming..."
-  )
-
-  total_remaining <- sum(vapply(
-    pending,
-    function(p) n_rep - p$n_done,
-    integer(1L)
-  ))
-
-  cli::cli_progress_bar(
-    name = "Fitting measurement models",
-    total = total_remaining,
-    format = paste0(
-      "{cli::pb_name} | {cli::pb_bar} {cli::pb_percent} | ",
-      "Rep {cli::pb_current}/{cli::pb_total} | ",
-      "Elapsed: {cli::pb_elapsed} | ETA: {cli::pb_eta}"
+fit_step1 <- function(d, sc, seed) {
+  set.seed(seed)
+  m <- tse_lca(F_ITEMS, data = d, nclass = 3, control = tse_control(n_init = 20))
+  out <- list(class_sizes = class_sizes(m), item_probs = item_probs(m), converged = TRUE)
+  if (sc == "covariate") {
+    # classes implied by the measurement model and the two-step coefficients
+    prior <- predict(tse_twostep(m, ~ Zp), newdata = d)
+    w <- prior * posterior(m) / matrix(class_sizes(m), nrow(d), 3, byrow = TRUE)
+    d$startval <- max.col(w)
+    fz <- multilevLCA::multiLCA(
+      data = d, Y = paste0("Y", 1:6), iT = 3L, Z = "Zp",
+      startval = if (length(unique(d$startval)) == 3L) "startval" else NULL,
+      extout = TRUE, verbose = FALSE
     )
-  )
-
-  # Shared objects needed for covariate warm-start
-  mGamma.init <- do.call(rbind, bk2018_params$covariate_params)[, -1L]
-  p.xz.sim <- function(Z_mat, params) {
-    eta_full <- cbind(0, Z_mat %*% params)
-    row_max <- apply(eta_full, 1, max)
-    exp_eta <- exp(eta_full - row_max)
-    exp_eta / rowSums(exp_eta)
+    out$two_step <- list(coef = fz$mGamma, vcov = fz$Varmat_cor)
+    out$converged <- abs(diff(utils::tail(fz$LLKSeries, 2))) < 1e-8
   }
+  out
+}
 
-  for (cond in pending) {
-    sc <- cond$sc
-    sep <- cond$sep
-    nn <- cond$nn
+model_path <- file.path(OUT_DIR, "measurement_models.rds")
+models <- if (file.exists(model_path)) readRDS(model_path) else list()
 
-    reps_data <- datasets[[sc]][[sep]][[nn]]
+todo <- which(vapply(seq_len(nrow(conditions)), function(i) {
+  cond <- conditions[i, ]
+  have <- models[[cond$scenario]][[cond$separation]][[cond$n]]
+  length(have) < N_REP || any(vapply(have[seq_len(N_REP)], is.null, logical(1)))
+}, logical(1)))
 
-    reps_fit <- measurement_models[[sc]][[sep]][[nn]]
-    if (is.null(reps_fit)) {
-      reps_fit <- vector("list", n_rep)
+if (length(todo) > 0L) {
+  cat("Fitting Step-1 models for", length(todo), "condition(s)...\n")
+  cl <- makePSOCKcluster(min(N_CORES, length(todo)))
+  invisible(clusterEvalQ(cl, library(tseLCA)))
+  clusterExport(cl, c("F_ITEMS", "fit_step1", "N_REP", "SEP_LEVELS", "datasets", "models"))
+  fitted <- parLapply(cl, split(conditions[todo, ], seq_along(todo)), function(cond) {
+    sc <- cond$scenario; sep <- cond$separation; nn <- cond$n
+    have <- models[[sc]][[sep]][[nn]]
+    if (is.null(have)) have <- vector("list", N_REP)
+    for (r in seq_len(N_REP)) {
+      if (length(have) >= r && !is.null(have[[r]])) next
+      seed <- match(sc, c("covariate", "distal")) * 1e6 + match(sep, SEP_LEVELS) * 1e4 +
+        as.integer(nn) + r
+      have[[r]] <- tryCatch(fit_step1(datasets[[sc]][[sep]][[nn]][[r]], sc, seed),
+                            error = function(e) NULL)
     }
+    have
+  })
+  stopCluster(cl)
+  for (k in seq_along(todo)) {
+    cond <- conditions[todo[k], ]
+    models[[cond$scenario]][[cond$separation]][[cond$n]] <- fitted[[k]]
+  }
+  saveRDS(models, model_path)
+}
 
-    for (r in seq_len(n_rep)) {
-      if (!is.null(reps_fit[[r]])) {
-        next
-      }
+###################################################
+### 3. Step 3: structural models, replication by replication
+###################################################
 
-      #Set a unique seed for reproducibility
-      set.seed(
-        which(scenarios == sc) *
-          1e6 +
-          which(sep_levels == sep) * 1e4 +
-          as.integer(nn) +
-          r
-      )
-
-      cli::cli_progress_update(
-        status = sprintf(
-          "scenario=%-10s sep=%-4s n=%-5s rep=%d/%d",
-          sc,
-          sep,
-          nn,
-          r,
-          n_rep
-        )
-      )
-
-      reps_fit[[r]] <- tryCatch(
-        {
-          m.r <- three_step(
-            data = reps_data[[r]],
-            Y.names = paste0("Y", 1:6),
-            n_classes = 3L,
-            maxIter.measurement = 5000,
-            n_init = 20L,
-            verbose = FALSE
-          )$measurement_model
-
-          #Two-step starting values are currently not available for distal outcomes
-          # so we only compare tseLCA to multiLCA's two-step estimation approach
-          if (sc == "covariate") {
-            c.fitZ <- fitZ_from_fit0(
-              fit0 = m.r$fit0,
-              data = reps_data[[r]],
-              Y.names = paste0("Y", 1:6),
-              Zp.names = "Zp",
-              maxIter = 500,
-              starting_val = mGamma.init
-            )
-
-            Y_mat <- as.matrix(reps_data[[r]][, paste0("Y", 1:6)])
-            mPhi.init <- m.r$fit0$mPhi
-
-            pi_adj <- p.xz.sim(cbind(1, reps_data[[r]]$Zp), c.fitZ$mGamma)
-            log_lik_items <- Y_mat %*%
-              log(mPhi.init) +
-              (1 - Y_mat) %*% log(1 - mPhi.init)
-            log_W <- log(pi_adj) + log_lik_items
-            log_W <- log_W -
-              apply(log_W, 1, function(x) {
-                m <- max(x)
-                m + log(sum(exp(x - m)))
-              })
-            W_init <- exp(log_W)
-
-            reps_data[[r]]$startval <- apply(W_init, 1, which.max)
-            has_all_classes <- length(unique(reps_data[[r]]$startval)) == 3L
-
-            c.r <- multilevLCA::multiLCA(
-              data = reps_data[[r]],
-              Y = paste0("Y", 1:6),
-              iT = 3L,
-              Z = "Zp",
-              startval = if (has_all_classes) "startval" else NULL,
-              extout = TRUE,
-              verbose = FALSE
-            )
-
-            m.r$fitZ <- c.r
-            #So we can check which measurement models failed to converged (if any) after the fact
-            m.r$fitZ_converged <- abs(diff(tail(c.r$LLKSeries, 2))) < 1e-8
-            m.r$fitZ_iters <- c.r$iter
-          }
-
-          # Keep only what three_step(step1 = ...) actually reads back out of
-          # a saved measurement model: vPi/mPhi (three_step() recomputes
-          # posteriors from `data` itself when fit0$mU is absent -- see
-          # lca_step2()/step1_Y in R/three_step.R) and, for the covariate
-          # scenario, the two-step gamma coefficients plus their vcov (needed
-          # for the two_step estimator's SE). Everything else multilevLCA
-          # attaches (mU, Varmat, SEs, mScore, ...) is diagnostic-only here,
-          # and fit0$call in particular is dead weight
-          m.r$fit0 <- list(vPi = m.r$fit0$vPi, mPhi = m.r$fit0$mPhi)
-          if (!is.null(m.r$fitZ)) {
-            m.r$fitZ <- list(
-              mGamma = m.r$fitZ$mGamma,
-              Varmat_cor = m.r$fitZ$Varmat_cor
-            )
-          }
-
-          m.r
+run_replication <- function(d, p, sc) {
+  if (is.null(p) || !isTRUE(p$converged)) return(NULL)
+  m <- as_tse_lca(F_ITEMS, data = d, class_sizes = p$class_sizes, item_probs = p$item_probs)
+  ctl <- tse_control(step3.maxit = 500)
+  rows <- list()
+  for (a in c("modal", "proportional")) {
+    clf <- tse_classify(m, assignment = a)
+    for (method in c("ML", "BCH")) {
+      fit <- tryCatch(
+        if (sc == "covariate") {
+          # start from the two-step estimates, as in the original study
+          start <- if (!is.null(p$two_step)) unname(p$two_step$coef) else NULL
+          tse_covariate(clf, ~ Zp, method = method, start = start, control = ctl)
+        } else {
+          tse_distal(clf, Zo ~ 1, method = method, control = ctl)
         },
-        error = function(e) {
-          cli::cli_alert_warning(sprintf(
-            "three_step failed: scenario=%s sep=%s n=%s rep=%d: %s",
-            sc,
-            sep,
-            nn,
-            r,
-            conditionMessage(e)
-          ))
-          NULL
-        }
+        error = function(e) NULL
+      )
+      est <- se <- NA_real_
+      if (!is.null(fit)) {
+        est <- coef(fit)[[TARGET[[sc]]]]
+        se <- sqrt(diag(vcov(fit)))[[TARGET[[sc]]]]
+      }
+      rows[[length(rows) + 1L]] <- data.frame(
+        estimator = paste0(if (a == "modal") "modal." else "prop.", tolower(method)),
+        estimate = est, se = se
       )
     }
-
-    measurement_models[[sc]][[sep]][[nn]] <- reps_fit
-    saveRDS(measurement_models, file = measurement_path)
-    cli::cli_alert_success(
-      "Saved: scenario={sc} sep={sep} n={nn} ({n_rep} reps)"
+  }
+  if (sc == "covariate" && !is.null(p$two_step)) {
+    rows[[length(rows) + 1L]] <- data.frame(
+      estimator = "two_step",
+      estimate = as.vector(p$two_step$coef)[4L],
+      se = if (!is.null(p$two_step$vcov)) sqrt(diag(p$two_step$vcov))[4L] else NA_real_
     )
   }
-
-  cli::cli_progress_done()
-  cli::cli_alert_success(
-    "All conditions complete. Final save: {measurement_path}"
-  )
+  do.call(rbind, rows)
 }
 
+rep_path <- file.path(OUT_DIR, sprintf("sim_replicates%s.rds", if (QUICK) "_quick" else ""))
+cat("Estimating Step-3 models...\n")
+cl <- makePSOCKcluster(min(N_CORES, nrow(conditions)))
+invisible(clusterEvalQ(cl, library(tseLCA)))
+clusterExport(cl, c("F_ITEMS", "TARGET", "N_REP", "run_replication", "datasets", "models",
+                    "model_params"))
+replicates <- parLapply(cl, split(conditions, seq_len(nrow(conditions))), function(cond) {
+  sc <- cond$scenario; sep <- cond$separation; nn <- cond$n
+  out <- lapply(seq_len(N_REP), function(r) {
+    res <- tryCatch(
+      run_replication(datasets[[sc]][[sep]][[nn]][[r]],
+                      model_params(models[[sc]][[sep]][[nn]][[r]]), sc),
+      error = function(e) NULL
+    )
+    if (!is.null(res)) cbind(scenario = sc, separation = sep, n = nn, rep = r, res)
+  })
+  do.call(rbind, out)
+})
+stopCluster(cl)
+replicates <- do.call(rbind, replicates)
+rownames(replicates) <- NULL
+saveRDS(replicates, rep_path)
+
 ###################################################
-### sim.cond: evaluate one simulation condition
+### 4. Tables
 ###################################################
-#
-# cond: character(3), e.g. c("covariate", "low", "500")
-#
-# methods: character subset of c("ml", "bch"), which bias-adjustment(s) to
-#   run. Default c("ml", "bch") runs both. "ml" drives modal.ml/prop.ml (and
-#   two_step, which piggybacks on the modal.ml three_step() call); "bch"
-#   drives modal.bch/prop.bch. Estimators for a method not requested are
-#   skipped entirely (not fit, not in the output).
-#
-# Covariate scenario: up to 5 estimators (methods = c("ml", "bch"))
-#   modal.ml, modal.bch, prop.ml, prop.bch, two_step
-#   Target parameter: Zp:C3 slope (true = 1), index 4 in coef vector
-#
-# Distal scenario: up to 4 estimators (methods = c("ml", "bch"))
-#   modal.ml, modal.bch, prop.ml, prop.bch
-#   Target parameter: mu_C3 (true = 0), index 3 in coef vector
-#
-# Returns a data.frame with one row per estimator and columns:
-#   estimator   : A string to indicator which estimator was evaluated
-#                - modal.ml  : Vermunt (2010) ML correction with modal assignment in step 2
-#                - modal.bch : BCH correction with modal assignment in step 2
-#                - prop.ml   : Vermunt (2010) ML correction with proportional assignment in step 2
-#                - prop.bch  : BCH correction with proportional assignment in step 2
-#                - two_step  : Bakk & Kuha (2018) two-step estimator (for the covariate scenario only: Zp -> X -> Y)
-#   bias        : Monte Carlo mean estimate of the difference between the true value (testing the slope on C2 for covariate estimation and the mu parameter on C3 for the distal outcomes scenario) and the estimated parameter
-#   rmse        : Monte Carlo mean estimate of the squared difference between the true values and estimated parameters
-#   coverage    : Monte Carlo mean estimate of the coverage of the true parameters (e.g., the proportion that the true values are within estimate +/- 1.96*SE(estimate)) for an alpha-level Wald test
-#   se_sd_ratio : Monte Carlo mean estimate of the estimated SE of the estimator divided by the standard deviation of the respective sampled distribution of the corresponding parameter estimates (the closer to 1, the better)
-#   n_ok        : How many replications (out of the total 500) for that estimator resulted in a non-degenerate case (happens most frequently for the BCH methods, where the method yields a non-PSD Hessian)
 
-sim.cond <- function(
-  datasets,
-  measurement_models,
-  cond = c("covariate", "low", "500"),
-  methods = c("ml", "bch"),
-  alpha = 0.05
-) {
-  methods <- match.arg(methods, choices = c("ml", "bch"), several.ok = TRUE)
-  run_ml <- "ml" %in% methods
-  run_bch <- "bch" %in% methods
-  if (!run_ml && !run_bch) {
-    stop(
-      "`methods` must include at least one of \"ml\" or \"bch\".",
-      call. = FALSE
-    )
-  }
-
-  sets <- datasets[[cond[1]]][[cond[2]]][[cond[3]]]
-  m.mods <- measurement_models[[cond[1]]][[cond[2]]][[cond[3]]]
-  R <- length(sets)
-
-  cli::cli_h1(sprintf(
-    "Condition: scenario={.val %s}  sep={.val %s}  n={.val %s}  ({R} reps)",
-    cond[1],
-    cond[2],
-    cond[3]
-  ))
-
-  # ---- Covariate scenario --------------------------------------------------------------------------------------------------------
-  if (cond[1] == "covariate") {
-    true_val <- 1 # Zp:C3 slope
-    param_idx <- 4L # [Int:C2, Zp:C2, Int:C3, Zp:C3]
-
-    estimator_method <- c(
-      modal.ml = "ml",
-      modal.bch = "bch",
-      prop.ml = "ml",
-      prop.bch = "bch",
-      two_step = "ml"
-    )
-    estimators <- names(estimator_method)[
-      (estimator_method == "ml" & run_ml) |
-        (estimator_method == "bch" & run_bch)
-    ]
-    n_ok <- matrix(
-      FALSE,
-      nrow = R,
-      ncol = length(estimators),
-      dimnames = list(NULL, estimators)
-    )
-    ests <- matrix(
-      NA_real_,
-      nrow = R,
-      ncol = length(estimators),
-      dimnames = list(NULL, estimators)
-    )
-    ses <- matrix(
-      NA_real_,
-      nrow = R,
-      ncol = length(estimators),
-      dimnames = list(NULL, estimators)
-    )
-
-    pb <- cli::cli_progress_bar(
-      name = "Replicates",
-      total = R,
-      format = "{cli::pb_bar} {cli::pb_current}/{cli::pb_total} | {cli::pb_eta_str} remaining | failures: {.val {sum(!n_ok[seq_len(max(1L, cli::pb_current)), estimators[1]])}}"
-    )
-
-    for (s in seq_len(R)) {
-      dat.s <- sets[[s]]
-      m.s <- m.mods[[s]]
-
-      if (is.null(m.s) || isFALSE(m.s$fitZ_converged)) {
-        cli::cli_progress_update()
-        next
-      }
-
-      # ---- modal ML (and two_step, which piggybacks on this fit) -------------------------------------------------------------------
-      if (run_ml) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zp.names = "Zp",
-            n_classes = 3,
-            step1 = m.s,
-            use.modal.assignment = TRUE,
-            use.bch = FALSE
-          ),
-          error = function(e) {
-            cli::cli_alert_warning("rep {s} modal.ml: {conditionMessage(e)}")
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "modal.ml"] <- TRUE
-          ests[s, "modal.ml"] <- as.vector(fit$three_step)[param_idx]
-          ses[s, "modal.ml"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-          if (!is.null(fit$two_step) && !anyNA(fit$two_step)) {
-            n_ok[s, "two_step"] <- TRUE
-            ests[s, "two_step"] <- as.vector(fit$two_step)[param_idx]
-            if (!is.null(fit$two_step_vcov)) {
-              ses[s, "two_step"] <- sqrt(diag(fit$two_step_vcov))[param_idx]
-            }
-          }
-        }
-      }
-
-      # ---- modal BCH --------------------------------------------------------------------------------------------------------------
-      if (run_bch) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zp.names = "Zp",
-            n_classes = 3,
-            step1 = m.s,
-            use.bch = TRUE,
-            em.maxIter = 500L
-          ),
-          error = function(e) {
-            # cli::cli_alert_warning(sprintf("rep %d: %s", s, conditionMessage(e)))
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "modal.bch"] <- TRUE
-          ests[s, "modal.bch"] <- as.vector(fit$three_step)[param_idx]
-          ses[s, "modal.bch"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-        }
-      }
-
-      # ---- proportional ML ----------------------------------------------------------------------------------------------------
-      if (run_ml) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zp.names = "Zp",
-            n_classes = 3,
-            step1 = m.s,
-            use.modal.assignment = FALSE,
-            use.bch = FALSE
-          ),
-          error = function(e) {
-            cli::cli_alert_warning("rep {s} prop.ml: {conditionMessage(e)}")
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "prop.ml"] <- TRUE
-          ests[s, "prop.ml"] <- as.vector(fit$three_step)[param_idx]
-          ses[s, "prop.ml"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-        }
-      }
-
-      # ---- proportional BCH --------------------------------------------------------------------------------------------------
-      if (run_bch) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zp.names = "Zp",
-            n_classes = 3,
-            step1 = m.s,
-            use.modal.assignment = FALSE,
-            use.bch = TRUE,
-            em.maxIter = 500L
-          ),
-          error = function(e) {
-            # cli::cli_alert_warning(sprintf("rep %d: %s", s, conditionMessage(e)))
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "prop.bch"] <- TRUE
-          ests[s, "prop.bch"] <- as.vector(fit$three_step)[param_idx]
-          ses[s, "prop.bch"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-        }
-      }
-
-      cli::cli_progress_update()
-    }
-
-    cli::cli_progress_done()
-
-    # ---- Distal scenario --------------------------------------------------------------------------------------------------------------
-  } else if (cond[1] == "distal") {
-    true_val <- 0 # mu_C3
-    param_idx <- 3L # [mu_C1, mu_C2, mu_C3]
-
-    estimator_method <- c(
-      modal.ml = "ml",
-      modal.bch = "bch",
-      prop.ml = "ml",
-      prop.bch = "bch"
-    )
-    estimators <- names(estimator_method)[
-      (estimator_method == "ml" & run_ml) |
-        (estimator_method == "bch" & run_bch)
-    ]
-    n_ok <- matrix(
-      FALSE,
-      nrow = R,
-      ncol = length(estimators),
-      dimnames = list(NULL, estimators)
-    )
-    ests <- matrix(
-      NA_real_,
-      nrow = R,
-      ncol = length(estimators),
-      dimnames = list(NULL, estimators)
-    )
-    ses <- matrix(
-      NA_real_,
-      nrow = R,
-      ncol = length(estimators),
-      dimnames = list(NULL, estimators)
-    )
-
-    pb <- cli::cli_progress_bar(
-      name = "Replicates",
-      total = R,
-      format = "{cli::pb_bar} {cli::pb_current}/{cli::pb_total} | {cli::pb_eta_str} remaining"
-    )
-
-    for (s in seq_len(R)) {
-      dat.s <- sets[[s]]
-      m.s <- m.mods[[s]]
-
-      if (is.null(m.s)) {
-        cli::cli_progress_update()
-        next
-      }
-
-      # ---- modal ML ----------------------------------------------------------------------------------------------------------------
-      if (run_ml) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zo.name = "Zo",
-            n_classes = 3,
-            step1 = m.s,
-            family = "gaussian",
-            use.modal.assignment = TRUE,
-            use.bch = FALSE
-          ),
-          error = function(e) {
-            cli::cli_alert_warning("rep {s} modal.ml: {conditionMessage(e)}")
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "modal.ml"] <- TRUE
-          ests[s, "modal.ml"] <- fit$three_step[param_idx]
-          ses[s, "modal.ml"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-        }
-      }
-
-      # ---- modal BCH --------------------------------------------------------------------------------------------------------------
-      if (run_bch) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zo.name = "Zo",
-            n_classes = 3,
-            step1 = m.s,
-            use.bch = TRUE,
-            em.maxIter = 500L
-          ),
-          error = function(e) {
-            #cli::cli_alert_warning("rep {s} modal.bch: {conditionMessage(e)}")
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "modal.bch"] <- TRUE
-          ests[s, "modal.bch"] <- fit$three_step[param_idx]
-          ses[s, "modal.bch"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-        }
-      }
-
-      # ---- proportional ML ----------------------------------------------------------------------------------------------------
-      if (run_ml) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zo.name = "Zo",
-            n_classes = 3,
-            step1 = m.s,
-            family = "gaussian",
-            use.modal.assignment = FALSE,
-            use.bch = FALSE
-          ),
-          error = function(e) {
-            cli::cli_alert_warning("rep {s} prop.ml: {conditionMessage(e)}")
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "prop.ml"] <- TRUE
-          ests[s, "prop.ml"] <- fit$three_step[param_idx]
-          ses[s, "prop.ml"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-        }
-      }
-
-      # ---- proportional BCH --------------------------------------------------------------------------------------------------
-      if (run_bch) {
-        fit <- tryCatch(
-          three_step(
-            data = dat.s,
-            Y.names = paste0("Y", 1:6),
-            Zo.name = "Zo",
-            n_classes = 3,
-            step1 = m.s,
-            use.modal.assignment = FALSE,
-            use.bch = TRUE,
-            em.maxIter = 500L
-          ),
-          error = function(e) {
-            #cli::cli_alert_warning("rep {s} prop.bch: {conditionMessage(e)}")
-            NULL
-          }
-        )
-        if (!is.null(fit) && !anyNA(fit$three_step)) {
-          n_ok[s, "prop.bch"] <- TRUE
-          ests[s, "prop.bch"] <- fit$three_step[param_idx]
-          ses[s, "prop.bch"] <- sqrt(diag(fit$three_step_vcov))[param_idx]
-        }
-      }
-
-      cli::cli_progress_update()
-    }
-
-    cli::cli_progress_done()
-  } else {
-    stop("cond[1] must be 'covariate' or 'distal'.", call. = FALSE)
-  }
-
-  # ---- Compute metrics ------------------------------------------------------------------------------------------------------------------
-  results <- lapply(estimators, function(est) {
-    ok <- n_ok[, est]
-    e <- ests[ok, est]
-    se <- ses[ok, est]
-    n <- sum(ok)
-
-    if (n == 0L) {
-      cli::cli_alert_danger("{est}: 0 successful replicates")
-      return(data.frame(
-        estimator = est,
-        bias = NA,
-        rmse = NA,
-        coverage = NA,
-        se_sd_ratio = NA,
-        n_ok = 0L
-      ))
-    }
-
-    err <- e - true_val
-    bias <- mean(err)
-    rmse <- sqrt(mean(err^2))
-    coverage <- mean(abs(err) <= qnorm(1 - alpha / 2) * se, na.rm = TRUE)
-    se_sd <- mean(se, na.rm = TRUE) / sd(e)
-
-    cli::cli_alert_success(
-      "{est}: n_ok={n}  bias={round(bias,4)}  rmse={round(rmse,4)}  cov={round(coverage,3)}  se/sd={round(se_sd,3)}"
-    )
-
+# Performance of each estimator in each condition: bias and its Monte Carlo
+# standard error, root mean squared error, coverage of 95% Wald intervals and
+# its Monte Carlo standard error, and the ratio of the mean estimated standard
+# error to the standard deviation of the estimates.
+summarize_simulation <- function(replicates, alpha = 0.05) {
+  z <- qnorm(1 - alpha / 2)
+  groups <- split(replicates, replicates[c("scenario", "separation", "n", "estimator")],
+                  drop = TRUE)
+  rows <- lapply(groups, function(g) {
+    ok <- is.finite(g$estimate)
+    e <- g$estimate[ok]
+    se <- g$se[ok]
+    err <- e - TRUTH[[g$scenario[1]]]
+    covered <- abs(err) <= z * se
+    cov_rate <- mean(covered, na.rm = TRUE)
+    n_cov <- sum(!is.na(covered))
     data.frame(
-      estimator = est,
-      bias = bias,
-      rmse = rmse,
-      coverage = coverage,
-      se_sd_ratio = se_sd,
-      n_ok = n
+      scenario = g$scenario[1], separation = g$separation[1], n = as.integer(g$n[1]),
+      estimator = g$estimator[1], n_ok = sum(ok),
+      bias = mean(err), bias_mcse = sd(e) / sqrt(sum(ok)),
+      rmse = sqrt(mean(err^2)),
+      coverage = cov_rate, coverage_mcse = sqrt(cov_rate * (1 - cov_rate) / n_cov),
+      se_sd = mean(se, na.rm = TRUE) / sd(e)
     )
   })
-
-  out <- do.call(rbind, results)
-  out$scenario <- cond[1]
-  out$separation <- cond[2]
-  out$n <- cond[3]
+  out <- do.call(rbind, rows)
+  out$separation <- factor(out$separation, SEP_LEVELS)
+  out$estimator <- factor(out$estimator,
+                          c("two_step", "modal.bch", "prop.bch", "modal.ml", "prop.ml"))
+  out <- out[order(out$scenario, out$separation, out$n, out$estimator), ]
   rownames(out) <- NULL
   out
 }
 
-###################################################
-### Run all simulation conditions in parallel
-###################################################
-
-run_simulation <- function(
-  datasets,
-  measurement_models,
-  conditions = NULL,
-  methods = c("ml", "bch"),
-  n_cores = NULL,
-  out_path = NULL
-) {
-  # `methods`: character subset of c("ml", "bch"), forwarded to sim.cond() to
-  # control which bias-adjustment(s) get run for every condition -- "ml",
-  # "bch", or both (default).
-  methods <- match.arg(methods, choices = c("ml", "bch"), several.ok = TRUE)
-
-  # ---- Load existing results, if present --------------------------------------
-  # New results below will overwrite rows for the (scenario, separation, n)
-  # conditions actually tested in this run, but existing rows for any
-  # conditions *not* tested here are preserved.
-  existing_results <- NULL
-  if (!is.null(out_path) && file.exists(out_path)) {
-    existing_results <- readRDS(out_path)
-    cli::cli_alert_info("Loaded existing results from: {.path {out_path}}")
-  }
-
-  # ---- Determine which conditions to run --------------------------------------
-  # Structure: datasets[[scenario]][[separation]][[n]][[rep]]
-  #
-  # `conditions` lets callers explicitly control which conditions get tested.
-  # Pass either:
-  #   - a data.frame/matrix with columns scenario, separation, n, or
-  #   - a list of character(3) vectors, e.g. list(c("covariate", "low", "500"))
-  # Leave NULL (default) to run every condition present in measurement_models.
-  if (is.null(conditions)) {
-    conditions <- do.call(
-      rbind,
-      lapply(
-        names(measurement_models),
-        function(scenario) {
-          do.call(
-            rbind,
-            lapply(
-              names(measurement_models[[scenario]]),
-              function(sep) {
-                do.call(
-                  rbind,
-                  lapply(
-                    names(measurement_models[[scenario]][[sep]]),
-                    function(n) {
-                      data.frame(
-                        scenario = scenario,
-                        separation = sep,
-                        n = n,
-                        stringsAsFactors = FALSE
-                      )
-                    }
-                  )
-                )
-              }
-            )
-          )
-        }
-      )
-    )
-  } else if (is.list(conditions) && !is.data.frame(conditions)) {
-    conditions <- do.call(
-      rbind,
-      lapply(conditions, function(cc) {
-        data.frame(
-          scenario = cc[1],
-          separation = cc[2],
-          n = cc[3],
-          stringsAsFactors = FALSE
-        )
-      })
-    )
-  } else {
-    conditions <- as.data.frame(conditions, stringsAsFactors = FALSE)
-    colnames(conditions) <- c("scenario", "separation", "n")
-  }
-  rownames(conditions) <- NULL
-
-  if (is.null(n_cores)) {
-    n_cores <- max(c(
-      1L,
-      min(3 * ((parallel::detectCores() - 1L) %/% 3), nrow(conditions))
-    ))
-  }
-
-  cli::cli_h1("tseLCA Simulation Study")
-  cli::cli_alert_info(sprintf(
-    "%d condition(s) detected across %d scenario(s), %d separation level(s), %d sample size(s)",
-    nrow(conditions),
-    length(unique(conditions$scenario)),
-    length(unique(conditions$separation)),
-    length(unique(conditions$n))
-  ))
-  cli::cli_alert_info(sprintf("Parallelizing over %d core(s)", n_cores))
-
-  # ---- Run conditions in parallel --------------------------------------------
-  if (n_cores > 1L && requireNamespace("parallel", quietly = TRUE)) {
-    cl <- parallel::makeCluster(n_cores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-
-    parallel::clusterExport(
-      cl,
-      varlist = c("datasets", "measurement_models", "sim.cond", "methods"),
-      envir = environment()
-    )
-    parallel::clusterEvalQ(cl, {
-      library(tseLCA)
-      library(cli)
-    })
-
-    results_list <- parallel::parLapplyLB(
-      cl,
-      seq_len(nrow(conditions)),
-      fun = function(i) {
-        cond <- unlist(conditions[i, ])
-        tryCatch(
-          sim.cond(
-            datasets,
-            measurement_models,
-            cond = cond,
-            methods = methods
-          ),
-          error = function(e) {
-            cli::cli_alert_danger(
-              "Condition {cond[1]}/{cond[2]}/{cond[3]} failed: {conditionMessage(e)}"
-            )
-            data.frame(
-              estimator = NA_character_,
-              bias = NA_real_,
-              rmse = NA_real_,
-              coverage = NA_real_,
-              se_sd_ratio = NA_real_,
-              n_ok = 0L,
-              scenario = cond[1],
-              separation = cond[2],
-              n = cond[3]
-            )
-          }
-        )
-      }
-    )
-  } else {
-    results_list <- lapply(
-      seq_len(nrow(conditions)),
-      function(i) {
-        cond <- unlist(conditions[i, ])
-        tryCatch(
-          sim.cond(
-            datasets,
-            measurement_models,
-            cond = cond,
-            methods = methods
-          ),
-          error = function(e) {
-            cli::cli_alert_danger(
-              "Condition {cond[1]}/{cond[2]}/{cond[3]} failed: {conditionMessage(e)}"
-            )
-            data.frame(
-              estimator = NA_character_,
-              bias = NA_real_,
-              rmse = NA_real_,
-              coverage = NA_real_,
-              se_sd_ratio = NA_real_,
-              n_ok = 0L,
-              scenario = cond[1],
-              separation = cond[2],
-              n = cond[3]
-            )
-          }
-        )
-      }
-    )
-  }
-
-  results <- do.call(rbind, results_list)
-  rownames(results) <- NULL
-
-  # ---- Merge with any existing results ----------------------------------------
-  if (!is.null(existing_results)) {
-    tested_key <- paste(
-      conditions$scenario,
-      conditions$separation,
-      conditions$n,
-      sep = "/"
-    )
-    existing_key <- paste(
-      existing_results$scenario,
-      existing_results$separation,
-      existing_results$n,
-      sep = "/"
-    )
-    keep <- !existing_key %in% tested_key
-    results <- rbind(existing_results[keep, , drop = FALSE], results)
-    rownames(results) <- NULL
-  }
-
-  # ---- Save if requested -----------------------------------------------------
-  if (!is.null(out_path)) {
-    if (!dir.exists(dirname(out_path))) {
-      dir.create(dirname(out_path), recursive = TRUE)
+# Tables in the layout of the manuscript: one row per separation and n, one
+# column (or column pair) per estimator.
+num <- function(x, digits = 3) sub("^(-?)0\\.", "\\1.", formatC(x, format = "f", digits = digits))
+print_tables <- function(s) {
+  labels <- c(two_step = "2-step", modal.bch = "BCH modal", prop.bch = "BCH prop.",
+              modal.ml = "ML modal", prop.ml = "ML prop.")
+  for (sc in unique(s$scenario)) {
+    ss <- s[s$scenario == sc, ]
+    ests <- levels(droplevels(ss$estimator))
+    key <- unique(ss[c("separation", "n")])
+    cell <- function(k, est, f) {
+      r <- ss[ss$separation == key$separation[k] & ss$n == key$n[k] & ss$estimator == est, ]
+      if (nrow(r) == 0L) "" else f(r)
     }
-    saveRDS(results, file = out_path)
-    cli::cli_alert_success("Results saved to: {.path {out_path}}")
+    bias_tab <- sapply(ests, function(est) vapply(seq_len(nrow(key)), cell, "", est = est,
+      f = function(r) sprintf("%s (%s)", num(r$bias), num(r$bias_mcse))))
+    cov_tab <- sapply(ests, function(est) vapply(seq_len(nrow(key)), cell, "", est = est,
+      f = function(r) sprintf("%s (%s) %s", num(r$coverage, 2), num(r$coverage_mcse, 2),
+                              num(r$se_sd, 2))))
+    rn <- sprintf("%-4s %4d", key$separation, key$n)
+    dimnames(bias_tab) <- dimnames(cov_tab) <- list(rn, labels[ests])
+    cat(sprintf("\n== %s scenario: bias (MCSE); target %s = %g ==\n", sc, TARGET[[sc]], TRUTH[[sc]]))
+    print(noquote(bias_tab))
+    cat(sprintf("\n== %s scenario: coverage (MCSE) SE/SD ==\n", sc))
+    print(noquote(cov_tab))
   }
-
-  cli::cli_h2("Simulation complete")
-  results
 }
 
-sim.results <- run_simulation(
-  datasets,
-  measurement_models,
-  # Pass e.g. list(c("covariate", "low", "500")) to test only specific
-  # conditions; leave NULL to test every condition in measurement_models.
-  conditions = NULL,
-  # Which bias-adjustment(s) to run: c("ml", "bch") (default, both), "ml"
-  # only, or "bch" only.
-  methods = c("ml", "bch"),
-  out_path = file.path(output.dir, "sim_results.rds"),
-  #Just run sequentially
-  n_cores = 1
-)
-
-print(sim.results)
+summary_tab <- summarize_simulation(replicates, ALPHA)
+utils::write.csv(summary_tab, file.path(OUT_DIR, sprintf("sim_summary%s.csv", if (QUICK) "_quick" else "")),
+                 row.names = FALSE)
+print_tables(summary_tab)
+cat(sprintf("\nReplications with estimates (of %d): %s\n", N_REP,
+            paste(range(summary_tab$n_ok), collapse = "-")))

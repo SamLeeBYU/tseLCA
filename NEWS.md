@@ -42,6 +42,15 @@
 - `predict()` for measurement models gives posterior class probabilities
   (or modal classes) for new data, coded with the model's stored
   categories. `fitted()`, `formula()`, and `update()` also work.
+- New `as_tse_lca()` builds a measurement model from given class sizes and
+  item-response probabilities (e.g. estimates reported elsewhere, or saved
+  from an earlier fit) without re-estimating it. The result can be passed to
+  `tse_classify()` like any `tse_lca()` model.
+- `inst/examples/tseLCA_sim.R` is rewritten for the step-wise interface. It
+  reuses saved datasets and measurement models, can run a quick version
+  (`TSELCA_SIM_QUICK`) or a subset of scenarios (`TSELCA_SIM_SCENARIOS`), and
+  ends by printing the manuscript's simulation tables (bias, RMSE, coverage,
+  SE/SD, with Monte Carlo standard errors) and writing them to CSV.
 
 ## Classes and methods
 

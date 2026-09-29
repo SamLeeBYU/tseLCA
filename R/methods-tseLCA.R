@@ -270,7 +270,21 @@ plot.tseLCA <- function(x, horiz = FALSE, clab = NULL, ...) {
   if (x$n_classes < 2L) {
     stop("Item-response profile plots need at least two classes.", call. = FALSE)
   }
-  plot(x$measurement_model$fit0, horiz = horiz, clab = clab, ...)
+  fit0 <- x$measurement_model$fit0
+  if (inherits(fit0, "multiLCA")) {
+    plot(fit0, horiz = horiz, clab = clab, ...)
+  } else {
+    # measurement models not estimated by multilevLCA (as_tse_lca())
+    probs <- item_probs(x)
+    graphics::matplot(
+      probs, type = "b", pch = seq_len(ncol(probs)), lty = 1, col = seq_len(ncol(probs)),
+      ylim = c(0, 1), xaxt = "n", xlab = "", ylab = "Item-response probability", ...
+    )
+    graphics::axis(1, at = seq_len(nrow(probs)), labels = sub("^P\\((.*)\\|C\\)$", "\\1", rownames(probs)),
+                   las = if (horiz) 1 else 2)
+    graphics::legend("topright", legend = if (is.null(clab)) colnames(probs) else clab,
+                     pch = seq_len(ncol(probs)), col = seq_len(ncol(probs)), bty = "n")
+  }
   invisible(NULL)
 }
 

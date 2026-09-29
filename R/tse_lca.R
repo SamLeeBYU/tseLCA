@@ -397,3 +397,113 @@ formula.tseLCA <- function(x, ...) {
   }
   x$formula
 }
+
+#' Use a measurement model with given parameters (Step 1)
+#'
+#' Creates a measurement model from given class sizes and item-response
+#' probabilities, evaluated on `data`, instead of estimating it. This allows
+#' Steps 2 and 3 to be based on a measurement model estimated elsewhere: in
+#' another program, reported in a publication, or saved from an earlier
+#' analysis.
+#'
+#' The Step-1 variance used for corrected standard errors in Step 3 is
+#' computed on `data` at the given parameters, which is valid when they are
+#' the maximum likelihood estimates for `data` (e.g. a model estimated on these
+#' data and saved). For parameters estimated on another sample, use
+#' `se = "robust"` in Step 3, or refit with [tse_lca()] using the parameters as
+#' `start`.
+#'
+#' @param formula `cbind(Y1, Y2, ...) ~ 1`, as in [tse_lca()].
+#' @param data A data frame.
+#' @param class_sizes Class proportions, one per class (they are normalized
+#'   to sum to one).
+#' @param item_probs Item-response probabilities in the layout of
+#'   [item_probs()]: one column per class, and one row per binary item
+#'   (\eqn{P(Y = 1 \mid X = t)}, where 1 is the item's second category) or per
+#'   category of a polytomous item (\eqn{P(Y = k \mid X = t)}), in the order
+#'   of the indicators.
+#' @param missing,control As in [tse_lca()].
+#'
+#' @return A `tseLCA_measurement` object, usable like one from [tse_lca()].
+#' @examples
+#' d <- generate_data(500, "high", "covariate", seed = 1)
+#' m <- tse_lca(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1, data = d, nclass = 3)
+#'
+#' # the same measurement model from its parameters
+#' m2 <- as_tse_lca(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1, data = d,
+#'                  class_sizes = class_sizes(m), item_probs = item_probs(m))
+#' all.equal(logLik(m2), logLik(m), tolerance = 1e-6)
+#' coef(tse_covariate(tse_classify(m2), ~ Zp))
+#' @export
+as_tse_lca <- function(
+  formula,
+  data,
+  class_sizes,
+  item_probs,
+  missing = c("listwise", "fiml"),
+  control = tse_control()
+) {
+  cl <- match.call()
+  missing <- match.arg(missing)
+  if (!is.data.frame(data)) {
+    stop("`data` must be a data frame.", call. = FALSE)
+  }
+  Y.names <- .indicators_from_formula(formula)
+  opts <- .opts_from_control(control, incomplete = missing == "fiml",
+                             include.intercept = TRUE)
+  rec <- .recode_indicators(data, Y.names)
+  dat <- .prepare_data(rec$data, Y.names, NULL, NULL, "gaussian", opts, rec$levels)
+  ivItemcat <- dat$ivItemcat
+
+  pi_t <- as.numeric(class_sizes)
+  K <- length(pi_t)
+  if (K < 2L || anyNA(pi_t) || any(pi_t <= 0)) {
+    stop("`class_sizes` must be two or more positive proportions.", call. = FALSE)
+  }
+  pi_t <- pi_t / sum(pi_t)
+  phi <- as.matrix(item_probs)
+  n_rows <- sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))
+  if (!identical(dim(phi), c(n_rows, K))) {
+    stop(sprintf(
+      "`item_probs` must be a %d x %d matrix (item rows as in item_probs(), one column per class).",
+      n_rows, K
+    ), call. = FALSE)
+  }
+  if (anyNA(phi) || any(phi <= 0 | phi >= 1)) {
+    stop("`item_probs` must be probabilities strictly between 0 and 1.", call. = FALSE)
+  }
+  full <- expand_Phi(phi, ivItemcat)
+  item_of <- rep(seq_along(ivItemcat), ivItemcat)
+  sums <- apply(full, 2L, function(p) tapply(p, item_of, sum))
+  if (any(abs(sums - 1) > 1e-6)) {
+    stop("The category probabilities of each polytomous item must sum to one in each class.",
+         call. = FALSE)
+  }
+
+  labels <- unlist(lapply(seq_along(ivItemcat), function(h) {
+    if (ivItemcat[h] == 2L) Y.names[h] else paste0(Y.names[h], ".", seq_len(ivItemcat[h]) - 1L)
+  }))
+  dimnames(phi) <- list(sprintf("P(%s|C)", labels), paste0("C", seq_len(K)))
+
+  log_joint <- sweep(log_lik_matrix(dat$Y.obs, full, dat$mDesign), 2L, log(pi_t), "+")
+  row_max <- apply(log_joint, 1L, max)
+  llik <- sum(row_max + log(rowSums(exp(log_joint - row_max))))
+  npar <- (K - 1L) + K * sum(ivItemcat - 1L)
+  fit0 <- list(
+    vPi = matrix(pi_t, K, 1L, dimnames = list(sprintf("P(C%d)", seq_len(K)), "")),
+    mPhi = phi,
+    LLKSeries = matrix(llik),
+    AIC = -2 * llik + 2 * npar,
+    BIC = -2 * llik + npar * log(nrow(dat$Y.obs))
+  )
+  fit0$R2entr <- .entropy_R2(step1_posteriors(dat$Y.obs, dat$mDesign, fit0, ivItemcat))
+
+  s1 <- .attach_step1_data(list(fit0 = fit0, fitZ = NULL), dat, 1L, fitted_here = TRUE)
+  fit <- .new_measurement_fit(s1, dat, K)
+  fit$call <- cl
+  fit$formula <- formula
+  fit$missing <- missing
+  fit$control <- control
+  fit$data <- data
+  fit
+}

@@ -144,3 +144,31 @@ test_that("formula(), update(), and input checks", {
     "not both"
   )
 })
+
+test_that("as_tse_lca() rebuilds a measurement model from its parameters", {
+  m <- sel[[3]]
+  m2 <- as_tse_lca(f_items, data = d, class_sizes = class_sizes(m), item_probs = item_probs(m))
+  expect_s3_class(m2, "tseLCA_measurement")
+  expect_equal(logLik(m2), logLik(m), tolerance = 1e-6)
+  expect_equal(posterior(m2), posterior(m), tolerance = 1e-6)
+  expect_equal(vcov(m2), vcov(m), tolerance = 1e-4)
+  fc <- tse_covariate(tse_classify(m), ~ Zp)
+  fc2 <- tse_covariate(tse_classify(m2), ~ Zp)
+  expect_equal(coef(fc2), coef(fc), tolerance = 1e-5)
+  expect_equal(vcov(fc2), vcov(fc), tolerance = 1e-5)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  expect_invisible(plot(m2))
+
+  # polytomous indicators, and input checks
+  dp <- v1_poly_data()
+  set.seed(1L)
+  mp <- tse_lca(f_items, data = dp, nclass = 3)
+  mp2 <- as_tse_lca(f_items, dp, class_sizes(mp), item_probs(mp))
+  expect_equal(logLik(mp2), logLik(mp), tolerance = 1e-6)
+  expect_error(as_tse_lca(f_items, d, c(.5, .5), item_probs(m)), "6 x 2 matrix")
+  expect_error(as_tse_lca(f_items, d, 1, item_probs(m)[, 1, drop = FALSE]), "two or more")
+  bad <- item_probs(mp)
+  bad[1, 1] <- bad[1, 1] + 0.1
+  expect_error(as_tse_lca(f_items, dp, class_sizes(mp), bad), "sum to one")
+})
