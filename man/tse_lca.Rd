@@ -36,7 +36,8 @@ at least one observed indicator (full-information maximum likelihood).}
 }
 \value{
 For a single \code{nclass}, a \code{tseLCA_measurement} object (see
-\code{\link[=class_sizes]{class_sizes()}}, \code{\link[=item_probs]{item_probs()}}, \code{\link[=posterior]{posterior()}}, \code{\link[=predict]{predict()}}); for several,
+\code{\link[=class_sizes]{class_sizes()}}, \code{\link[=item_probs]{item_probs()}}, \code{\link[=posterior]{posterior()}}, \code{\link[=predict]{predict()}}; it keeps
+\code{data} for \code{\link[=tse_classify]{tse_classify()}}); for several,
 a \code{tseLCA_select} object: the enumeration table with the fitted models,
 see \code{\link[=best_model]{best_model()}}.
 }
@@ -54,7 +55,7 @@ the result is a class-enumeration table of fit statistics (see Details).
 The number of classes is chosen from the measurement model alone, before
 any structural variables are considered, typically by the BIC together
 with interpretability and class separation; see Nylund, Asparouhov, and
-Muthén (2007) and Masyn (2013). The enumeration table reports, for each
+\enc{Muthén}{Muthen} (2007) and Masyn (2013). The enumeration table reports, for each
 number of classes, the log-likelihood, number of free parameters, AIC,
 BIC, sample-size adjusted BIC (SABIC; Sclove 1987), entropy R\eqn{^2}, and
 the smallest estimated class proportion. The one-class model is the
@@ -84,7 +85,7 @@ Masyn, K. E. (2013). Latent class analysis and finite mixture modeling. In
 T. D. Little (Ed.), \emph{The Oxford Handbook of Quantitative Methods},
 Vol. 2, 551--611. Oxford University Press.
 
-Nylund, K. L., Asparouhov, T., & Muthén, B. O. (2007). Deciding on the
+Nylund, K. L., Asparouhov, T., & \enc{Muthén}{Muthen}, B. O. (2007). Deciding on the
 number of classes in latent class analysis and growth mixture modeling:
 A Monte Carlo simulation study. \emph{Structural Equation Modeling},
 14(4), 535--569. \doi{10.1080/10705510701575396}

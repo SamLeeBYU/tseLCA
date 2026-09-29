@@ -232,6 +232,9 @@ item_probs.tseLCA <- function(object, ...) {
 #' @export
 logLik.tseLCA <- function(object, ...) {
   p <- .fit_part(object)
+  if (is.null(p$llik)) {
+    stop("This object has no log-likelihood.", call. = FALSE)
+  }
   structure(p$llik, df = p$npar, nobs = p$nobs, class = "logLik")
 }
 

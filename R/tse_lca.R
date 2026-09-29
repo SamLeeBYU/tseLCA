@@ -18,7 +18,7 @@
 #' The number of classes is chosen from the measurement model alone, before
 #' any structural variables are considered, typically by the BIC together
 #' with interpretability and class separation; see Nylund, Asparouhov, and
-#' Muthén (2007) and Masyn (2013). The enumeration table reports, for each
+#' \enc{Muthén}{Muthen} (2007) and Masyn (2013). The enumeration table reports, for each
 #' number of classes, the log-likelihood, number of free parameters, AIC,
 #' BIC, sample-size adjusted BIC (SABIC; Sclove 1987), entropy R\eqn{^2}, and
 #' the smallest estimated class proportion. The one-class model is the
@@ -44,7 +44,8 @@
 #' @param control Estimation settings, see [tse_control()].
 #'
 #' @return For a single `nclass`, a `tseLCA_measurement` object (see
-#'   [class_sizes()], [item_probs()], [posterior()], [predict()]); for several,
+#'   [class_sizes()], [item_probs()], [posterior()], [predict()]; it keeps
+#'   `data` for [tse_classify()]); for several,
 #'   a `tseLCA_select` object: the enumeration table with the fitted models,
 #'   see [best_model()].
 #'
@@ -53,7 +54,7 @@
 #'   T. D. Little (Ed.), \emph{The Oxford Handbook of Quantitative Methods},
 #'   Vol. 2, 551--611. Oxford University Press.
 #'
-#' Nylund, K. L., Asparouhov, T., & Muthén, B. O. (2007). Deciding on the
+#' Nylund, K. L., Asparouhov, T., & \enc{Muthén}{Muthen}, B. O. (2007). Deciding on the
 #'   number of classes in latent class analysis and growth mixture modeling:
 #'   A Monte Carlo simulation study. \emph{Structural Equation Modeling},
 #'   14(4), 535--569. \doi{10.1080/10705510701575396}
@@ -129,6 +130,7 @@ tse_lca <- function(
     fit$formula <- formula
     fit$missing <- missing
     fit$control <- control
+    fit$data <- data
     fit
   }
 

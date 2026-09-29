@@ -9,6 +9,12 @@
   BIC, SABIC, entropy R^2, and smallest class. The table has `print()`,
   `plot()`, `as.data.frame()`, `best_model()`, and `[[` methods. The
   one-class (independence) model is fitted in closed form.
+- New `tse_classify()` (Step 2) assigns observations to classes with a
+  fixed measurement model (`assignment = "modal"` or `"proportional"`). It
+  reports the classification-error probabilities P(W = s | X = t) and
+  entropy R^2. With `newdata` it classifies another sample, replacing the
+  `step1 =` route for using a measurement model from one sample on another.
+  `tse_lca()` models now keep their `data` for this purpose.
 - `predict()` for measurement models gives posterior class probabilities
   (or modal classes) for new data, coded with the model's stored
   categories. `fitted()`, `formula()`, and `update()` also work.
