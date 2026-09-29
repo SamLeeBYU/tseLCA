@@ -157,3 +157,51 @@ test_that("a legacy lca_step1() fit with two-step estimates can be rebased", {
   # the rebased two-step values are a valid start: same optimum as a cold start
   expect_equal(coef(fit), coef(ref), tolerance = 1e-4)
 })
+
+test_that("corrected SEs exist when a reference category is on the boundary", {
+  # Class 1 never gives the first category of Y1, so P(Y1 = 0 | class 1) is on
+  # the boundary; the corrected variance used to be all NA in this case.
+  set.seed(7)
+  n <- 1500
+  Zp <- rnorm(n)
+  cls <- apply(cbind(1, exp(0.5 * Zp), exp(-0.5 * Zp)), 1, function(p) sample(3, 1, prob = p))
+  probs <- list(c(0, .5, .5), c(.8, .1, .1), c(.1, .1, .8))
+  d <- data.frame(Zp = Zp)
+  for (j in 1:5) {
+    pj <- if (j == 1) probs else list(c(.1, .8, .1), c(.8, .1, .1), c(.1, .1, .8))
+    d[[paste0("Y", j)]] <- vapply(cls, function(k) sample(0:2, 1, prob = pj[[k]]), integer(1))
+  }
+  set.seed(1)
+  m <- tse_lca(cbind(Y1, Y2, Y3, Y4, Y5) ~ 1, data = d, nclass = 3,
+               control = tse_control(n_init = 5))
+  bdry <- which(item_probs(m)[1, ] < 1e-3)
+  expect_length(bdry, 1L)
+  V1 <- vcov(m)
+  expect_false(anyNA(V1))
+  expect_equal(V1, t(V1))
+  # the log-ratios of Y1 in that class: finite, moderate SEs (were ~3000),
+  # and no variance along their common shift, log P(Y1 = 0 | class)
+  blk <- grep(sprintf("^log\\(P\\(Y1=[12]\\|C%d\\)", bdry), rownames(V1))
+  expect_length(blk, 2L)
+  expect_true(all(sqrt(diag(V1)[blk]) < 1))
+  expect_equal(sum(V1[blk, blk]), 0, tolerance = 1e-10)
+  fc <- tse_covariate(tse_classify(m), ~ Zp)
+  fr <- tse_covariate(tse_classify(m), ~ Zp, se = "robust")
+  se_c <- sqrt(diag(vcov(fc)))
+  expect_true(all(is.finite(se_c)))
+  expect_true(all(se_c >= sqrt(diag(vcov(fr))) - 1e-8))
+})
+
+test_that("a singular Step-1 information matrix falls back to robust SEs, with a warning", {
+  f <- cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1
+  set.seed(1)
+  cl <- tse_classify(tse_lca(f, generate_data(500, "high", "covariate", seed = 3), 3))
+  set.seed(1)
+  cld <- tse_classify(tse_lca(f, generate_data(500, "high", "distal", seed = 3), 3))
+  local_mocked_bindings(.step1_varmat = function(...) matrix(NA_real_, 2, 2))
+  expect_warning(fc <- tse_covariate(cl, ~ Zp), "robust standard errors are reported")
+  expect_equal(vcov(fc), vcov(tse_covariate(cl, ~ Zp, se = "robust")))
+  expect_identical(fc$se, "robust")
+  expect_warning(fd <- tse_distal(cld, Zo ~ 1, family = "gaussian"), "robust standard errors")
+  expect_equal(vcov(fd), vcov(tse_distal(cld, Zo ~ 1, family = "gaussian", se = "robust")))
+})

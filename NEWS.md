@@ -87,6 +87,16 @@
 
 ## Bug fixes
 
+- Step-1 variance of polytomous indicators when the first (reference)
+  category of an item has a boundary probability in some class: the free
+  parameters of that item are log-ratios against this category, and their
+  common shift, log P(Y = first | class), is not informed by the data. It is
+  now treated as fixed, like other boundary parameters. Previously the
+  variance of these log-ratios was huge (the information matrix was nearly
+  singular) or all `NA` (singular), which made the corrected standard errors
+  of the Step-3 models `NA`.
+- If the Step-1 information matrix is still singular, Step-3 models warn
+  and report robust standard errors instead of returning `NA`.
 - `tse_twostep(se = TRUE)` with a reference class other than the first
   returned the class-1-reference estimates and variance under the new class
   labels. They are now transformed to the requested reference class. It also

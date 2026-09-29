@@ -192,8 +192,39 @@ lca_indiv_varmat <- function(
     Infomat_active <- crossprod(S_active) / N
   }
 
+  # ---- Reference categories on the boundary ----------------------------------
+  # The free parameters of a polytomous item are log-ratios against its first
+  # category. When P(Y = first | class t) is on the boundary, the scores of that
+  # item's free parameters in class t sum to (almost) zero: a common shift of
+  # its log-ratios, i.e. log P(Y = first | t), is not informed by the data.
+  # Treat that direction as fixed, like other boundary parameters: invert the
+  # information on its orthogonal complement.
+  null_dirs <- list()
+  for (h in which(ivItemcat > 2L)) {
+    rows_h <- which(free_idx >= starts[h] & free_idx < starts[h] + ivItemcat[h])
+    for (t in seq_len(iT)) {
+      if (!phi_bdry[starts[h], t]) next
+      cols <- (iT - 1L) + (t - 1L) * n_free_phi + rows_h
+      cols <- match(cols, active)
+      cols <- cols[!is.na(cols)]
+      if (length(cols) < 1L) next
+      v <- numeric(length(active))
+      v[cols] <- 1
+      null_dirs[[length(null_dirs) + 1L]] <- v
+    }
+  }
+  invert_info <- function(I) {
+    if (length(null_dirs) == 0L) {
+      return(qr.solve(I))
+    }
+    Nd <- do.call(cbind, null_dirs)
+    B <- qr.Q(qr(Nd), complete = TRUE)[, -seq_len(qr(Nd)$rank), drop = FALSE]
+    V <- B %*% qr.solve(crossprod(B, I %*% B)) %*% t(B)
+    (V + t(V)) / 2
+  }
+
   Varmat_active <- tryCatch(
-    qr.solve(Infomat_active) / N,
+    invert_info(Infomat_active) / N,
     error = function(e) {
       warning(
         "lca_indiv_varmat: Infomat is singular even after removing boundary ",

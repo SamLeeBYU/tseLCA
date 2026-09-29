@@ -405,8 +405,18 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   } else {
     .step1_varmat(s1, dat, ref_idx, opts$boundary.tol)
   }
+  se_fallback <- !is.null(Sigma.1) && anyNA(Sigma.1)
+  if (se_fallback) {
+    warning(
+      "The Step-1 information matrix is singular, so the standard errors cannot be ",
+      "corrected for the Step-1 uncertainty; robust standard errors are reported instead.",
+      call. = FALSE
+    )
+    Sigma.1 <- NULL
+    opts$use.simple.cov <- TRUE
+  }
   list(s1 = s1, s2 = s2, dat = dat, opts = opts, Sigma.1 = Sigma.1, ref_idx = ref_idx,
-       ref = ref)
+       ref = ref, se_fallback = se_fallback)
 }
 
 #' Two-step estimates (measurement model fixed) used as Step-3 starting values
@@ -520,7 +530,7 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   }
   fit$method <- method
   fit$se_requested <- se
-  fit$se <- if (method %in% c("BCH", "none")) "robust" else se
+  fit$se <- if (method %in% c("BCH", "none") || isTRUE(setup$se_fallback)) "robust" else se
   fit$assignment <- classify$assignment
   fit$ref <- paste0("C", setup$ref_idx)
   fit$classification <- classify
