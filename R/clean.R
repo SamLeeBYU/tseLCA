@@ -531,48 +531,6 @@ permute_fit0_classes <- function(fit0, ref_idx) {
   fit0
 }
 
-#' Compress a one-hot expanded Y matrix back to integer codes
-#'
-#' Inverse of \code{expand_Y}. Takes a one-hot expanded matrix where each
-#' item occupies \code{K_h} consecutive columns (one per category, 0-based)
-#' and returns an N x H integer matrix of category codes (0, 1, ..., K_h-1).
-#'
-#' Rows where all K_h columns for an item are \code{NA} are returned as
-#' \code{NA} for that item.
-#'
-#' @param mY_exp   N x sum(K_h) one-hot matrix (as stored in \code{fit0$mU}).
-#' @param ivItemcat Integer vector of category counts per item (length H).
-#' @return N x H integer matrix of category codes.
-#' @keywords internal
-compress_Y <- function(mY_exp, ivItemcat) {
-  N <- nrow(mY_exp)
-  H <- length(ivItemcat)
-  out <- matrix(NA_integer_, N, H)
-  col_start <- 1L
-
-  for (h in seq_len(H)) {
-    K_h <- ivItemcat[h]
-    block <- mY_exp[, col_start:(col_start + K_h - 1L), drop = FALSE]
-
-    # Rows where all cols are NA -> NA (missing item response)
-    all_na <- rowSums(!is.na(block)) == 0L
-
-    # which.max returns the column index of the first 1 (0-based: subtract 1)
-    codes <- apply(block, 1L, \(row) {
-      if (all(is.na(row))) {
-        NA_integer_
-      } else {
-        which.max(row) - 1L
-      }
-    })
-
-    out[, h] <- as.integer(codes)
-    col_start <- col_start + K_h
-  }
-
-  out
-}
-
 #' Extract Y.exp, mDesign, posteriors from a multilevLCA mU matrix
 #'
 #' `fit0$mU` from \pkg{multilevLCA} stores data already in one-hot expanded
@@ -581,7 +539,7 @@ compress_Y <- function(mY_exp, ivItemcat) {
 #'
 #' For dichotomous items (K_h=2) the two columns are stored. For polytomous
 #' items (K_h>2) all K_h columns are stored. This function first compresses
-#' the expanded Y back to integer codes through \code{compress_Y}, then re-expands
+#' the expanded Y back to integer codes, then re-expands
 #' consistently with \code{expand_Y} so downstream functions receive the correct
 #' N x K_total matrix.
 #'

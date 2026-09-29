@@ -139,3 +139,21 @@ test_that("covariate models without an intercept can be fitted", {
   expect_equal(dimnames(coef(f, matrix = TRUE)), list("Zp", c("C2", "C3")))
   expect_equal(names(coef(f)), rownames(vcov(f)))
 })
+
+test_that("a legacy lca_step1() fit with two-step estimates can be rebased", {
+  # Exercises normalize_fitZ_names() / permute_fitZ_classes(): the stored
+  # two-step estimates are renamed and re-referenced to match the new
+  # reference class.
+  d <- dl$cov_high
+  set.seed(1L)
+  s1 <- lca_step1(d, v1_items, 3L, Zp.names = "Zp")
+  expect_false(is.null(s1$fitZ))
+  fit <- three_step(d, v1_items, 3L, Zp.names = "Zp", step1 = s1, rebase = "C2",
+                    use.simple.cov = TRUE)
+  ref <- three_step(d, v1_items, 3L, Zp.names = "Zp", step1 = s1, rebase = "C2",
+                    use.simple.cov = TRUE, use.two.step = FALSE)
+  expect_equal(colnames(coef(fit, step = "two_step", matrix = TRUE)), c("C1", "C3"))
+  expect_equal(rownames(coef(fit, step = "two_step", matrix = TRUE)), c("(Intercept)", "Zp"))
+  # the rebased two-step values are a valid start: same optimum as a cold start
+  expect_equal(coef(fit), coef(ref), tolerance = 1e-4)
+})

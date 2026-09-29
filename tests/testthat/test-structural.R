@@ -4,6 +4,10 @@
 # Each specification is checked against three_step() with the same
 # measurement model (passed as step1), which the v1 regression fixtures pin.
 
+# Every specification here is also covered, more cheaply, by other test files;
+# this file cross-checks them exhaustively and is skipped on CRAN for time.
+skip_on_cran()
+
 items <- paste0("Y", 1:6)
 f_items <- cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1
 dl <- v1_data()

@@ -2,6 +2,10 @@
 #
 # One-call interface tseLCA() and component accessors.
 
+# Every specification here is also covered, more cheaply, by other test files;
+# this file cross-checks them exhaustively and is skipped on CRAN for time.
+skip_on_cran()
+
 dl <- v1_data()
 f_m <- cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1
 chain <- function(d, cov = NULL, outcome = NULL, family = "gaussian", method = "ML",

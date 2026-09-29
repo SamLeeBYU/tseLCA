@@ -61,27 +61,23 @@ test_that("three_step returns correct subclasses", {
 test_that("posteriors is N x T numeric matrix", {
   N <- nrow(d_cov)
   T <- 3L
-  expect_true(is.matrix(fit_cov$posteriors))
-  expect_equal(dim(fit_cov$posteriors), c(N, T))
-  expect_true(all(fit_cov$posteriors >= 0 & fit_cov$posteriors <= 1))
-  expect_equal(rowSums(fit_cov$posteriors), rep(1, N), tolerance = 1e-6)
+  expect_true(is.matrix(posterior(fit_cov)))
+  expect_equal(dim(posterior(fit_cov)), c(N, T))
+  expect_true(all(posterior(fit_cov) >= 0 & posterior(fit_cov) <= 1))
+  expect_equal(rowSums(posterior(fit_cov)), rep(1, N), tolerance = 1e-6)
 })
 
 test_that("classifications is length-N integer vector with values in 1..T", {
   N <- nrow(d_cov)
-  cl <- fit_cov$classifications
+  cl <- classes(fit_cov)
   expect_length(cl, N)
   expect_true(all(cl >= 1L & cl <= 3L))
-  expect_equal(cl, max.col(fit_cov$posteriors))
+  expect_equal(cl, max.col(posterior(fit_cov)))
 })
 
-test_that("measurement-only fit has posteriors from mU", {
-  expect_true(!is.null(fit_meas$posteriors) || is.null(fit_meas$posteriors))
-  # If mU is present, posteriors should be N x T
-  if (!is.null(fit_meas$posteriors)) {
-    expect_true(is.matrix(fit_meas$posteriors))
-    expect_equal(ncol(fit_meas$posteriors), 3L)
-  }
+test_that("measurement-only fit has an N x T posterior matrix", {
+  expect_true(is.matrix(posterior(fit_meas)))
+  expect_equal(ncol(posterior(fit_meas)), 3L)
 })
 
 # ---- coef() ------------------------------------------------------------------
@@ -116,7 +112,7 @@ test_that("coef.tseLCA_distal returns named length-T vector", {
 
 test_that("coef.tseLCA_both selects components", {
   expect_equal(names(coef(fit_both, component = "covariate")), names(coef(fit_cov)))
-  expect_equal(unname(coef(fit_both, component = "distal")), unname(fit_both$distal$three_step))
+  expect_equal(unname(coef(fit_both, component = "distal")), unname(coef(distal(fit_both))))
   both <- coef(fit_both)
   expect_length(both, 4L + 3L)
   expect_equal(names(both), rownames(vcov(fit_both)))
@@ -182,20 +178,20 @@ test_that("vcov.tseLCA_both returns components and a block matrix", {
 # ---- llik / AIC / BIC --------------------------------------------------------
 
 test_that("covariate fit has finite llik, AIC, BIC", {
-  expect_true(is.finite(fit_cov$llik))
-  expect_true(is.finite(fit_cov$AIC))
-  expect_true(is.finite(fit_cov$BIC))
-  expect_true(fit_cov$AIC > 0)
-  expect_true(fit_cov$BIC > fit_cov$AIC)
+  expect_true(is.finite(as.numeric(logLik(fit_cov))))
+  expect_true(is.finite(AIC(fit_cov)))
+  expect_true(is.finite(BIC(fit_cov)))
+  expect_true(AIC(fit_cov) > 0)
+  expect_true(BIC(fit_cov) > AIC(fit_cov))
 })
 
 test_that("distal fit has finite llik, AIC, BIC and three_step.llik", {
-  expect_true(is.finite(fit_dis$llik))
-  expect_true(is.finite(fit_dis$AIC))
-  expect_true(is.finite(fit_dis$BIC))
+  expect_true(is.finite(as.numeric(logLik(fit_dis))))
+  expect_true(is.finite(AIC(fit_dis)))
+  expect_true(is.finite(BIC(fit_dis)))
   expect_true(is.finite(fit_dis$three_step.llik))
   # Profile llik <= step-3-only llik (adds (negative) log P(Y|X) contribution)
-  expect_true(fit_dis$llik < fit_dis$three_step.llik)
+  expect_true(as.numeric(logLik(fit_dis)) < fit_dis$three_step.llik)
 })
 
 test_that("entropy.R2 is in [0, 1]", {

@@ -5,6 +5,10 @@
 # and the generic stats tooling (logLik/AIC/BIC/nobs/confint/printCoefmat)
 # working out of the box.
 
+# Every specification here is also covered, more cheaply, by other test files;
+# this file cross-checks them exhaustively and is skipped on CRAN for time.
+skip_on_cran()
+
 fits <- local({
   dl <- v1_data()
   lapply(v1_configs, v1_fit, data_list = dl)
