@@ -145,6 +145,17 @@ test_that("formula(), update(), and input checks", {
   )
 })
 
+test_that("item_probs() of a fitted model can be used as `start`", {
+  m <- sel[[3]]
+  m2 <- tse_lca(f_items, data = d, nclass = 3, start = item_probs(m))
+  expect_equal(item_probs(m2), item_probs(m), tolerance = 1e-5)
+  dp <- v1_poly_data()
+  set.seed(1)
+  mp <- tse_lca(f_items, data = dp, nclass = 3)
+  mp2 <- tse_lca(f_items, data = dp, nclass = 3, start = item_probs(mp))
+  expect_equal(item_probs(mp2), item_probs(mp), tolerance = 1e-5)
+})
+
 test_that("as_tse_lca() rebuilds a measurement model from its parameters", {
   m <- sel[[3]]
   m2 <- as_tse_lca(f_items, data = d, class_sizes = class_sizes(m), item_probs = item_probs(m))

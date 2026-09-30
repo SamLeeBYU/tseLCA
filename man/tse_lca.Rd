@@ -25,8 +25,9 @@ to compare (e.g. \code{1:6}).}
 \item{start}{Optional fixed starting point for the EM algorithm (single
 \code{nclass} only): an integer vector with one class per row of \code{data}, or a
 matrix of item-response probabilities P(Y = k | X = t) with one row per
-item category (in the order of the indicators) and one column per class.
-Bypasses the default k-means initialization.}
+item category (in the order of the indicators) and one column per class,
+such as \code{\link[=item_probs]{item_probs()}} of a fitted model (whose binary items have one
+row, P(Y = 1 | X = t)). Bypasses the default k-means initialization.}
 
 \item{missing}{Handling of missing indicator values: \code{"listwise"}
 (default) drops rows with any missing indicator; \code{"fiml"} keeps rows with

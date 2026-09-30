@@ -36,8 +36,9 @@
 #' @param start Optional fixed starting point for the EM algorithm (single
 #'   `nclass` only): an integer vector with one class per row of `data`, or a
 #'   matrix of item-response probabilities P(Y = k | X = t) with one row per
-#'   item category (in the order of the indicators) and one column per class.
-#'   Bypasses the default k-means initialization.
+#'   item category (in the order of the indicators) and one column per class,
+#'   such as [item_probs()] of a fitted model (whose binary items have one
+#'   row, P(Y = 1 | X = t)). Bypasses the default k-means initialization.
 #' @param missing Handling of missing indicator values: `"listwise"`
 #'   (default) drops rows with any missing indicator; `"fiml"` keeps rows with
 #'   at least one observed indicator (full-information maximum likelihood).

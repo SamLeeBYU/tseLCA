@@ -63,6 +63,11 @@ classify_from_phi <- function(data, Y.names, n_classes, phi, incomplete = FALSE)
   if (!is.matrix(phi)) {
     phi <- as.matrix(phi)
   }
+  # item_probs() layout: one row, P(Y = 1 | X), per binary item
+  if (nrow(phi) != sum(ivItemcat) &&
+      nrow(phi) == sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))) {
+    phi <- expand_Phi(phi, ivItemcat)
+  }
   if (nrow(phi) != sum(ivItemcat)) {
     stop(
       sprintf(
