@@ -21,6 +21,13 @@
 #   TSELCA_SIM_DIR        Directory for the simulated data, Step-1 models, and
 #                         results ("tseLCA_sim_output").
 #   TSELCA_SIM_CORES      Parallel workers (number of cores - 1).
+#   TSELCA_SIM_TABLES_ONLY TRUE skips the estimation and rebuilds the tables
+#                         from saved replication results (sim_replicates.rds in
+#                         TSELCA_SIM_DIR), e.g. those shipped with the
+#                         replication materials; this takes seconds (FALSE).
+#
+# The tables are printed and written to TSELCA_SIM_DIR: sim_summary.csv, and
+# the manuscript's LaTeX tables in TSELCA_SIM_DIR/tables.
 #
 # The computational cost is dominated by Step 1 (500 replications x 18
 # conditions, each measurement model fitted from 20 random starts), which
@@ -39,6 +46,7 @@ QUICK <- isTRUE(as.logical(Sys.getenv("TSELCA_SIM_QUICK", "FALSE")))
 SCENARIOS <- strsplit(Sys.getenv("TSELCA_SIM_SCENARIOS", "covariate,distal"), ",")[[1]]
 OUT_DIR <- Sys.getenv("TSELCA_SIM_DIR", "tseLCA_sim_output")
 N_CORES <- as.integer(Sys.getenv("TSELCA_SIM_CORES", max(1L, detectCores() - 1L)))
+TABLES_ONLY <- isTRUE(as.logical(Sys.getenv("TSELCA_SIM_TABLES_ONLY", "FALSE")))
 
 N_REP <- if (QUICK) 25L else 500L
 SEP_LEVELS <- c("low", "mid", "high")
@@ -49,11 +57,18 @@ TARGET <- c(covariate = "Zp:C3", distal = "mu_C3")
 ALPHA <- 0.05
 
 dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
+rep_path <- file.path(OUT_DIR, sprintf("sim_replicates%s.rds", if (QUICK) "_quick" else ""))
 cat(sprintf(
   "tseLCA %s simulation: %s, %d replications per condition, %d worker(s), output in %s\n",
   as.character(packageVersion("tseLCA")), paste(SCENARIOS, collapse = " + "),
   N_REP, N_CORES, normalizePath(OUT_DIR)
 ))
+
+if (TABLES_ONLY) {
+  if (!file.exists(rep_path)) stop("TSELCA_SIM_TABLES_ONLY=TRUE needs ", rep_path)
+  replicates <- readRDS(rep_path)
+  cat("Tables from the saved replication results in", normalizePath(rep_path), "\n")
+} else { # sections 1-3: estimation
 
 ###################################################
 ### 1. Simulated data
@@ -198,7 +213,6 @@ run_replication <- function(d, p, sc) {
   do.call(rbind, rows)
 }
 
-rep_path <- file.path(OUT_DIR, sprintf("sim_replicates%s.rds", if (QUICK) "_quick" else ""))
 cat("Estimating Step-3 models...\n")
 cl <- makePSOCKcluster(min(N_CORES, nrow(conditions)))
 invisible(clusterEvalQ(cl, library(tseLCA)))
@@ -220,6 +234,8 @@ stopCluster(cl)
 replicates <- do.call(rbind, replicates)
 rownames(replicates) <- NULL
 saveRDS(replicates, rep_path)
+
+} # end of estimation (sections 1-3)
 
 ###################################################
 ### 4. Tables
@@ -261,7 +277,10 @@ summarize_simulation <- function(replicates, alpha = 0.05) {
 
 # Tables in the layout of the manuscript: one row per separation and n, one
 # column (or column pair) per estimator.
-num <- function(x, digits = 3) sub("^(-?)0\\.", "\\1.", formatC(x, format = "f", digits = digits))
+num <- function(x, digits = 3) {
+  x[round(x, digits) == 0] <- 0 # no "-.000"
+  sub("^(-?)0\\.", "\\1.", formatC(x, format = "f", digits = digits))
+}
 print_tables <- function(s) {
   labels <- c(two_step = "2-step", modal.bch = "BCH modal", prop.bch = "BCH prop.",
               modal.ml = "ML modal", prop.ml = "ML prop.")
@@ -287,9 +306,136 @@ print_tables <- function(s) {
   }
 }
 
+# The same tables as LaTeX, in the layout of the manuscript (booktabs). All
+# four tables are scaled to the width of the widest one, the covariate
+# coverage table, which is stored in a box by sim_box.tex; the manuscript
+# includes sim_box.tex once, before the first simulation table.
+SEP_LABELS <- c(low = "Low", mid = "Medium", high = "High")
+TEX_EST <- c("two_step", "modal.bch", "prop.bch", "modal.ml", "prop.ml")
+tex_rows <- function(ss, ests, cellfun) {
+  key <- unique(ss[c("separation", "n")])
+  key <- key[order(key$separation, key$n), ]
+  vapply(seq_len(nrow(key)), function(k) {
+    first <- k == 1L || key$separation[k] != key$separation[k - 1L]
+    cells <- unlist(lapply(ests, function(est) {
+      cellfun(ss[ss$separation == key$separation[k] & ss$n == key$n[k] &
+                   ss$estimator == est, ])
+    }))
+    paste(paste(c(if (first) SEP_LABELS[[as.character(key$separation[k])]] else "",
+                  key$n[k], cells), collapse = " & "), "\\\\")
+  }, "")
+}
+bias_cell <- function(r) sprintf("%s (%s)", num(r$bias), num(r$bias_mcse))
+cov_cells <- function(r) c(sprintf("%s (%s)", num(r$coverage, 2), num(r$coverage_mcse, 2)),
+                           num(r$se_sd, 2))
+sesd <- "$\\tfrac{\\text{SE}}{\\text{SD}}$"
+
+# column headers; `two` = the scenario has the two-step estimator
+bias_head <- function(two) {
+  if (two) {
+    c("Separation & $n$ & 2-step & \\multicolumn{2}{c}{BCH} & \\multicolumn{2}{c}{ML} \\\\",
+      "\\cmidrule(lr){4-5} \\cmidrule(lr){6-7}",
+      " & & & Modal & Prop. & Modal & Prop. \\\\")
+  } else {
+    c("Separation & $n$ & \\multicolumn{2}{c}{BCH} & \\multicolumn{2}{c}{ML} \\\\",
+      "\\cmidrule(lr){3-4} \\cmidrule(lr){5-6}",
+      " & & Modal & Prop. & Modal & Prop. \\\\")
+  }
+}
+cov_head <- function(two) {
+  pairs <- paste(rep(paste("Coverage &", sesd), if (two) 5 else 4), collapse = " & ")
+  if (two) {
+    c("Separation & $n$ & \\multicolumn{2}{c}{2-step} & \\multicolumn{4}{c}{BCH} & \\multicolumn{4}{c}{ML} \\\\",
+      "\\cmidrule(lr){3-4} \\cmidrule(lr){5-8} \\cmidrule(lr){9-12}",
+      paste(" & & \\multicolumn{2}{c}{} & \\multicolumn{2}{c}{Modal} & \\multicolumn{2}{c}{Prop.}",
+            "& \\multicolumn{2}{c}{Modal} & \\multicolumn{2}{c}{Prop.} \\\\"),
+      "\\cmidrule(lr){5-6} \\cmidrule(lr){7-8} \\cmidrule(lr){9-10} \\cmidrule(lr){11-12}",
+      paste(" & &", pairs, "\\\\"))
+  } else {
+    c("Separation & $n$ & \\multicolumn{4}{c}{BCH} & \\multicolumn{4}{c}{ML} \\\\",
+      "\\cmidrule(lr){3-6} \\cmidrule(lr){7-10}",
+      paste(" & & \\multicolumn{2}{c}{Modal} & \\multicolumn{2}{c}{Prop.}",
+            "& \\multicolumn{2}{c}{Modal} & \\multicolumn{2}{c}{Prop.} \\\\"),
+      "\\cmidrule(lr){3-4} \\cmidrule(lr){5-6} \\cmidrule(lr){7-8} \\cmidrule(lr){9-10}",
+      paste(" & &", pairs, "\\\\"))
+  }
+}
+
+SIM_CAPTIONS <- c(
+  covariate_bias = paste(
+    "Mean bias and corresponding Monte Carlo standard errors (MCSE) in parentheses",
+    "for the covariate scenario. The evaluated target parameter is the $Z_p$ slope for",
+    "class 3, corresponding to $\\boldsymbol{\\Gamma}_{23}=1$ in the coefficient matrix.",
+    "Columns indicate latent class separation, sample size ($n$), and the evaluated",
+    "estimators: the two-step estimator, and the BCH and ML three-step estimators",
+    "utilizing either modal or proportional (Prop.) assignment."),
+  covariate_cov = paste(
+    "Coverage probability (evaluated at $\\alpha=0.05$ for standard Wald test confidence",
+    "intervals) and corresponding Monte Carlo standard errors (MCSE) in parentheses for",
+    "the covariate scenario. The evaluated target parameter is the $Z_p$ slope for",
+    "class 3, corresponding to $\\boldsymbol{\\Gamma}_{23}=1$. The SE/SD column represents",
+    "the Monte Carlo mean of the estimated standard errors divided by the empirical",
+    "standard deviation of the parameter estimates (values closer to 1 indicate better",
+    "performance). Columns indicate class separation, sample size ($n$), and the",
+    "evaluated estimators: 2-step, BCH, and ML under modal or proportional (Prop.)",
+    "assignment."),
+  distal_bias = paste(
+    "Mean bias and corresponding Monte Carlo standard errors (MCSE) in parentheses for",
+    "the distal outcome scenario. The evaluated target parameter is the mean distal",
+    "outcome for class 3, $\\mu_3 = 0$. Columns represent latent class separation, sample",
+    "size ($n$), and the BCH and ML three-step estimators using either modal or",
+    "proportional (Prop.) assignment."),
+  distal_cov = paste(
+    "Coverage probability (evaluated at $\\alpha=0.05$ for standard Wald test confidence",
+    "intervals), Monte Carlo standard errors (MCSE) in parentheses, and the SE/SD ratio",
+    "for the distal outcome scenario. The evaluated target parameter is the mean distal",
+    "outcome for class 3, $\\mu_3 = 0$. Columns indicate class separation, sample size",
+    "($n$), and the assignment methods (modal or proportional) for the BCH and ML",
+    "estimators.")
+)
+
+write_sim_tables <- function(s, dir) {
+  dir.create(dir, showWarnings = FALSE, recursive = TRUE)
+  tabular <- list()
+  for (sc in unique(s$scenario)) {
+    ss <- s[s$scenario == sc, ]
+    two <- "two_step" %in% ss$estimator
+    ests <- intersect(TEX_EST, as.character(ss$estimator))
+    tabular[[paste0(sc, "_bias")]] <- list(
+      spec = if (two) "ll c cccc" else "ll cccc",
+      lines = c(bias_head(two), "\\midrule", tex_rows(ss, ests, bias_cell)))
+    tabular[[paste0(sc, "_cov")]] <- list(
+      spec = if (two) "ll cc cccc cccc" else "ll cccc cccc",
+      lines = c(cov_head(two), "\\midrule", tex_rows(ss, ests, cov_cells)))
+  }
+  # the widest table (covariate coverage, or distal coverage without it)
+  # defines the common width
+  boxed <- if ("covariate_cov" %in% names(tabular)) "covariate_cov" else "distal_cov"
+  writeLines(c("\\newsavebox{\\simtablebox}", "\\sbox{\\simtablebox}{%",
+               sprintf("\\begin{tabular}{%s}", tabular[[boxed]]$spec), "\\toprule",
+               tabular[[boxed]]$lines, "\\bottomrule", "\\end{tabular}%", "}"),
+             file.path(dir, "sim_box.tex"))
+  for (nm in names(tabular)) {
+    body <- if (nm == boxed) {
+      "\\resizebox{\\textwidth}{!}{\\usebox{\\simtablebox}}"
+    } else {
+      c("\\resizebox{\\textwidth}{!}{%",
+        sprintf("\\begin{tabular*}{\\wd\\simtablebox}{@{\\extracolsep{\\fill}}%s}",
+                tabular[[nm]]$spec),
+        "\\toprule", tabular[[nm]]$lines, "\\bottomrule", "\\end{tabular*}%", "}")
+    }
+    writeLines(c("\\begin{table}[t!]", "\\centering", body,
+                 sprintf("\\caption{\\footnotesize %s}", SIM_CAPTIONS[[nm]]),
+                 sprintf("\\label{tab:%s}", nm), "\\end{table}"),
+               file.path(dir, sprintf("sim_%s.tex", nm)))
+  }
+  invisible(names(tabular))
+}
+
 summary_tab <- summarize_simulation(replicates, ALPHA)
 utils::write.csv(summary_tab, file.path(OUT_DIR, sprintf("sim_summary%s.csv", if (QUICK) "_quick" else "")),
                  row.names = FALSE)
 print_tables(summary_tab)
+write_sim_tables(summary_tab, file.path(OUT_DIR, "tables"))
 cat(sprintf("\nReplications with estimates (of %d): %s\n", N_REP,
             paste(range(summary_tab$n_ok), collapse = "-")))

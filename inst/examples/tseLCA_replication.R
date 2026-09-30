@@ -76,7 +76,10 @@ fit_or_load <- function(name, expr) {
 ## other tables of the manuscript) and printed here.
 tab_dir <- file.path(script_dir, "tables")
 dir.create(tab_dir, showWarnings = FALSE)
-num <- function(x, d = 2) sub("^(-?)0\\.", "\\1.", formatC(x, digits = d, format = "f"))
+num <- function(x, d = 2) {
+  x[round(x, d) == 0] <- 0 # no "-.00"
+  sub("^(-?)0\\.", "\\1.", formatC(x, digits = d, format = "f"))
+}
 est_se <- function(est, se, d = 2) paste0(num(est, d), " (", num(se, d), ")")
 write_table <- function(body, header, align, caption, label, footer = NULL,
                         resize = FALSE) {
