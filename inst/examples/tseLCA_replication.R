@@ -361,6 +361,28 @@ cmp <- rbind(
 colnames(cmp) <- c(paste("estimate", nonref), paste("se", nonref))
 round(cmp, 3)
 
+## predicted class membership along the party scale: three-step (tseLCA)
+## and one-step (poLCA)
+party_x <- seq(1, 7, length.out = 101)
+p_three <- predict(fc_elec, newdata = data.frame(PARTY = party_x))
+colnames(p_three) <- lab_elec
+eta_one <- cbind(0, cbind(1, party_x) %*% one3$coeff)
+p_one <- exp(eta_one) / rowSums(exp(eta_one))
+colnames(p_one) <- lab_one
+p_one <- p_one[, lab_elec]
+matplot(party_x, p_three, type = "l", lwd = 3, col = 1, lty = 1, ylim = c(0, 1),
+        xlab = "Party ID: strong Democrat (1) to strong Republican (7)",
+        ylab = "Probability of latent class membership",
+        main = "Party ID as a predictor of candidate affinity class")
+matlines(party_x, p_one, lwd = 2, col = 1, lty = 2)
+peak <- apply(p_three, 2, which.max)
+for (k in seq_along(peak)) { # labels at the peaks, kept inside the plot
+  text(party_x[peak[k]], max(p_three[, k]) + 0.05, lab_elec[k],
+       adj = c((peak[k] - 1) / (length(party_x) - 1), 0.5))
+}
+legend("topright", c("tseLCA (three-step)", "poLCA (one-step)"),
+       lty = 1:2, lwd = c(3, 2), col = 1, bty = "n")
+
 if (!QUICK) {
   saveRDS(cache, cache_file)
   message("Saved the measurement-model and poLCA fits to ", cache_file)
