@@ -63,14 +63,29 @@ num <- function(x, d = 2) {
   sub("^(-?)0\\.", "\\1.", formatC(x, digits = d, format = "f"))
 }
 est_se <- function(est, se, d = 2) paste0(num(est, d), " (", num(se, d), ")")
+## Tables span the text width with the column padding expanded, as the
+## simulation tables. Tables wider than the text (resize = "box" for the
+## widest, TRUE for the others) are scaled alike: all have the width of the
+## widest one, which is stored in a box by tables/<label>_box.tex.
 write_table <- function(body, header, align, caption, label, footer = NULL,
                         resize = FALSE) {
   rows <- c(paste0(apply(body, 1, paste, collapse = " & "), " \\\\"), footer)
-  writeLines(c("\\begin{table}[t!]", "\\centering",
-               if (resize) "\\resizebox{\\textwidth}{!}{%",
-               sprintf("\\begin{tabular}{%s}", align), "\\toprule", header,
-               "\\midrule", rows, "\\bottomrule",
-               if (resize) c("\\end{tabular}%", "}") else "\\end{tabular}",
+  inner <- c("\\toprule", header, "\\midrule", rows, "\\bottomrule")
+  fill <- "@{\\extracolsep{\\fill}}"
+  tab <- if (identical(resize, "box")) {
+    writeLines(c("\\newsavebox{\\widetablebox}", "\\sbox{\\widetablebox}{%",
+                 sprintf("\\begin{tabular}{%s}", align), inner, "\\end{tabular}%", "}"),
+               file.path("tables", paste0(label, "_box.tex")))
+    "\\resizebox{\\textwidth}{!}{\\usebox{\\widetablebox}}"
+  } else if (isTRUE(resize)) {
+    c("\\resizebox{\\textwidth}{!}{%",
+      sprintf("\\begin{tabular*}{\\wd\\widetablebox}{%s%s}", fill, align), inner,
+      "\\end{tabular*}%", "}")
+  } else {
+    c(sprintf("\\begin{tabular*}{\\textwidth}{%s%s}", fill, align), inner,
+      "\\end{tabular*}")
+  }
+  writeLines(c("\\begin{table}[t!]", "\\centering", tab,
                sprintf("\\caption{\\footnotesize %s}", caption),
                sprintf("\\label{tab:%s}", label), "\\end{table}"),
              file.path("tables", paste0(label, ".tex")))
@@ -118,11 +133,11 @@ elec_pol <- elec
 elec_pol[items] <- lapply(elec_pol[items], as.integer)
 f_onestep <- cbind(MORALG, CARESG, KNOWG, LEADG, DISHONG, INTELG,
   MORALB, CARESB, KNOWB, LEADB, DISHONB, INTELB) ~ PARTY
-onestep <- function(K) {
+onestep <- function(n_cl) {
   ## each start separately: one failed start stops poLCA's own nrep loop
   best <- NULL
-  for (s in seq_len(if (K == 1) 1L else N_STARTS)) {
-    fit <- tryCatch(poLCA(f_onestep, elec_pol, nclass = K, maxiter = 5000,
+  for (s in seq_len(if (n_cl == 1) 1L else N_STARTS)) {
+    fit <- tryCatch(poLCA(f_onestep, elec_pol, nclass = n_cl, maxiter = 5000,
       verbose = FALSE), error = function(e) NULL)
     if (!is.null(fit) && is.finite(fit$llik) &&
         (is.null(best) || fit$llik > best$llik)) best <- fit
@@ -223,17 +238,17 @@ rownames(est) <- rownames(se) <- paste("PARTY:", lab_elec[-other])
 one3 <- one[[3]]
 lab_one <- label_elec(one3$posterior)
 rebase_polca <- function(fit, ref) {
-  K <- ncol(fit$coeff) + 1L
+  n_cl <- ncol(fit$coeff) + 1L
   Q <- nrow(fit$coeff)
-  M <- matrix(0, K - 1L, K - 1L)
-  for (i in seq_len(K - 1L)) {
-    t <- seq_len(K)[-ref][i]
+  M <- matrix(0, n_cl - 1L, n_cl - 1L)
+  for (i in seq_len(n_cl - 1L)) {
+    t <- seq_len(n_cl)[-ref][i]
     if (t != 1L) M[i, t - 1L] <- 1
     if (ref != 1L) M[i, ref - 1L] <- -1
   }
   A <- kronecker(M, diag(Q))
-  list(est = matrix(A %*% as.vector(fit$coeff), Q, K - 1L,
-    dimnames = list(rownames(fit$coeff), seq_len(K)[-ref])),
+  list(est = matrix(A %*% as.vector(fit$coeff), Q, n_cl - 1L,
+    dimnames = list(rownames(fit$coeff), seq_len(n_cl)[-ref])),
     vcov = A %*% fit$coeff.V %*% t(A))
 }
 one_rb <- rebase_polca(one3, which(lab_one == "Other"))
@@ -385,7 +400,7 @@ write_table(body,
     "$N = 2689$): class sizes and probabilities of a tolerant answer, with",
     "standard errors in parentheses, estimated by \\pkg{tseLCA} and reported by",
     "\\citet[Table~7]{Bakk2014}."),
-  label = "gss_measurement", resize = TRUE)
+  label = "gss_measurement", resize = "box")
 
 
 ###################################################
