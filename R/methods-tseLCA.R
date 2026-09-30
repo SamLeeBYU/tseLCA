@@ -641,11 +641,10 @@ coef.summary.tseLCA_structural <- function(object, ...) {
   cat(title, "\n", sep = "")
   info <- sprintf("  Classes: %d   Estimator: %s", x$n_classes, x$estimator)
   if (x$type != "covariate") info <- paste0(info, "   Family: ", x$family)
-  cat(info, "\n", sep = "")
+  cat(info, sprintf("   N: %d", attr(x$logLik, "nobs")), "\n", sep = "")
   cat(sprintf(
-    "  Log-lik: %.4f (df = %d)   AIC: %.2f   BIC: %.2f   N: %d\n",
-    as.numeric(x$logLik), attr(x$logLik, "df"), x$AIC, x$BIC,
-    attr(x$logLik, "nobs")
+    "  Log-lik: %.4f (df = %d)   AIC: %.2f   BIC: %.2f\n",
+    as.numeric(x$logLik), attr(x$logLik, "df"), x$AIC, x$BIC
   ))
 }
 
@@ -677,10 +676,6 @@ print.summary.tseLCA_structural <- function(
   .structural_header(x)
   if (!is.null(x$entropy.R2)) {
     cat(sprintf("  Entropy R\u00b2 (covariate-adjusted): %.4f\n", x$entropy.R2))
-  }
-  if (!is.null(x$two_step)) {
-    cat("\nTwo-step estimates (used to initialize Step 3):\n")
-    print(x$two_step, digits = digits)
   }
   .print_tables(x, digits, signif.stars, ...)
   invisible(x)
@@ -719,10 +714,10 @@ summary.tseLCA_measurement <- function(object, ...) {
 
 .measurement_header <- function(x) {
   cat("Latent class measurement model\n")
+  cat(sprintf("  Classes: %d   N: %d\n", x$n_classes, attr(x$logLik, "nobs")))
   cat(sprintf(
-    "  Classes: %d   Log-lik: %.4f (df = %d)   AIC: %.2f   BIC: %.2f   N: %d\n",
-    x$n_classes, as.numeric(x$logLik), attr(x$logLik, "df"), x$AIC, x$BIC,
-    attr(x$logLik, "nobs")
+    "  Log-lik: %.4f (df = %d)   AIC: %.2f   BIC: %.2f\n",
+    as.numeric(x$logLik), attr(x$logLik, "df"), x$AIC, x$BIC
   ))
   if (!is.null(x$R2entr) && !is.na(x$R2entr)) cat(sprintf("  Entropy R\u00b2: %.4f\n", x$R2entr))
 }
