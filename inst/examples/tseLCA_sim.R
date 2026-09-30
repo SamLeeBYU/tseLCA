@@ -307,9 +307,8 @@ print_tables <- function(s) {
 }
 
 # The same tables as LaTeX, in the layout of the manuscript (booktabs). All
-# four tables are scaled to the width of the widest one, the covariate
-# coverage table, which is stored in a box by sim_box.tex; the manuscript
-# includes sim_box.tex once, before the first simulation table.
+# tables are set at the common table width \tablewidth of the manuscript
+# (the natural width of its widest table) and scaled to the text width.
 SEP_LABELS <- c(low = "Low", mid = "Medium", high = "High")
 TEX_EST <- c("two_step", "modal.bch", "prop.bch", "modal.ml", "prop.ml")
 tex_rows <- function(ss, ests, cellfun) {
@@ -408,22 +407,18 @@ write_sim_tables <- function(s, dir) {
       spec = if (two) "ll cc cccc cccc" else "ll cccc cccc",
       lines = c(cov_head(two), "\\midrule", tex_rows(ss, ests, cov_cells)))
   }
-  # the widest table (covariate coverage, or distal coverage without it)
-  # defines the common width
-  boxed <- if ("covariate_cov" %in% names(tabular)) "covariate_cov" else "distal_cov"
-  writeLines(c("\\newsavebox{\\simtablebox}", "\\sbox{\\simtablebox}{%",
-               sprintf("\\begin{tabular}{%s}", tabular[[boxed]]$spec), "\\toprule",
-               tabular[[boxed]]$lines, "\\bottomrule", "\\end{tabular}%", "}"),
-             file.path(dir, "sim_box.tex"))
+  # Every table is set at the common width \tablewidth, the natural width of
+  # the widest table of the manuscript, and scaled to the text width, so that
+  # all tables have the same font size. The manuscript measures \tablewidth
+  # from the natural-width versions written here (sim_<name>_natural.tex).
   for (nm in names(tabular)) {
-    body <- if (nm == boxed) {
-      "\\resizebox{\\textwidth}{!}{\\usebox{\\simtablebox}}"
-    } else {
-      c("\\resizebox{\\textwidth}{!}{%",
-        sprintf("\\begin{tabular*}{\\wd\\simtablebox}{@{\\extracolsep{\\fill}}%s}",
-                tabular[[nm]]$spec),
-        "\\toprule", tabular[[nm]]$lines, "\\bottomrule", "\\end{tabular*}%", "}")
-    }
+    inner <- c("\\toprule", tabular[[nm]]$lines, "\\bottomrule")
+    writeLines(c(sprintf("\\begin{tabular}{%s}", tabular[[nm]]$spec), inner, "\\end{tabular}"),
+               file.path(dir, sprintf("sim_%s_natural.tex", nm)))
+    body <- c("\\resizebox{\\textwidth}{!}{%",
+              sprintf("\\begin{tabular*}{\\tablewidth}{@{\\extracolsep{\\fill}}%s}",
+                      tabular[[nm]]$spec),
+              inner, "\\end{tabular*}%", "}")
     writeLines(c("\\begin{table}[t!]", "\\centering", body,
                  sprintf("\\caption{\\footnotesize %s}", SIM_CAPTIONS[[nm]]),
                  sprintf("\\label{tab:%s}", nm), "\\end{table}"),
