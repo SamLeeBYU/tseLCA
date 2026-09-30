@@ -32,6 +32,9 @@
 ### file and recomputes everything else (all Step-2 and Step-3 models,
 ### tables, and tests) in about a minute:
 ###   TSELCA_REP_QUICK=TRUE Rscript tseLCA_replication.R
+###
+### The tables of the empirical examples are written as LaTeX files to
+### ./tables (included by the manuscript) and printed.
 #####################################################
 
 ###################################################
@@ -67,6 +70,54 @@ fit_or_load <- function(name, expr) {
   if (QUICK) return(cache[[name]])
   cache[[name]] <<- expr
   cache[[name]]
+}
+
+## The manuscript's tables are written as LaTeX to ./tables (booktabs, as the
+## other tables of the manuscript) and printed here.
+tab_dir <- file.path(script_dir, "tables")
+dir.create(tab_dir, showWarnings = FALSE)
+num <- function(x, d = 2) sub("^(-?)0\\.", "\\1.", formatC(x, digits = d, format = "f"))
+est_se <- function(est, se, d = 2) paste0(num(est, d), " (", num(se, d), ")")
+write_table <- function(body, header, align, caption, label, footer = NULL,
+                        resize = FALSE) {
+  rows <- c(paste0(apply(body, 1, paste, collapse = " & "), " \\\\"), footer)
+  tex <- c("\\begin{table}[t!]", "\\centering",
+           if (resize) "\\resizebox{\\textwidth}{!}{%",
+           sprintf("\\begin{tabular}{%s}", align), "\\toprule", header, "\\midrule",
+           rows, "\\bottomrule",
+           if (resize) c("\\end{tabular}%", "}") else "\\end{tabular}",
+           sprintf("\\caption{\\footnotesize %s}", caption),
+           sprintf("\\label{tab:%s}", label), "\\end{table}")
+  writeLines(tex, file.path(tab_dir, paste0(label, ".tex")))
+  print(noquote(body), right = FALSE)
+  invisible(tex)
+}
+
+## Class sizes and response probabilities with delta-method standard errors,
+## from the model's log-ratio parameters (coef() and vcov()): for class
+## sizes, P(X = t); for item h, P(Y_h = r | X = t) of one category r.
+prob_se <- function(model, item = NULL, r = 0L) {
+  b <- coef(model)
+  V <- vcov(model)
+  K <- length(class_sizes(model))
+  cls <- paste0("C", seq_len(K))
+  out <- matrix(NA_real_, 2, K, dimnames = list(c("est", "se"), cls))
+  for (t in seq_len(K)) {
+    if (is.null(item)) { # class sizes: softmax of log(pi_t / pi_1)
+      nm <- sprintf("log(pi_%s/pi_C1)", cls[-1])
+      eta <- c(0, b[nm])
+      k_of <- t
+    } else { # categories 1.. of `item` against category 0
+      nm <- grep(sprintf("^log\\(P\\(%s=[0-9]+\\|%s\\)", item, cls[t]), names(b),
+                 value = TRUE)
+      eta <- c(0, b[nm])
+      k_of <- r + 1L
+    }
+    p <- exp(eta) / sum(exp(eta))
+    grad <- p[k_of] * ((seq_along(p) == k_of) - p)[-1] # d p / d eta[-1]
+    out[, t] <- c(p[k_of], sqrt(drop(t(grad) %*% V[nm, nm] %*% grad)))
+  }
+  out
 }
 
 ###################################################
@@ -123,6 +174,28 @@ round(item_probs(m_elec), 3)
 plot(m_elec)
 logLik(m_elec)
 BIC(m_elec)
+
+## Table: class sizes and P(candidate described "extremely well" | class)
+ord_elec <- match(c("Gore affinity", "Bush affinity", "Other"), lab_elec)
+traits <- c(MORAL = "Moral", CARES = "Caring", KNOW = "Knowledgeable",
+            LEAD = "Good leader", DISHON = "Dishonest", INTEL = "Intelligent")
+s <- prob_se(m_elec)
+body <- rbind(c("", "Class size", est_se(s["est", ord_elec], s["se", ord_elec])))
+for (cand in c("Gore", "Bush")) {
+  for (tr in names(traits)) {
+    s <- prob_se(m_elec, paste0(tr, substr(cand, 1, 1)), r = 0L)
+    body <- rbind(body, c(if (tr == "MORAL") cand else "", traits[[tr]],
+                          est_se(s["est", ord_elec], s["se", ord_elec])))
+  }
+}
+write_table(body,
+  header = "Candidate & Trait & Gore affinity & Bush affinity & Other \\\\",
+  align = "ll ccc",
+  caption = paste("Three-class measurement model for the ANES 2000 candidate",
+                  "evaluations: class sizes and probabilities that the candidate",
+                  "is described ``extremely well'' by each trait, with standard",
+                  "errors in parentheses."),
+  label = "elec_measurement")
 
 ###################################################
 ### 1b. Step 2: class assignment and classification error
@@ -238,6 +311,38 @@ tab_gss <- rbind(size = class_sizes(m_gss), ip)
 colnames(tab_gss) <- lab_gss
 round(tab_gss, 3)
 
+## Table: the four-class model next to Bakk et al. (2014, Table 7)
+gss_classes <- c("Intolerant", "Tolerant", "Intolerant of right", "Intolerant of left")
+ord_gss <- match(gss_classes, lab_gss)
+bakk_est <- rbind(size = c(.56, .23, .11, .10),
+                  atheists = c(.03, .98, .41, .61), communists = c(.04, .95, .59, .27),
+                  militarists = c(.05, .92, .34, .38), racists = c(.08, .90, .02, .81),
+                  homosexuals = c(.13, .96, .72, .56))
+bakk_se <- rbind(size = c(.02, .01, .03, .03),
+                 atheists = c(.01, .01, .06, .07), communists = c(.01, .02, .11, .07),
+                 militarists = c(.01, .02, .05, .06), racists = c(.01, .02, .06, .20),
+                 homosexuals = c(.01, .01, .07, .06))
+body <- NULL
+for (row in rownames(bakk_est)) {
+  s <- if (row == "size") prob_se(m_gss) else prob_se(m_gss, row, r = 1L)
+  cells <- as.vector(rbind(est_se(s["est", ord_gss], s["se", ord_gss]),
+                           est_se(bakk_est[row, ], bakk_se[row, ])))
+  label <- if (row == "size") "Class size" else paste0("Tolerant of ", row)
+  body <- rbind(body, c(label, cells))
+}
+write_table(body,
+  header = c(paste(" &", paste(sprintf("\\multicolumn{2}{c}{%s}", gss_classes),
+                               collapse = " & "), "\\\\"),
+             "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7} \\cmidrule(lr){8-9}",
+             paste(" &", paste(rep("\\pkg{tseLCA} & Bakk et al.", 4), collapse = " & "),
+                   "\\\\")),
+  align = "l cc cc cc cc",
+  caption = paste("Four-class model of tolerance for nonconformity (GSS 1976--77,",
+                  "$N = 2689$): class sizes and probabilities of a tolerant answer,",
+                  "with standard errors in parentheses, estimated by \\pkg{tseLCA} and",
+                  "reported by Bakk et al. (2014, Table 7)."),
+  label = "gss_measurement", resize = TRUE)
+
 ###################################################
 ### 2b. Steps 2 and 3: cohort and education
 ###################################################
@@ -256,12 +361,37 @@ slopes <- grep("^(cohort|education)", names(coef(fc_gss)), value = TRUE)
 round(cbind(corrected = coef(fc_gss)[slopes], uncorrected = coef(unc_gss)[slopes],
             ratio = coef(fc_gss)[slopes] / coef(unc_gss)[slopes]), 3)
 
-## cohort x education interaction: likelihood-ratio test. (The Wald test is
-## unreliable here: one class probability is on the boundary.)
-fc_int <- tse_covariate(cl_gss, ~ cohort * education, ref = intolerant)
-lr <- 2 * (as.numeric(logLik(fc_int)) - as.numeric(logLik(fc_gss)))
-lr_df <- attr(logLik(fc_int), "df") - attr(logLik(fc_gss), "df")
-c(LR = lr, df = lr_df, p = pchisq(lr, lr_df, lower.tail = FALSE))
+## Table: corrected (ML, proportional assignment) and uncorrected effects
+terms <- c("cohort1934-1951" = "Born 1934--1951", "cohort1915-1933" = "Born 1915--1933",
+           "cohort1914 or before" = "Born 1914 or before",
+           "education12 years" = "12 years of education",
+           "education> 12 years" = "More than 12 years of education")
+nonref_gss <- gss_classes[-1]
+se_c <- sqrt(diag(vcov(fc_gss)))
+se_u <- sqrt(diag(vcov(unc_gss)))
+body <- NULL
+for (tm in names(terms)) {
+  cells <- character(0)
+  for (k in nonref_gss) {
+    nm <- sprintf("%s:C%d", tm, which(lab_gss == k))
+    cells <- c(cells, est_se(coef(fc_gss)[nm], se_c[nm]), est_se(coef(unc_gss)[nm], se_u[nm]))
+  }
+  body <- rbind(body, c(terms[[tm]], cells))
+}
+write_table(body,
+  header = c(paste(" &", paste(sprintf("\\multicolumn{2}{c}{%s}", nonref_gss),
+                               collapse = " & "), "\\\\"),
+             "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7}",
+             paste(" &", paste(rep("Corrected & Uncorrected", 3), collapse = " & "), "\\\\")),
+  align = "l cc cc cc",
+  caption = paste("Effects of birth cohort and education on class membership",
+                  "(multinomial logit, reference class ``Intolerant''; reference",
+                  "categories: born after 1951, less than 12 years of education).",
+                  "Corrected: ML three-step estimator with proportional assignment and",
+                  "standard errors corrected for the Step-1 uncertainty; uncorrected:",
+                  "multinomial logit of the modal class assignments. Standard errors",
+                  "in parentheses."),
+  label = "gss_covariate", resize = TRUE)
 
 ###################################################
 ### 2c. Distal outcomes
@@ -286,6 +416,63 @@ summary(fb_pol)
 omnibus_test(fb_pol)
 fb_race <- tse_distal(fc_gss, natrace ~ 1, family = "multinomial")
 omnibus_test(fb_race)
+
+## Table: class means of POLVIEWS
+fd_pol_bch <- tse_distal(cl_gss, polviews ~ 1, family = "gaussian", method = "BCH")
+pol_fits <- list(fd_pol, fd_pol_bch, fb_pol)
+body <- NULL
+for (k in gss_classes) {
+  nm <- sprintf("mu_C%d", which(lab_gss == k))
+  body <- rbind(body, c(k, sapply(pol_fits, function(f)
+    est_se(coef(f)[nm], sqrt(diag(vcov(f)))[nm]))))
+}
+wald <- sapply(pol_fits, function(f) {
+  h <- omnibus_test(f)
+  sprintf("%.1f (%d)", h$statistic, as.integer(h$parameter))
+})
+write_table(body,
+  footer = c("\\midrule", paste("Wald test (df) &", paste(wald, collapse = " & "), "\\\\")),
+  header = c(" & \\multicolumn{2}{c}{Distal outcome only} & With covariates \\\\",
+             "\\cmidrule(lr){2-3} \\cmidrule(lr){4-4}",
+             "Class & ML & BCH & ML \\\\"),
+  align = "l cc c",
+  caption = paste("Class means of liberal (1) to conservative (7) self-placement",
+                  "(POLVIEWS), with standard errors in parentheses, and Wald tests of",
+                  "equal means across classes. Proportional assignment; ``with",
+                  "covariates'': class membership depends on cohort and education."),
+  label = "gss_polviews")
+
+## Table: class distributions of NATRACE
+cats <- levels(gss$natrace)
+race_fits <- list(fd_race, fb_race)
+body <- NULL
+for (k in gss_classes) {
+  t <- which(lab_gss == k)
+  cells <- character(0)
+  for (f in race_fits) {
+    nm <- sprintf("C%d:%s", t, cats)
+    cells <- c(cells, est_se(coef(f)[nm], sqrt(diag(vcov(f)))[nm]))
+  }
+  body <- rbind(body, c(k, cells))
+}
+wald <- sapply(race_fits, function(f) {
+  h <- omnibus_test(f)
+  sprintf("\\multicolumn{3}{c}{%.1f (%d)}", h$statistic, as.integer(h$parameter))
+})
+cat_head <- paste(tools::toTitleCase(cats), collapse = " & ")
+write_table(body,
+  footer = c("\\midrule", paste("Wald test (df) &", wald[1], "&", wald[2], "\\\\")),
+  header = c(" & \\multicolumn{3}{c}{Distal outcome only} & \\multicolumn{3}{c}{With covariates} \\\\",
+             "\\cmidrule(lr){2-4} \\cmidrule(lr){5-7}",
+             paste("Class &", cat_head, "&", cat_head, "\\\\")),
+  align = "l ccc ccc",
+  caption = paste("Class distributions of opinions on spending to improve the",
+                  "conditions of Blacks (NATRACE: too little, about right, too much),",
+                  "with standard errors in parentheses, and Wald tests of equal",
+                  "distributions across classes. ML estimator with proportional",
+                  "assignment; ``with covariates'': class membership depends on cohort",
+                  "and education."),
+  label = "gss_natrace", resize = TRUE)
 
 ## in one call
 fit_gss <- tseLCA(cbind(atheists, communists, militarists, racists, homosexuals) ~
@@ -360,6 +547,29 @@ cmp <- rbind(
 )
 colnames(cmp) <- c(paste("estimate", nonref), paste("se", nonref))
 round(cmp, 3)
+
+## Table: PARTY effects by estimator (reference class "Other")
+gb <- paste("PARTY:", c("Gore affinity", "Bush affinity"))
+estimators <- c("ML, corrected SE" = "Three-step ML, corrected SE",
+                "ML, robust SE" = "Three-step ML, robust SE",
+                "BCH" = "Three-step BCH", "two-step" = "Two-step",
+                "uncorrected" = "Three-step, uncorrected")
+body <- t(sapply(names(estimators), function(e)
+  c(estimators[[e]], est_se(est[gb, e], se[gb, e], d = 3))))
+one_cols <- match(c("Gore affinity", "Bush affinity"), lab_one[lab_one != "Other"])
+body <- rbind(body, c("One-step (\\pkg{poLCA})",
+                      est_se(one_rb$est["PARTY", one_cols], one_se[2, one_cols], d = 3)))
+write_table(unname(body),
+  header = c(" & \\multicolumn{2}{c}{Effect of PARTY (reference: Other)} \\\\",
+             "\\cmidrule(lr){2-3}",
+             "Estimator & Gore affinity & Bush affinity \\\\"),
+  align = "l cc",
+  caption = paste("Effect of party identification (1 strong Democrat to 7 strong",
+                  "Republican) on membership of the Gore- and Bush-affinity classes",
+                  "relative to the ``Other'' class (multinomial logit coefficients,",
+                  "standard errors in parentheses), three-class models of the ANES",
+                  "2000 data ($N = 1300$). Three-step estimators use modal assignment."),
+  label = "elec_party")
 
 ## predicted class membership along the party scale: three-step (tseLCA)
 ## and one-step (poLCA)
