@@ -183,3 +183,46 @@ test_that("as_tse_lca() rebuilds a measurement model from its parameters", {
   bad[1, 1] <- bad[1, 1] + 0.1
   expect_error(as_tse_lca(f_items, dp, class_sizes(mp), bad), "sum to one")
 })
+
+test_that("item_probs() and class_sizes() give delta-method standard errors", {
+  numeric_se <- function(m) {
+    # the same quantities from finite differences of the softmax maps
+    b <- coef(m)
+    V <- vcov(m)
+    f <- function(beta) {
+      K <- length(class_sizes(m))
+      pi_ <- exp(c(0, beta[seq_len(K - 1)]))
+      c(pi_ / sum(pi_))
+    }
+    J <- sapply(seq_along(b), function(j) {
+      e <- replace(numeric(length(b)), j, 1e-6)
+      (f(b + e) - f(b - e)) / 2e-6
+    })
+    sqrt(diag(J %*% V %*% t(J)))
+  }
+  for (m in list(sel[[3]], local({
+    set.seed(1)
+    tse_lca(f_items, data = v1_poly_data(), nclass = 3)
+  }))) {
+    cs <- class_sizes(m, se = TRUE)
+    expect_named(cs, c("estimate", "se"))
+    expect_equal(cs$estimate, class_sizes(m))
+    expect_equal(unname(cs$se), unname(numeric_se(m)), tolerance = 1e-6)
+    ip <- item_probs(m, se = TRUE)
+    expect_equal(ip$estimate, item_probs(m))
+    expect_equal(dim(ip$se), dim(item_probs(m)))
+    expect_true(all(ip$se >= 0))
+  }
+
+  # binary item: SE of P(Y = 1 | X = t) is p (1 - p) times the SE of its logit
+  m <- sel[[3]]
+  ip <- item_probs(m, se = TRUE)
+  p <- ip$estimate["P(Y1|C)", 2]
+  se_logit <- sqrt(vcov(m)["log(P(Y1=1|C2)/P(Y1=0|C2))", "log(P(Y1=1|C2)/P(Y1=0|C2))"])
+  expect_equal(unname(ip$se["P(Y1|C)", 2]), unname(p * (1 - p) * se_logit))
+
+  # structural models report those of their measurement model
+  fc <- tse_covariate(tse_classify(m), ~ Zp, ref = 2)
+  expect_equal(item_probs(fc, se = TRUE), ip)
+  expect_equal(class_sizes(fc, se = TRUE), class_sizes(m, se = TRUE))
+})

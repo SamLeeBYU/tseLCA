@@ -96,31 +96,11 @@ write_table <- function(body, header, align, caption, label, footer = NULL,
   invisible(tex)
 }
 
-## Class sizes and response probabilities with delta-method standard errors,
-## from the model's log-ratio parameters (coef() and vcov()): for class
-## sizes, P(X = t); for item h, P(Y_h = r | X = t) of one category r.
-prob_se <- function(model, item = NULL, r = 0L) {
-  b <- coef(model)
-  V <- vcov(model)
-  K <- length(class_sizes(model))
-  cls <- paste0("C", seq_len(K))
-  out <- matrix(NA_real_, 2, K, dimnames = list(c("est", "se"), cls))
-  for (t in seq_len(K)) {
-    if (is.null(item)) { # class sizes: softmax of log(pi_t / pi_1)
-      nm <- sprintf("log(pi_%s/pi_C1)", cls[-1])
-      eta <- c(0, b[nm])
-      k_of <- t
-    } else { # categories 1.. of `item` against category 0
-      nm <- grep(sprintf("^log\\(P\\(%s=[0-9]+\\|%s\\)", item, cls[t]), names(b),
-                 value = TRUE)
-      eta <- c(0, b[nm])
-      k_of <- r + 1L
-    }
-    p <- exp(eta) / sum(exp(eta))
-    grad <- p[k_of] * ((seq_along(p) == k_of) - p)[-1] # d p / d eta[-1]
-    out[, t] <- c(p[k_of], sqrt(drop(t(grad) %*% V[nm, nm] %*% grad)))
-  }
-  out
+## Class sizes (row = NULL) or one row of item_probs(), with standard errors
+prob_se <- function(model, row = NULL) {
+  x <- if (is.null(row)) class_sizes(model, se = TRUE) else item_probs(model, se = TRUE)
+  if (is.null(row)) rbind(est = x$estimate, se = x$se)
+  else rbind(est = x$estimate[row, ], se = x$se[row, ])
 }
 
 ###################################################
@@ -186,7 +166,7 @@ s <- prob_se(m_elec)
 body <- rbind(c("", "Class size", est_se(s["est", ord_elec], s["se", ord_elec])))
 for (cand in c("Gore", "Bush")) {
   for (tr in names(traits)) {
-    s <- prob_se(m_elec, paste0(tr, substr(cand, 1, 1)), r = 0L)
+    s <- prob_se(m_elec, sprintf("P(%s%s.0|C)", tr, substr(cand, 1, 1)))
     body <- rbind(body, c(if (tr == "MORAL") cand else "", traits[[tr]],
                           est_se(s["est", ord_elec], s["se", ord_elec])))
   }
@@ -327,7 +307,7 @@ bakk_se <- rbind(size = c(.02, .01, .03, .03),
                  homosexuals = c(.01, .01, .07, .06))
 body <- NULL
 for (row in rownames(bakk_est)) {
-  s <- if (row == "size") prob_se(m_gss) else prob_se(m_gss, row, r = 1L)
+  s <- if (row == "size") prob_se(m_gss) else prob_se(m_gss, sprintf("P(%s|C)", row))
   cells <- as.vector(rbind(est_se(s["est", ord_gss], s["se", ord_gss]),
                            est_se(bakk_est[row, ], bakk_se[row, ])))
   label <- if (row == "size") "Class size" else paste0("Tolerant of ", row)

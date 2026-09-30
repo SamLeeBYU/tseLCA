@@ -181,25 +181,40 @@ classes.tseLCA <- function(object, ...) object$classifications
 #' `item_probs()` the class-conditional item-response probabilities of the
 #' Step-1 measurement model underlying any fitted `tseLCA` object.
 #'
+#' With `se = TRUE`, their standard errors are returned as well. They are
+#' obtained by the delta method from the variance of the measurement model's
+#' log-ratio parameters ([vcov()] of the measurement model): class sizes are
+#' the softmax of \eqn{\log(\pi_t / \pi_1)}, and the response probabilities of
+#' an item in class \eqn{t} the softmax of \eqn{\log(P(Y = k \mid X = t) /
+#' P(Y = 0 \mid X = t))}. Parameters on the boundary of the parameter space
+#' are treated as fixed and get a standard error of zero.
+#'
 #' @param object A fitted `tseLCA` object.
+#' @param se Logical. If `TRUE`, also return standard errors.
 #' @param ... Further arguments (currently unused).
 #' @return `class_sizes()`: a named numeric vector of length T summing to one.
 #'   `item_probs()`: a matrix with one row per item (binary items:
 #'   \eqn{P(Y = 1 \mid X = t)}) or per item category (polytomous items:
-#'   \eqn{P(Y = k \mid X = t)}) and one column per class.
+#'   \eqn{P(Y = k \mid X = t)}) and one column per class. With `se = TRUE`,
+#'   a list with elements `estimate` and `se` of that form.
 #' @examples
 #' d <- generate_data(200, "high", "covariate", seed = 1)
-#' m <- three_step(d, paste0("Y", 1:6), n_classes = 3)
+#' m <- tse_lca(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1, data = d, nclass = 3)
 #' class_sizes(m)
 #' item_probs(m)
+#' item_probs(m, se = TRUE)$se
 #' @export
 class_sizes <- function(object, ...) UseMethod("class_sizes")
 
 #' @rdname class_sizes
 #' @export
-class_sizes.tseLCA <- function(object, ...) {
+class_sizes.tseLCA <- function(object, se = FALSE, ...) {
   vPi <- as.vector(object$measurement_model$fit0$vPi)
-  stats::setNames(vPi, paste0("C", seq_along(vPi)))
+  est <- stats::setNames(vPi, paste0("C", seq_along(vPi)))
+  if (!isTRUE(se)) {
+    return(est)
+  }
+  list(estimate = est, se = .measurement_prob_se(object)$class_sizes)
 }
 
 #' @rdname class_sizes
@@ -208,8 +223,59 @@ item_probs <- function(object, ...) UseMethod("item_probs")
 
 #' @rdname class_sizes
 #' @export
-item_probs.tseLCA <- function(object, ...) {
-  object$measurement_model$fit0$mPhi
+item_probs.tseLCA <- function(object, se = FALSE, ...) {
+  est <- object$measurement_model$fit0$mPhi
+  if (!isTRUE(se)) {
+    return(est)
+  }
+  list(estimate = est, se = .measurement_prob_se(object)$item_probs)
+}
+
+#' Delta-method standard errors of class sizes and response probabilities
+#'
+#' The measurement model's variance ([vcov.tseLCA_measurement()], log-ratio
+#' parameters ordered as `.measurement_coef()`) mapped through the softmax:
+#' for probabilities p = softmax(0, eta), dp_r / deta_k = p_r (1(r = k) - p_k).
+#' Returns the class-size standard errors and a matrix of the layout of
+#' `item_probs()`.
+#' @noRd
+.measurement_prob_se <- function(object) {
+  s1 <- object$measurement_model
+  fit0 <- s1$fit0
+  ivItemcat <- s1$ivItemcat
+  iT <- length(fit0$vPi)
+  softmax_se <- function(p, V) {
+    J <- p * (outer(seq_along(p), seq_along(p), "==") - matrix(p, length(p), length(p), byrow = TRUE))
+    J <- J[, -1L, drop = FALSE]
+    sqrt(pmax(diag(J %*% V %*% t(J)), 0))
+  }
+  if (iT == 1L) {
+    V <- .independence_vcov(object)
+    se_pi <- 0
+  } else {
+    V <- vcov.tseLCA_measurement(object)
+    se_pi <- softmax_se(as.vector(fit0$vPi), V[seq_len(iT - 1L), seq_len(iT - 1L), drop = FALSE])
+  }
+  Phi <- expand_Phi(fit0$mPhi, ivItemcat) # every category of every item
+  n_free <- sum(ivItemcat - 1L)
+  first <- cumsum(c(1L, utils::head(ivItemcat, -1L))) # first category row per item
+  free_at <- cumsum(c(0L, utils::head(ivItemcat - 1L, -1L))) # free parameters before item h
+  se_all <- matrix(0, nrow(Phi), iT)
+  for (t in seq_len(iT)) {
+    for (h in seq_along(ivItemcat)) {
+      rows <- first[h] + seq_len(ivItemcat[h]) - 1L
+      idx <- (iT - 1L) + (t - 1L) * n_free + free_at[h] + seq_len(ivItemcat[h] - 1L)
+      se_all[rows, t] <- softmax_se(Phi[rows, t], V[idx, idx, drop = FALSE])
+    }
+  }
+  # the layout of item_probs(): binary items keep only P(Y = 1 | X)
+  keep <- unlist(lapply(seq_along(ivItemcat), function(h) {
+    rows <- first[h] + seq_len(ivItemcat[h]) - 1L
+    if (ivItemcat[h] == 2L) rows[2L] else rows
+  }))
+  se_items <- se_all[keep, , drop = FALSE]
+  dimnames(se_items) <- dimnames(fit0$mPhi)
+  list(class_sizes = stats::setNames(se_pi, paste0("C", seq_len(iT))), item_probs = se_items)
 }
 
 # -- methods shared by all tseLCA objects -------------------------------------------

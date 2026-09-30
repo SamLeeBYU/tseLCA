@@ -9,31 +9,44 @@
 \usage{
 class_sizes(object, ...)
 
-\method{class_sizes}{tseLCA}(object, ...)
+\method{class_sizes}{tseLCA}(object, se = FALSE, ...)
 
 item_probs(object, ...)
 
-\method{item_probs}{tseLCA}(object, ...)
+\method{item_probs}{tseLCA}(object, se = FALSE, ...)
 }
 \arguments{
 \item{object}{A fitted \code{tseLCA} object.}
 
 \item{...}{Further arguments (currently unused).}
+
+\item{se}{Logical. If \code{TRUE}, also return standard errors.}
 }
 \value{
 \code{class_sizes()}: a named numeric vector of length T summing to one.
 \code{item_probs()}: a matrix with one row per item (binary items:
 \eqn{P(Y = 1 \mid X = t)}) or per item category (polytomous items:
-\eqn{P(Y = k \mid X = t)}) and one column per class.
+\eqn{P(Y = k \mid X = t)}) and one column per class. With \code{se = TRUE},
+a list with elements \code{estimate} and \code{se} of that form.
 }
 \description{
 \code{class_sizes()} returns the estimated class proportions and
 \code{item_probs()} the class-conditional item-response probabilities of the
 Step-1 measurement model underlying any fitted \code{tseLCA} object.
 }
+\details{
+With \code{se = TRUE}, their standard errors are returned as well. They are
+obtained by the delta method from the variance of the measurement model's
+log-ratio parameters (\code{\link[=vcov]{vcov()}} of the measurement model): class sizes are
+the softmax of \eqn{\log(\pi_t / \pi_1)}, and the response probabilities of
+an item in class \eqn{t} the softmax of \eqn{\log(P(Y = k \mid X = t) /
+P(Y = 0 \mid X = t))}. Parameters on the boundary of the parameter space
+are treated as fixed and get a standard error of zero.
+}
 \examples{
 d <- generate_data(200, "high", "covariate", seed = 1)
-m <- three_step(d, paste0("Y", 1:6), n_classes = 3)
+m <- tse_lca(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1, data = d, nclass = 3)
 class_sizes(m)
 item_probs(m)
+item_probs(m, se = TRUE)$se
 }
