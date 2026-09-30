@@ -126,6 +126,9 @@ step1_sample <- function(s1, ivItemcat, ref_idx = 1L) {
   s1$ivItemcat <- dat$ivItemcat
   s1$Y.levels <- dat$Y.levels
   s1$ref_idx <- ref_idx
+  # multilevLCA's N x p score matrix is not used (tseLCA computes its own
+  # scores) and would dominate the size of every fitted object.
+  if (!is.null(s1$fit0)) s1$fit0$mScore <- NULL
   if (fitted_here) {
     s1$Y.exp <- dat$Y.obs
     s1$mDesign.exp <- dat$mDesign

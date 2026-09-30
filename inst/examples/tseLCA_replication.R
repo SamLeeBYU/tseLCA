@@ -7,13 +7,14 @@
 #####################################################
 ###
 ### Sections
-###   1. ANES 2000 (poLCA `election` data): choosing the number of classes
-###      from the measurement model, and the three-step workflow with a
-###      covariate (PARTY)
+###   1. ANES 2000 (poLCA `election` data): the three-step workflow with party
+###      identification as a covariate, for the three-class model of Linzer
+###      and Lewis (2011, Section 5.2)
 ###   2. GSS 1976-77 tolerance for nonconformity (McCutcheon 1985; Bakk,
 ###      Oberski & Vermunt 2014): covariates, distal outcomes, and combined
 ###      models
-###   3. One-step (poLCA) versus three-step class enumeration on `election`
+###   3. One-step (poLCA) versus three-step estimation on `election`: class
+###      enumeration, and the three-class models compared
 ###
 ### Only the exported tseLCA interface is used. The simulation study is
 ### replicated by the separate script tseLCA_sim.R.
@@ -23,8 +24,14 @@
 ### & Vermunt (2014), Harvard Dataverse, doi:10.7910/DVN/24497; if it is not
 ### next to this script, it is rebuilt from that archive (internet needed).
 ###
-### Run time: about 15 minutes, most of it in Section 3 (poLCA with random
-### starts). Set N_STARTS lower for a quicker, less thorough run.
+### Run time. The measurement models are fitted from 50 random starts per
+### number of classes, and the one-step poLCA models from 50 starts each;
+### these fits take about 30 minutes. A full run saves them to
+### tseLCA_replication_cache.rds next to this script. With the environment
+### variable TSELCA_REP_QUICK=TRUE, the script instead loads them from that
+### file and recomputes everything else (all Step-2 and Step-3 models,
+### tables, and tests) in about a minute:
+###   TSELCA_REP_QUICK=TRUE Rscript tseLCA_replication.R
 #####################################################
 
 ###################################################
@@ -43,11 +50,32 @@ script_dir <- tryCatch(
   }
 )
 
+## The time-consuming fits: computed and cached in a full run, loaded from
+## the cache in a quick run.
+QUICK <- isTRUE(as.logical(Sys.getenv("TSELCA_REP_QUICK", "FALSE")))
+cache_file <- file.path(script_dir, "tseLCA_replication_cache.rds")
+if (QUICK) {
+  if (!file.exists(cache_file)) {
+    stop("TSELCA_REP_QUICK=TRUE needs ", cache_file, "; run the script once without it.")
+  }
+  cache <- readRDS(cache_file)
+  message("Quick run: the measurement-model and poLCA fits are loaded from ", cache_file)
+} else {
+  cache <- list()
+}
+fit_or_load <- function(name, expr) {
+  if (QUICK) return(cache[[name]])
+  cache[[name]] <<- expr
+  cache[[name]]
+}
+
 ###################################################
 ### 1. ANES 2000: data
 ###################################################
-## Twelve evaluations of the candidates (Gore and Bush) on four-point scales
-## and party identification (PARTY: 1 strong Democrat ... 7 strong Republican).
+## Twelve evaluations of the candidates Gore (G) and Bush (B): how well is
+## each described as moral, caring, knowledgeable, a good leader, dishonest,
+## and intelligent (1 extremely well ... 4 not well at all), and party
+## identification (PARTY: 1 strong Democrat ... 7 strong Republican).
 ## Complete cases on the items and PARTY, so that Sections 1 and 3 use the
 ## same sample.
 data("election", package = "poLCA")
@@ -57,32 +85,47 @@ nrow(elec)
 f_elec <- cbind(MORALG, CARESG, KNOWG, LEADG, DISHONG, INTELG,
                 MORALB, CARESB, KNOWB, LEADB, DISHONB, INTELB) ~ 1
 
-###################################################
-### 1a. Step 1: number of classes from the measurement model
-###################################################
-## The measurement model alone determines the classes; covariates and distal
-## outcomes play no part in choosing K.
-set.seed(20260928)
-sel <- tse_lca(f_elec, data = elec, nclass = 1:6,
-               control = tse_control(n_init = N_STARTS))
-sel
-plot(sel)
-ic <- as.data.frame(sel)
-K_elec <- ic$nclass[which.min(ic$BIC)]
-m_elec <- best_model(sel, criterion = "BIC")
+## Class labels following Linzer and Lewis (2011): the class that rates Gore
+## best relative to Bush ("Gore affinity"), the reverse ("Bush affinity"),
+## and the rest ("Other"); from posterior-weighted mean ratings of the five
+## positive traits (lower = better).
+G <- c("MORALG", "CARESG", "KNOWG", "LEADG", "INTELG")
+B <- c("MORALB", "CARESB", "KNOWB", "LEADB", "INTELB")
+label_elec <- function(post) {
+  codes <- sapply(elec[c(G, B)], as.integer)
+  means <- crossprod(post, codes) / colSums(post)
+  score <- rowMeans(means[, G]) - rowMeans(means[, B])
+  lab <- rep("Other", ncol(post))
+  lab[which.min(score)] <- "Gore affinity"
+  lab[which.max(score)] <- "Bush affinity"
+  lab
+}
 
 ###################################################
-### 1b. Inspecting the measurement model
+### 1a. Step 1: the measurement model
 ###################################################
+## The measurement model alone defines the classes: covariates and distal
+## outcomes play no part in choosing the number of classes.
+set.seed(20260928)
+sel <- fit_or_load("sel_elec", tse_lca(f_elec, data = elec, nclass = 1:6,
+                                       control = tse_control(n_init = N_STARTS)))
+sel
+plot(sel)
+
+## The information criteria keep decreasing up to six classes. As Linzer and
+## Lewis (2011), we analyze the three-class model of Gore supporters, Bush
+## supporters, and a neutral group.
+m_elec <- sel[[3]]
+lab_elec <- label_elec(posterior(m_elec))
+lab_elec
 m_elec
-class_sizes(m_elec)
 round(item_probs(m_elec), 3)
 plot(m_elec)
 logLik(m_elec)
 BIC(m_elec)
 
 ###################################################
-### 1c. Step 2: class assignment and classification error
+### 1b. Step 2: class assignment and classification error
 ###################################################
 cl_elec <- tse_classify(m_elec, assignment = "modal")
 cl_elec # classification-error matrix P(W = s | X = t) and entropy R^2
@@ -90,40 +133,49 @@ head(posterior(cl_elec))
 table(classes(cl_elec))
 
 ###################################################
-### 1d. Step 3: party identification as a covariate
+### 1c. Step 3: party identification as a covariate
 ###################################################
-fc_elec <- tse_covariate(cl_elec, ~ PARTY, method = "ML", se = "corrected")
+other <- which(lab_elec == "Other") # reference class
+fc_elec <- tse_covariate(cl_elec, ~ PARTY, method = "ML", se = "corrected", ref = other)
 summary(fc_elec)
 confint(fc_elec)
 anova(fc_elec)
 logLik(fc_elec)
 AIC(fc_elec)
+printCoefmat(coef(summary(fc_elec)))
 
-## class membership probabilities along the party scale
-round(predict(fc_elec, newdata = data.frame(PARTY = 1:7)), 3)
+## class membership probabilities along the party scale (cf. Linzer and
+## Lewis 2011, Figure 2)
+p_party <- predict(fc_elec, newdata = data.frame(PARTY = 1:7))
+colnames(p_party) <- lab_elec
+round(p_party, 3)
+matplot(1:7, p_party, type = "l", lwd = 3, lty = 1:3, col = 1, ylim = c(0, 1),
+        xlab = "Party ID: strong Democrat (1) to strong Republican (7)",
+        ylab = "Probability of latent class membership")
+legend("right", lab_elec, lty = 1:3, lwd = 3, bty = "n")
 
 ## another reference class
-summary(relevel(fc_elec, ref = 2))
-
-## the coefficients as a matrix of the familiar printCoefmat() form
-printCoefmat(coef(summary(fc_elec)))
+summary(relevel(fc_elec, ref = which(lab_elec == "Gore affinity")))
 
 ## the same model from other estimators
 fits_elec <- list(
   "ML, corrected SE" = fc_elec,
-  "ML, robust SE" = tse_covariate(cl_elec, ~ PARTY, method = "ML", se = "robust"),
-  "BCH" = tse_covariate(cl_elec, ~ PARTY, method = "BCH"),
-  "two-step" = tse_twostep(m_elec, ~ PARTY, se = TRUE),
-  "uncorrected" = tse_covariate(cl_elec, ~ PARTY, method = "none")
+  "ML, robust SE" = tse_covariate(cl_elec, ~ PARTY, se = "robust", ref = other),
+  "BCH" = tse_covariate(cl_elec, ~ PARTY, method = "BCH", ref = other),
+  "two-step" = tse_twostep(m_elec, ~ PARTY, se = TRUE, ref = other),
+  "uncorrected" = tse_covariate(cl_elec, ~ PARTY, method = "none", ref = other)
 )
 party <- grep("^PARTY:", names(coef(fc_elec)), value = TRUE)
-round(sapply(fits_elec, function(f) coef(f)[party]), 3)
-round(sapply(fits_elec, function(f) sqrt(diag(vcov(f)))[party]), 3)
+est <- sapply(fits_elec, function(f) coef(f)[party])
+se <- sapply(fits_elec, function(f) sqrt(diag(vcov(f)))[party])
+rownames(est) <- rownames(se) <- paste("PARTY:", lab_elec[-other])
+round(est, 3)
+round(se, 3)
 
 ## all three steps in one call
 ## (starting from the chosen measurement model, so the classes are the same)
-fit_elec <- tseLCA(update(f_elec, . ~ PARTY), data = elec, nclass = K_elec,
-                   start = item_probs(m_elec))
+fit_elec <- tseLCA(update(f_elec, . ~ PARTY), data = elec, nclass = 3,
+                   ref = other, start = item_probs(m_elec))
 fit_elec
 all.equal(coef(fit_elec), coef(fc_elec), tolerance = 1e-4)
 
@@ -136,7 +188,7 @@ methods(class = "tseLCA_structural")
 ###################################################
 ## Five tolerance indicators (1 = would allow a communist, atheist,
 ## homosexual, militarist, or racist to speak, to teach, and would not remove
-## their book from the library), birth cohort, education, and three outcomes.
+## their book from the library), birth cohort, education, and two outcomes.
 gss_file <- file.path(script_dir, "gss7677_tolerance.csv")
 if (!file.exists(gss_file)) {
   sav <- tempfile(fileext = ".sav")
@@ -166,8 +218,8 @@ f_gss <- cbind(atheists, communists, militarists, racists, homosexuals) ~ 1
 ###################################################
 ## With five binary items, at most five classes are identified.
 set.seed(20260929)
-sel_gss <- tse_lca(f_gss, data = gss, nclass = 1:5,
-                   control = tse_control(n_init = N_STARTS))
+sel_gss <- fit_or_load("sel_gss", tse_lca(f_gss, data = gss, nclass = 1:5,
+                                          control = tse_control(n_init = N_STARTS)))
 sel_gss
 m_gss <- sel_gss[[4]] # as McCutcheon (1985) and Bakk et al. (2014)
 ip <- item_probs(m_gss)
@@ -176,21 +228,22 @@ rownames(ip) <- c("atheists", "communists", "militarists", "racists", "homosexua
 ## class labels from the profiles
 avg <- colMeans(ip)
 mid <- setdiff(1:4, c(which.max(avg), which.min(avg)))
-lab <- character(4)
-lab[which.max(avg)] <- "Tolerant"
-lab[which.min(avg)] <- "Intolerant"
-lab[mid] <- ifelse(colMeans(ip[c("atheists", "communists"), mid]) >
-                     colMeans(ip[c("militarists", "racists"), mid]),
-                   "Intolerant of right", "Intolerant of left")
-round(rbind(size = class_sizes(m_gss), ip), 3)
-lab
+lab_gss <- character(4)
+lab_gss[which.max(avg)] <- "Tolerant"
+lab_gss[which.min(avg)] <- "Intolerant"
+lab_gss[mid] <- ifelse(colMeans(ip[c("atheists", "communists"), mid]) >
+                         colMeans(ip[c("militarists", "racists"), mid]),
+                       "Intolerant of right", "Intolerant of left")
+tab_gss <- rbind(size = class_sizes(m_gss), ip)
+colnames(tab_gss) <- lab_gss
+round(tab_gss, 3)
 
 ###################################################
 ### 2b. Steps 2 and 3: cohort and education
 ###################################################
 cl_gss <- tse_classify(m_gss, assignment = "proportional")
 cl_gss
-intolerant <- which(lab == "Intolerant")
+intolerant <- which(lab_gss == "Intolerant")
 fc_gss <- tse_covariate(cl_gss, ~ cohort + education, ref = intolerant)
 summary(fc_gss)
 anova(fc_gss)
@@ -244,7 +297,7 @@ summary(distal(fit_gss))
 all.equal(coef(distal(fit_gss)), coef(distal(fb_pol)), tolerance = 1e-4)
 
 ###################################################
-### 3. One-step vs three-step class enumeration (election)
+### 3. One-step vs three-step estimation (election)
 ###################################################
 ## poLCA estimates the classes jointly with the covariate (one-step); its
 ## BIC refers to that joint model. Each start is run separately because a
@@ -263,13 +316,54 @@ onestep <- function(K) {
   best
 }
 set.seed(20260928)
-one <- lapply(1:6, onestep)
-bic <- data.frame(K = 1:6, three_step = ic$BIC,
+one <- fit_or_load("onestep_elec", lapply(1:6, onestep))
+
+## 3a. class enumeration: BIC of the measurement model (three-step) and of
+## the joint model (one-step)
+bic <- data.frame(K = 1:6, three_step = as.data.frame(sel)$BIC,
                   one_step = sapply(one, function(f) f$bic))
 bic
 matplot(bic$K, bic[, -1], type = "b", pch = c(16, 1), lty = 1:2, col = 1,
         xlab = "Number of classes", ylab = "BIC")
 legend("topright", c("three-step (measurement model)", "one-step (poLCA)"),
        pch = c(16, 1), lty = 1:2, bty = "n")
+
+## 3b. the three-class models: modal assignments and PARTY effects
+one3 <- one[[3]]
+lab_one <- label_elec(one3$posterior)
+table(one_step = lab_one[max.col(one3$posterior)],
+      three_step = lab_elec[classes(cl_elec)])
+mean(lab_one[max.col(one3$posterior)] == lab_elec[classes(cl_elec)])
+
+## poLCA's coefficients are against its first class; re-express them against
+## the "Other" class, with their variance, to compare with tseLCA.
+rebase_polca <- function(fit, ref) {
+  K <- ncol(fit$coeff) + 1L
+  Q <- nrow(fit$coeff)
+  M <- matrix(0, K - 1L, K - 1L)
+  for (i in seq_len(K - 1L)) {
+    t <- seq_len(K)[-ref][i]
+    if (t != 1L) M[i, t - 1L] <- 1
+    if (ref != 1L) M[i, ref - 1L] <- -1
+  }
+  A <- kronecker(M, diag(Q))
+  list(est = matrix(A %*% as.vector(fit$coeff), Q, K - 1L,
+                    dimnames = list(rownames(fit$coeff), seq_len(K)[-ref])),
+       vcov = A %*% fit$coeff.V %*% t(A))
+}
+one_rb <- rebase_polca(one3, which(lab_one == "Other"))
+one_se <- matrix(sqrt(diag(one_rb$vcov)), nrow(one_rb$est))
+nonref <- paste("PARTY:", lab_one[lab_one != "Other"])
+cmp <- rbind(
+  one_step = c(one_rb$est["PARTY", ], one_se[2, ]),
+  three_step_ML = c(est[nonref, "ML, corrected SE"], se[nonref, "ML, corrected SE"])
+)
+colnames(cmp) <- c(paste("estimate", nonref), paste("se", nonref))
+round(cmp, 3)
+
+if (!QUICK) {
+  saveRDS(cache, cache_file)
+  message("Saved the measurement-model and poLCA fits to ", cache_file)
+}
 
 sessionInfo()

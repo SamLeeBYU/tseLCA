@@ -42,6 +42,8 @@
 - `predict()` for measurement models gives posterior class probabilities
   (or modal classes) for new data, coded with the model's stored
   categories. `fitted()`, `formula()`, and `update()` also work.
+- Fitted objects no longer keep multilevLCA's unused observation-level
+  score matrix, which made up most of their size (about 80% smaller).
 - `start` in `tse_lca()` and `tseLCA()` accepts `item_probs()` of a fitted
   model directly, e.g. to refit a chosen model with covariates.
 - New `as_tse_lca()` builds a measurement model from given class sizes and
