@@ -254,19 +254,41 @@ gb <- paste("PARTY:", c("Gore affinity", "Bush affinity"))
 labels_est <- c("ML, corrected SE" = "Three-step ML, corrected SE",
   "ML, robust SE" = "Three-step ML, robust SE", "BCH" = "Three-step BCH",
   "two-step" = "Two-step", "uncorrected" = "Three-step, uncorrected")
-body <- t(sapply(names(labels_est), function(e)
-  c(labels_est[[e]], est_se(est[gb, e], se[gb, e], d = 3))))
+## estimate (SE), 95% Wald interval, and the joint Wald test of both PARTY
+## coefficients (2 df)
+ci <- function(b, se) sprintf("[%s, %s]", num(b - qnorm(.975) * se, 3),
+  num(b + qnorm(.975) * se, 3))
+wald_party <- function(b, V) {
+  w <- drop(t(b) %*% solve(V, b))
+  p <- pchisq(w, length(b), lower.tail = FALSE)
+  c(sprintf("%.1f", w), if (p < .001) "$<$.001" else num(p, 3))
+}
+party_row <- function(label, b, se, V) {
+  c(label, as.vector(rbind(est_se(b, se, d = 3), ci(b, se))), wald_party(b, V))
+}
+body <- t(sapply(names(labels_est), function(e) {
+  f <- fits_elec[[e]]
+  nm <- sprintf("PARTY:C%d", match(c("Gore affinity", "Bush affinity"), lab_elec))
+  party_row(labels_est[[e]], coef(f)[nm], sqrt(diag(vcov(f)))[nm], vcov(f)[nm, nm])
+}))
+## poLCA: PARTY is the second row of each class's coefficients
 one_cols <- match(c("Gore affinity", "Bush affinity"), lab_one[lab_one != "Other"])
-body <- rbind(body, c("One-step (\\pkg{poLCA})",
-  est_se(one_rb$est["PARTY", one_cols], one_se[2, one_cols], d = 3)))
+idx_party <- 2 * one_cols
+body <- rbind(body, party_row("One-step (\\pkg{poLCA})",
+  one_rb$est["PARTY", one_cols], one_se[2, one_cols],
+  one_rb$vcov[idx_party, idx_party, drop = FALSE]))
 write_table(unname(body),
-  header = c(" & \\multicolumn{2}{c}{Effect of \\code{PARTY} (reference: Other)} \\\\",
-    "\\cmidrule(lr){2-3}", "Estimator & Gore affinity & Bush affinity \\\\"),
-  align = "l cc",
+  header = c(paste(" & \\multicolumn{2}{c}{Gore affinity} & \\multicolumn{2}{c}{Bush affinity}",
+      "& \\multicolumn{2}{c}{Wald test} \\\\"),
+    "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7}",
+    tex_line("Estimator", rep(c("Estimate (SE)", "95\\% CI"), 2), "$\\chi^2_2$", "$p$")),
+  align = "l cc cc cc",
   caption = paste("Effect of party identification on membership of the Gore- and",
-    "Bush-affinity classes relative to the ``Other'' class (multinomial logit",
-    "coefficients, standard errors in parentheses), three-class models of the",
-    "ANES 2000 data ($N = 1300$). The three-step estimators use modal assignment."),
+    "Bush-affinity classes relative to the ``Other'' class: multinomial logit",
+    "coefficients with standard errors, 95\\% Wald confidence intervals (all",
+    "coefficients have $p < .001$), and the Wald test that party identification",
+    "has no effect on class membership (2 df). Three-class models of the ANES",
+    "2000 data ($N = 1300$); the three-step estimators use modal assignment."),
   label = "elec_party")
 
 
