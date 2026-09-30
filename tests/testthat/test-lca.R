@@ -226,3 +226,17 @@ test_that("item_probs() and class_sizes() give delta-method standard errors", {
   expect_equal(item_probs(fc, se = TRUE), ip)
   expect_equal(class_sizes(fc, se = TRUE), class_sizes(m, se = TRUE))
 })
+
+test_that("FIML with missing indicator values uses the default initialization", {
+  dp <- d
+  dp$Y2[1:40] <- NA
+  expect_warning(
+    m <- tse_lca(f_items, data = dp, nclass = 3, missing = "fiml",
+                 control = tse_control(n_init = 3)),
+    "not available"
+  )
+  expect_s3_class(m, "tseLCA_measurement")
+  expect_equal(nobs(m), nrow(dp))
+  expect_error(tse_lca(f_items, data = dp, nclass = 3, missing = "fiml",
+                       start = item_probs(sel[[3]])), "cannot be used")
+})

@@ -104,6 +104,21 @@ tse_lca <- function(
   if (!is.null(start) && !is.null(control$n_init)) {
     stop("Supply either `start` or `control$n_init`, not both.", call. = FALSE)
   }
+  # multilevLCA cannot start its EM algorithm from a given classification when
+  # indicator values are missing (it stops with "sort_index(): detected NaN"),
+  # so random starts and `start` are not available with FIML on incomplete data.
+  if (missing == "fiml" && anyNA(data[Y.names])) {
+    if (!is.null(start)) {
+      stop("`start` cannot be used with missing = \"fiml\" when indicator values ",
+           "are missing (multilevLCA cannot initialize from it).", call. = FALSE)
+    }
+    if (!is.null(control$n_init)) {
+      warning("Random starts (`n_init`) are not available with missing = \"fiml\" ",
+              "when indicator values are missing; using multilevLCA's default ",
+              "initialization.", call. = FALSE)
+      control$n_init <- NULL
+    }
+  }
 
   opts <- .opts_from_control(
     control,

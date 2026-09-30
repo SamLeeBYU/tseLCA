@@ -93,6 +93,11 @@
 
 ## Bug fixes
 
+- `tse_lca(missing = "fiml")` with random starts (`n_init`) failed with a
+  cryptic error from multilevLCA ("sort_index(): detected NaN") when
+  indicator values were missing: multilevLCA cannot start from a given
+  classification on incomplete data. It now warns and uses multilevLCA's
+  default initialization; a user-supplied `start` gives a clear error.
 - Corrected (ML) standard errors: the Jacobian of the classification-error
   matrix with respect to the Step-1 parameters, which carries the Step-1
   uncertainty into Step 3, had its item-parameter columns ordered item by
