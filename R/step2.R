@@ -7,7 +7,7 @@
 #'
 #' Returns posteriors, modal/soft assignments (w.is), and the T x T
 #' classification-error probability matrix p.wx_mat = P(W=s|X=t).
-#' When pi_adj (N x T) is supplied, uses person-specific class priors from the
+#' When pi_adj (n x T) is supplied, uses person-specific class priors from the
 #' covariate model; otherwise falls back to the flat vPi from fit0.
 #' @noRd
 compute_pwx_adj <- function(
@@ -290,7 +290,7 @@ lca_step2 <- function(
 
 #' BCH classification-error-corrected weight matrix
 #'
-#' Computes the N x T BCH weight matrix used throughout the BCH estimators:
+#' Computes the n x T BCH weight matrix used throughout the BCH estimators:
 #' \code{w.it = w.is \%*\% t(pwx)^-1}, where \code{pwx[s, t] = P(W = s | X =
 #' t)} is the column-stochastic classification-error matrix from
 #' \code{compute_pwx_adj()}/\code{lca_step2()} (\code{colSums(pwx) == 1}).

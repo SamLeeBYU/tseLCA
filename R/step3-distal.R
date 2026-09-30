@@ -435,7 +435,7 @@ lca_step3.distal <- function(
 #' covariates: the fitted P(X = t | Zp_i) as the prior, and assignment weights
 #' and classification errors recomputed with that covariate-adjusted prior.
 #'
-#' @return list(pi_adj = N x T prior, res_adj = list(w.is, p.wx_mat),
+#' @return list(pi_adj = n x T prior, res_adj = list(w.is, p.wx_mat),
 #'   p.xz.cov = prior as a function of the covariate coefficients, Z_mat_cov =
 #'   covariate design on the distal rows); the last two are NULL without
 #'   covariates.

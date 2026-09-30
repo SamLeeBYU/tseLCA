@@ -21,11 +21,11 @@ classes(object, ...)
 \item{...}{Further arguments (currently unused).}
 }
 \value{
-\code{posterior()}: a numeric N x T matrix. \code{classes()}: an integer
-vector of length N with values in \verb{1..T}.
+\code{posterior()}: a numeric n x T matrix. \code{classes()}: an integer
+vector of length n with values in \verb{1..T}.
 }
 \description{
-\code{posterior()} returns the N x T matrix of posterior class-membership
+\code{posterior()} returns the n x T matrix of posterior class-membership
 probabilities used by a fitted model; \code{classes()} returns the modal
 (most likely) class of each observation.
 }

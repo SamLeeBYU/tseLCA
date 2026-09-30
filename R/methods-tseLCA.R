@@ -140,14 +140,14 @@
 
 #' Posterior class-membership probabilities and modal class assignments
 #'
-#' `posterior()` returns the N x T matrix of posterior class-membership
+#' `posterior()` returns the n x T matrix of posterior class-membership
 #' probabilities used by a fitted model; `classes()` returns the modal
 #' (most likely) class of each observation.
 #'
 #' @param object A fitted `tseLCA` object.
 #' @param ... Further arguments (currently unused).
-#' @return `posterior()`: a numeric N x T matrix. `classes()`: an integer
-#'   vector of length N with values in `1..T`.
+#' @return `posterior()`: a numeric n x T matrix. `classes()`: an integer
+#'   vector of length n with values in `1..T`.
 #' @examples
 #' d   <- generate_data(200, "high", "covariate", seed = 1)
 #' fit <- three_step(d, paste0("Y", 1:6), n_classes = 3,
@@ -409,7 +409,7 @@ plot.tseLCA <- function(x, horiz = FALSE, clab = NULL, ...) {
 #' @param step `"three_step"` (default) or `"two_step"` (the two-step
 #'   estimates used to initialize Step 3; covariate models only).
 #' @param matrix Logical. If `TRUE`, return the coefficients in their natural
-#'   matrix layout instead: Q x (T-1) for covariate models, T x C for
+#'   matrix layout: (Q+1) x (T-1) for covariate models, T x C for
 #'   multinomial distal outcomes, a list of both for `tseLCA_both`.
 #' @param ... Further arguments (currently unused).
 #' @return A named numeric vector (or matrix / list if `matrix = TRUE`).

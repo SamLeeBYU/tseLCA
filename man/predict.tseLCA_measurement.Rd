@@ -15,7 +15,7 @@
 \item{newdata}{Optional data frame with the indicator columns. Omitted:
 the estimation sample.}
 
-\item{type}{\code{"posterior"} (default) for an N x T matrix of probabilities,
+\item{type}{\code{"posterior"} (default) for an n x T matrix of probabilities,
 or \code{"class"} for the modal class of each row.}
 
 \item{...}{Unused.}

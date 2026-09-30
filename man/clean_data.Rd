@@ -47,14 +47,14 @@ A named list with:
 \item{mDesign}{N_Y x K design/mask matrix (NULL when incomplete = FALSE).}
 \item{ivItemcat}{Integer vector of category counts per item.}
 \item{Y.levels}{Named list of the categories of each item.}
-\item{keep_Y}{Integer indices of rows kept for Steps 1 & 2 (into original N).}
-\item{Z_mat}{N_Z x Q covariate design matrix, or NULL.}
+\item{keep_Y}{Integer indices of rows kept for Steps 1 & 2 (into original n).}
+\item{Z_mat}{n_Z x (Q+1) covariate design matrix, or NULL.}
 \item{Zp.formula, Z_terms, Z_xlevels}{The covariate formula, its terms,
 and the factor levels used, or NULL.}
 \item{keep_step3_Z_in_Y}{Positions of Z-complete rows within keep_Y.}
 \item{Zo_mat}{N_Zo x 1 distal outcome matrix, or NULL.}
 \item{keep_step3_Zo_in_Y}{Positions of Zo-complete rows within keep_Y.}
-\item{keep_step3_Zo}{Indices of Zo-complete rows (into original N).}
+\item{keep_step3_Zo}{Indices of Zo-complete rows (into original n).}
 \item{keep_step3_Zo_in_Z}{With covariates, positions of the distal rows
 within the covariate rows (distal rows then also need complete
 covariates); otherwise NULL.}

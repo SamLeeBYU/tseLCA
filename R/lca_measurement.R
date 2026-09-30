@@ -16,7 +16,7 @@
 # -------------------------
 # multilevLCA::multiLCA()'s default initialization (k-means on principal
 # components) is deterministic given the data and, on some datasets, lands
-# on a local rather than global optimum of the Step-1 likelihood.
+# on a local optimum of the Step-1 likelihood.
 #
 # `startval` (on lca_step1(), lca_step1_startval(), fitZ_from_multiLCA(), and
 # three_step()) works around this by accepting either:
@@ -28,18 +28,17 @@
 #     per-row classification is derived (classify_from_phi()) by naive-Bayes
 #     argmax under a flat class prior. This is the natural format for an
 #     externally estimated Step-1 solution (e.g. poLCA's `probs`, or a
-#     published item-response table), which gives item-response profiles
-#     rather than a classification for this specific sample.
+#     published item-response table)
 # Either form is injected into a data column and passed to
 # multiLCA(..., startval = <that column>, kmea = FALSE), which skips k-means
-# entirely and initializes the EM algorithm from the supplied classification.
+# and initializes the EM algorithm from the supplied classification.
 #
 # `n_init` (on lca_step1(), fitZ_from_multiLCA(), and three_step()) is the
 # unconditional multi-random-start analog of StepMix's `n_init` and poLCA's
 # `nrep`: it fits the measurement model `n_init` times from independent
 # random classifications (not multilevLCA's deterministic k-means-on-PCA
 # path) and keeps the highest-log-likelihood fit. This is a separate
-# argument from `iter.measurement`, which instead reruns multilevLCA's own
+# argument from `iter.measurement`, which reruns multilevLCA's own
 # (kmea = TRUE) k-means initialization, and only when entropy R^2 is low.
 
 # -- External starting values ---------------------------------------------------
@@ -51,12 +50,17 @@
 #' item-response probability matrix `phi` (a flat class prior is assumed,
 #' since no prevalences are supplied). `phi` must have one row per
 #' (item, category) pair -- in the same order as `expand_Y()`'s columns,
-#' i.e. items in `Y.names` order, categories `0..K_h-1` within each item --
+#' i.e. items in `Y.names` order, categories `0..R_k-1` within each item --
 #' and one column per class. Rows within an item block are renormalized
-#' (with a warning-free tolerance of 5%) to sum to 1 per class, to absorb
-#' minor rounding in hand-transcribed probability tables.
+#' (with a warning-free tolerance of 5%) to sum to 1 per class
 #' @noRd
-classify_from_phi <- function(data, Y.names, n_classes, phi, incomplete = FALSE) {
+classify_from_phi <- function(
+  data,
+  Y.names,
+  n_classes,
+  phi,
+  incomplete = FALSE
+) {
   cd <- clean_data(data = data, Y.names = Y.names, incomplete = incomplete)
   ivItemcat <- cd$ivItemcat
 
@@ -64,8 +68,10 @@ classify_from_phi <- function(data, Y.names, n_classes, phi, incomplete = FALSE)
     phi <- as.matrix(phi)
   }
   # item_probs() layout: one row, P(Y = 1 | X), per binary item
-  if (nrow(phi) != sum(ivItemcat) &&
-      nrow(phi) == sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))) {
+  if (
+    nrow(phi) != sum(ivItemcat) &&
+      nrow(phi) == sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))
+  ) {
     phi <- expand_Phi(phi, ivItemcat)
   }
   if (nrow(phi) != sum(ivItemcat)) {
@@ -152,7 +158,13 @@ attach_startval_column <- function(
         call. = FALSE
       )
     }
-    startval <- classify_from_phi(data, Y.names, n_classes, startval, incomplete)
+    startval <- classify_from_phi(
+      data,
+      Y.names,
+      n_classes,
+      startval,
+      incomplete
+    )
   }
 
   if (length(startval) != nrow(data)) {
@@ -201,7 +213,7 @@ attach_startval_column <- function(
 #'
 #' Injects `startval` into `data` and calls `multilevLCA::multiLCA()` with
 #' `startval = <injected column>, kmea = FALSE`, bypassing multilevLCA's
-#' default k-means-on-principal-components initialization entirely. Returns
+#' default k-means-on-principal-components initialization. Returns
 #' the raw (not yet rebase-permuted) `multiLCA` fit object. Because the
 #' starting classification is user-supplied, no automatic random restarts
 #' are attempted (unlike `run_measurement_fit()`'s low-entropy restart path).
@@ -327,18 +339,18 @@ run_measurement_fit_random_restarts <- function(
 #' A thin wrapper around \pkg{multilevLCA}'s deterministic initialization
 #' path. \code{multilevLCA::multiLCA()}'s default Step-1 initialization
 #' (k-means on principal components) is deterministic given the data and, on
-#' some datasets, converges to a local rather than global optimum of the
+#' some datasets, converges to a local optimum of the
 #' Step-1 log-likelihood. If you have already found a better solution with
 #' an external solver run with many random starts (e.g. \pkg{StepMix},
 #' \pkg{poLCA}, or similar), this function lets you inject that
 #' classification directly: it writes \code{startval} into a temporary
 #' column of \code{data} and calls \code{multiLCA(..., startval = <that
-#' column>, kmea = FALSE)}, which skips k-means entirely and initializes the
-#' EM algorithm from the supplied classification instead.
+#' column>, kmea = FALSE)}, which skips k-means and initializes the
+#' EM algorithm from the supplied classification.
 #'
 #' Most users should not need to call this function directly. Pass
 #' \code{startval} to \code{\link{three_step}()} (for structural estimation)
-#' or \code{\link{lca_step1}()} (for a measurement-only fit) instead --
+#' or \code{\link{lca_step1}()} (for a measurement-only fit) --
 #' both implement the same mechanism and return the fitted measurement
 #' model as \code{$measurement_model$fit0} / \code{$fit0} respectively. This
 #' function is documented mainly to describe what `startval` accepts and
@@ -357,7 +369,7 @@ run_measurement_fit_random_restarts <- function(
 #'       posterior probabilities, as in \pkg{StepMix} or \pkg{poLCA}).}
 #'     \item{A numeric matrix}{A conditional item-response probability
 #'       matrix \eqn{P(Y_h = k \mid X = t)} with one row per (item, category)
-#'       pair -- items in \code{Y.names} order, categories \code{0..K_h-1}
+#'       pair -- items in \code{Y.names} order, categories \code{0..R_k-1}
 #'       within each item, matching the column order of
 #'       \code{expand_Y(data[, Y.names], ivItemcat)} -- and one column per
 #'       class. A per-row classification is derived internally by
@@ -372,7 +384,7 @@ run_measurement_fit_random_restarts <- function(
 #'   \code{iter.measurement}/\code{R2.threshold} restart logic, which applies
 #'   only to multilevLCA's own k-means initialization, and its \code{n_init}
 #'   argument, which does run unconditional random restarts but from
-#'   independent random classifications rather than a single fixed one).
+#'   independent random classifications, not a single fixed one).
 #' @param maxIter.measurement Maximum EM iterations before giving up on
 #'   convergence. Default `5000L`.
 #' @param measurement.tol Convergence tolerance. Default `1e-8`.
@@ -394,7 +406,7 @@ run_measurement_fit_random_restarts <- function(
 #' d <- generate_data(200, "high", "covariate", seed = 1)
 #'
 #' # Recommended: pass `startval` to three_step() (or lca_step1() for a
-#' # measurement-only fit) rather than calling this function directly --
+#' # measurement-only fit); do not call this function directly --
 #' # both use this same mechanism internally.
 #'
 #' # A starting classification from an external solver (here, the DGP's own
@@ -421,7 +433,7 @@ run_measurement_fit_random_restarts <- function(
 #' }
 #' @keywords internal
 #' @section Deprecated:
-#' Deprecated as of tseLCA 2.0.0: use [tse_lca()] instead. It keeps
+#' Deprecated as of tseLCA 2.0.0: use [tse_lca()]. It keeps
 #' working and warns once per session when called directly.
 #' @export
 lca_step1_startval <- function(
@@ -435,7 +447,11 @@ lca_step1_startval <- function(
   rebase = "C1",
   verbose = FALSE
 ) {
-  .tse_deprecated_external("lca_step1_startval()", "tse_lca(start = )", parent.frame())
+  .tse_deprecated_external(
+    "lca_step1_startval()",
+    "tse_lca(start = )",
+    parent.frame()
+  )
   fit0 <- run_measurement_fit_startval(
     data = data,
     Y.names = Y.names,
@@ -487,7 +503,7 @@ lca_step1_startval <- function(
 #'   item-response probabilities from which a classification is derived. See
 #'   [lca_step1_startval()] for the full description of both forms. When
 #'   supplied, `lca_step1()` fits the measurement model with
-#'   [lca_step1_startval()] instead of multilevLCA's default
+#'   [lca_step1_startval()], not multilevLCA's default
 #'   k-means-on-principal-components initialization, and `estimate.one.step`,
 #'   `iter.measurement`, and `R2.threshold` (which govern the default
 #'   restart-on-low-entropy behavior) are ignored. Mutually exclusive with
@@ -527,7 +543,7 @@ lca_step1_startval <- function(
 #'                  n_init = 20L, verbose = TRUE)
 #' }
 #' @section Deprecated:
-#' Deprecated as of tseLCA 2.0.0: use [tse_lca()] instead. It keeps
+#' Deprecated as of tseLCA 2.0.0: use [tse_lca()]. It keeps
 #' working and warns once per session when called directly.
 #' @export
 lca_step1 <- function(
@@ -711,18 +727,18 @@ lca_step1 <- function(
 #'   parameterization (e.g. `"C1"`, `"C2"`, or an integer). Default `"C1"`.
 #'   Must match the `rebase` used in `lca_step1()` so class column ordering
 #'   is consistent.
-#' @param starting_val Optional Q x (T-1) starting value matrix for `mGamma`.
+#' @param starting_val Optional (Q+1) x (T-1) starting value matrix for `mGamma`.
 #' @param Y.levels Optional named list of indicator categories when `data`
 #'   holds 0-based codes (as stored with a fitted measurement model); `NULL`
 #'   derives them from `data`.
-#' @param Zp.formula Optional one-sided formula for the covariate design, used
-#'   instead of `Zp.names` and `include.intercept`.
+#' @param Zp.formula Optional one-sided formula for the covariate design; it
+#'   replaces `Zp.names` and `include.intercept`.
 #' @param verbose Logical. Print convergence messages. Default `FALSE`.
 #'
 #' @return A list with the following elements:
 #'   \describe{
-#'     \item{`mGamma`}{Q x (T-1) numeric matrix of multinomial logit
-#'       coefficients, where Q is the number of columns in the covariate design
+#'     \item{`mGamma`}{(Q+1) x (T-1) numeric matrix of multinomial logit
+#'       coefficients, where Q + 1 is the number of columns in the covariate design
 #'       matrix (including intercept if `include.intercept = TRUE`). Rows are
 #'       named by covariate, columns by non-reference class (e.g. `"C2"`,
 #'       `"C3"`).}
@@ -752,11 +768,11 @@ lca_step1 <- function(
 #'   Zp.names = "Zp",
 #'   verbose  = TRUE
 #' )
-#' fZ$mGamma   # Q x (T-1) coefficient matrix
+#' fZ$mGamma   # (Q+1) x (T-1) coefficient matrix
 #' fZ$converged
 #' }
 #' @section Deprecated:
-#' Deprecated as of tseLCA 2.0.0: use [tse_twostep()] instead. It keeps
+#' Deprecated as of tseLCA 2.0.0: use [tse_twostep()]. It keeps
 #' working and warns once per session when called directly.
 #' @export
 fitZ_from_fit0 <- function(
@@ -952,7 +968,7 @@ fitZ_from_fit0 <- function(
 #'
 #' @return A list with the following elements:
 #'   \describe{
-#'     \item{`mGamma`}{Q x (T-1) numeric matrix of multinomial logit
+#'     \item{`mGamma`}{(Q+1) x (T-1) numeric matrix of multinomial logit
 #'       coefficients. Rows are named by covariate (including `"Intercept"`),
 #'       columns by non-reference class (e.g. `"C2"`, `"C3"`).}
 #'     \item{`mPhi`}{Item parameter matrix (items x classes) from the
@@ -987,7 +1003,7 @@ fitZ_from_fit0 <- function(
 #' fZ_ml$raw_fit$Varmat_cor   # multilevLCA corrected vcov
 #' }
 #' @section Deprecated:
-#' Deprecated as of tseLCA 2.0.0: use [tse_twostep()] instead. It keeps
+#' Deprecated as of tseLCA 2.0.0: use [tse_twostep()]. It keeps
 #' working and warns once per session when called directly.
 #' @export
 fitZ_from_multiLCA <- function(
@@ -1006,7 +1022,11 @@ fitZ_from_multiLCA <- function(
   n_init = NULL,
   verbose = FALSE
 ) {
-  .tse_deprecated_external("fitZ_from_multiLCA()", "tse_twostep(se = TRUE)", parent.frame())
+  .tse_deprecated_external(
+    "fitZ_from_multiLCA()",
+    "tse_twostep(se = TRUE)",
+    parent.frame()
+  )
   if (!is.null(startval) && !is.null(n_init)) {
     stop(
       "`startval` and `n_init` are mutually exclusive ways of controlling ",

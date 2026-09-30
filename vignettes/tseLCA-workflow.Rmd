@@ -121,7 +121,7 @@ item_probs(m)
 Latent class models can have several local optima. By default `tse_lca()`
 uses the k-means initialization of **multilevLCA**, with additional random
 starts when the entropy is low; `control = tse_control(n_init = 20)` fits the
-model from 20 random starts instead, and `start` fixes a starting
+model from 20 random starts, and `start` fixes a starting
 classification.
 
 ## Step 2: classification
@@ -241,7 +241,7 @@ round(coef(fm, matrix = TRUE), 3)
 omnibus_test(fm)
 ```
 
-### Covariates and a distal outcome together
+### Covariates and a distal outcome
 
 Passing a covariate model to `tse_distal()` fits both parts. The class prior
 then depends on the covariates, and the uncertainty of the covariate model is

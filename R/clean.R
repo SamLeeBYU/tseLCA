@@ -46,14 +46,14 @@
 #'   \item{mDesign}{N_Y x K design/mask matrix (NULL when incomplete = FALSE).}
 #'   \item{ivItemcat}{Integer vector of category counts per item.}
 #'   \item{Y.levels}{Named list of the categories of each item.}
-#'   \item{keep_Y}{Integer indices of rows kept for Steps 1 & 2 (into original N).}
-#'   \item{Z_mat}{N_Z x Q covariate design matrix, or NULL.}
+#'   \item{keep_Y}{Integer indices of rows kept for Steps 1 & 2 (into original n).}
+#'   \item{Z_mat}{n_Z x (Q+1) covariate design matrix, or NULL.}
 #'   \item{Zp.formula, Z_terms, Z_xlevels}{The covariate formula, its terms,
 #'     and the factor levels used, or NULL.}
 #'   \item{keep_step3_Z_in_Y}{Positions of Z-complete rows within keep_Y.}
 #'   \item{Zo_mat}{N_Zo x 1 distal outcome matrix, or NULL.}
 #'   \item{keep_step3_Zo_in_Y}{Positions of Zo-complete rows within keep_Y.}
-#'   \item{keep_step3_Zo}{Indices of Zo-complete rows (into original N).}
+#'   \item{keep_step3_Zo}{Indices of Zo-complete rows (into original n).}
 #'   \item{keep_step3_Zo_in_Z}{With covariates, positions of the distal rows
 #'     within the covariate rows (distal rows then also need complete
 #'     covariates); otherwise NULL.}
@@ -534,26 +534,26 @@ permute_fit0_classes <- function(fit0, ref_idx) {
 #' Extract Y.exp, mDesign, posteriors from a multilevLCA mU matrix
 #'
 #' `fit0$mU` from \pkg{multilevLCA} stores data already in one-hot expanded
-#' form: each item h occupies K_h consecutive columns (one per category),
+#' form: each item k occupies R_k consecutive columns (one per category),
 #' followed by T columns of posterior class probabilities.
 #'
-#' For dichotomous items (K_h=2) the two columns are stored. For polytomous
-#' items (K_h>2) all K_h columns are stored. This function first compresses
+#' For dichotomous items (R_k=2) the two columns are stored. For polytomous
+#' items (R_k>2) all R_k columns are stored. This function first compresses
 #' the expanded Y back to integer codes, then re-expands
 #' consistently with \code{expand_Y} so downstream functions receive the correct
-#' N x K_total matrix.
+#' n x sum(R_k) matrix.
 #'
 #' @param fit0       Raw multilevLCA fit object with \code{$mU}, \code{$mPhi},
 #'   \code{$vPi}.
-#' @param ivItemcat  Integer vector of category counts per item (length H).
+#' @param ivItemcat  Integer vector of category counts per item (length K).
 #'   If \code{NULL}, inferred from \code{fit0$mPhi} dimensions.
 #'
 #' @return A list with:
 #' \describe{
-#'   \item{Y.exp}{N x K_total expanded one-hot matrix (NAs replaced with 0).}
-#'   \item{mDesign}{N x K_total design/mask matrix. \code{NULL} if no missing.}
+#'   \item{Y.exp}{n x sum(R_k) expanded one-hot matrix (NAs replaced with 0).}
+#'   \item{mDesign}{n x sum(R_k) design/mask matrix. \code{NULL} if no missing.}
 #'   \item{ivItemcat}{Integer vector of category counts per item.}
-#'   \item{u_post}{N x T posterior class probability matrix from \code{mU}.}
+#'   \item{u_post}{n x T posterior class probability matrix from \code{mU}.}
 #' }
 #' @keywords internal
 extract_Y_from_mU <- function(fit0, ivItemcat = NULL) {

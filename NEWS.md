@@ -52,18 +52,16 @@
   item-response probabilities (e.g. estimates reported elsewhere, or saved
   from an earlier fit) without re-estimating it. The result can be passed to
   `tse_classify()` like any `tse_lca()` model.
-- `inst/examples/tseLCA_sim.R` is rewritten for the step-wise interface. It
-  reuses saved datasets and measurement models, can run a quick version
-  (`TSELCA_SIM_QUICK`) or a subset of scenarios (`TSELCA_SIM_SCENARIOS`), and
-  ends by printing the manuscript's simulation tables (bias, RMSE, coverage,
-  SE/SD, with Monte Carlo standard errors) and writing them to CSV.
+- The replication and simulation scripts of the accompanying manuscript are
+  no longer installed with the package; they are part of the manuscript's
+  replication materials.
 
 ## Classes and methods
 
 - Fitted objects now share a class hierarchy. `tseLCA` is the parent class of
   every fit; `tseLCA_structural` is the parent of `tseLCA_covariate`,
   `tseLCA_distal`, and `tseLCA_both`. Methods are defined once on the parent
-  classes instead of separately for each subclass.
+  classes, not separately for each subclass.
 - New methods on all fits: `logLik()` (with `df` and `nobs`, so `AIC()`
   and `BIC()` work), `nobs()`, `posterior()`, `classes()`,
   `class_sizes()`, and `item_probs()`.
@@ -123,7 +121,7 @@
   singular) or all `NA` (singular), which made the corrected standard errors
   of the Step-3 models `NA`.
 - If the Step-1 information matrix is still singular, Step-3 models warn
-  and report robust standard errors instead of returning `NA`.
+  and report robust standard errors (was `NA`).
 - `tse_twostep(se = TRUE)` with a reference class other than the first
   returned the class-1-reference estimates and variance under the new class
   labels. They are now transformed to the requested reference class. It also
@@ -138,14 +136,14 @@
   the measurement model was fitted with listwise deletion
   (`incomplete = FALSE`). The Step-1 information matrix was then singular, so
   `vcov()` of a polytomous measurement model and the Step-1-corrected Step-3
-  variance (`use.simple.cov = FALSE`) were entirely `NA`. The measurement
+  variance (`use.simple.cov = FALSE`) were all `NA`. The measurement
   model now stores its Step-1 sample in data-row order and uses it for all
   of these computations. The fallback decoder for objects without stored data
   handles both of multilevLCA's codings.
 - Parameter counts behind the reported AIC/BIC were wrong. Covariate models
-  counted one-hot indicator columns rather than free item parameters (e.g.
-  40 instead of 22 for six binary items, three classes, one covariate).
-  Combined covariate + distal models counted class sizes instead of the
+  counted one-hot indicator columns, not free item parameters (e.g.
+  40, not 22, for six binary items, three classes, one covariate).
+  Combined covariate + distal models counted class sizes, not the
   covariate coefficients. Reported `AIC`/`BIC` for these models change;
   estimates and standard errors do not.
 
@@ -171,7 +169,7 @@
   this form. The E-step, score, Hessian/Jacobian, and Step-1/Step-2
   uncertainty propagation now use the correct likelihood for all distal
   families. Proportional-assignment ML distal estimates were biased away from
-  zero (e.g. class means of -1.07 and 1.06 instead of -1 and 1 at mid
+  zero (e.g. class means of -1.07 and 1.06, not -1 and 1, at mid
   separation). Modal-assignment fits, whose single assignment makes the two
   forms identical, BCH, and covariate models are unchanged.
 
@@ -201,7 +199,7 @@
 - `coef()` on a measurement model returns the log-ratio parameters that
   `vcov()` describes. The previous list is now available as
   `class_sizes()` and `item_probs()`.
-- Covariate coefficient names use `"(Intercept)"` instead of `"Intercept"`,
+- Covariate coefficient names use `"(Intercept)"` (was `"Intercept"`),
   e.g. `"(Intercept):C2"`.
 - The `which` argument of `coef()` and `vcov()` is replaced by
   `component` (`"covariate"` or `"distal"`) and `step` (`"two_step"`).

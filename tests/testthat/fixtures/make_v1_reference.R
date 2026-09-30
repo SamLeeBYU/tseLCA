@@ -22,7 +22,7 @@
 #     Proportional-assignment ML distal fits (dis_gauss_ml, both_ml_prop)
 #     change; modal-assignment, BCH, and covariate fits are unchanged.
 #   - 2.0 Step 3: covariate designs built with model.matrix(); the intercept
-#     is named "(Intercept)" instead of "Intercept". Names only; all numbers
+#     is named "(Intercept)" (was "Intercept"). Names only; all numbers
 #     unchanged.
 #   - 2.0 Step 11b: Step-2 Jacobian J.2 = d theta2 / d theta1 in the
 #     corrected (Step-1 uncertainty) variance. Its item-parameter columns

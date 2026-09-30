@@ -9,7 +9,7 @@
 
 #' Warn once per session that a 1.x function is deprecated
 #' @noRd
-.tse_deprecated <- function(what, instead) {
+.tse_deprecated <- function(what, replacement) {
   if (!isTRUE(getOption("tseLCA.warn.deprecated", TRUE))) {
     return(invisible(FALSE))
   }
@@ -20,9 +20,9 @@
   .tse_state$warned <- c(warned, what)
   warning(
     sprintf(
-      "%s is deprecated as of tseLCA 2.0.0; use %s instead. %s",
+      "%s is deprecated as of tseLCA 2.0.0; use %s. %s",
       what,
-      instead,
+      replacement,
       "(Shown once per session; see NEWS for the new interface.)"
     ),
     call. = FALSE
@@ -36,9 +36,9 @@
 #' `frame` is the calling frame of the deprecated function (its
 #' `parent.frame()`).
 #' @noRd
-.tse_deprecated_external <- function(what, instead, frame) {
+.tse_deprecated_external <- function(what, replacement, frame) {
   if (identical(topenv(frame), topenv(environment(.tse_deprecated)))) {
     return(invisible(FALSE))
   }
-  .tse_deprecated(what, instead)
+  .tse_deprecated(what, replacement)
 }

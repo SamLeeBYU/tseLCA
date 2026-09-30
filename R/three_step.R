@@ -40,7 +40,7 @@
 #'   \pkg{multilevLCA}'s default initialization (k-means on principal
 #'   components) is deterministic given the data and can converge to a local
 #'   optimum of the Step-1 log-likelihood; supplying \code{startval} bypasses
-#'   it entirely (\code{kmea = FALSE} with the classification injected as
+#'   it (\code{kmea = FALSE} with the classification injected as
 #'   multilevLCA's \code{startval}). Mutually exclusive with \code{step1} and
 #'   \code{n_init}. Default \code{NULL}.
 #' @param n_init Optional positive integer. If supplied, fits the Step-1
@@ -49,7 +49,7 @@
 #'   path) and keeps the fit with the highest log-likelihood -- the
 #'   unconditional multi-start analog of \code{n_init} in \pkg{StepMix} or
 #'   \code{nrep} in \pkg{poLCA}. This is distinct from
-#'   \code{iter.measurement}, which instead reruns multilevLCA's own k-means
+#'   \code{iter.measurement}, which reruns multilevLCA's own k-means
 #'   initialization, and only when the entropy R\eqn{^2} of the default fit
 #'   is below \code{R2.threshold}; \code{n_init} restarts always run.
 #'   Mutually exclusive with \code{step1} and \code{startval}. Default
@@ -81,8 +81,8 @@
 #'   \code{10L}.
 #' @param R2.threshold Scalar. Entropy R\eqn{^2} threshold below which Step-1
 #'   random restarts are triggered. Default \code{0.70}.
-#' @param use.bch Logical. Use BCH-corrected weights instead of the ML
-#'   estimator in Step 3. May error if BCH weights induce a non-positive semi-definite Hessian in the third step (common in cases of low separation). Default \code{FALSE}.
+#' @param use.bch Logical. Use the BCH estimator in Step 3 (default: the ML
+#'   estimator). May error if BCH weights induce a non-positive semi-definite Hessian in the third step (common in cases of low separation). Default \code{FALSE}.
 #' @param em.maxIter Integer. Maximum EM iterations for the Step-3 covariate
 #'   or distal outcome model. Default \code{200L}.
 #' @param get.twostep.vcov Logical. If \code{TRUE}, obtain \pkg{multilevLCA}'s
@@ -104,7 +104,7 @@
 #'   \code{sort(unique(data[[Zo.name]]))} with \code{factor()}). For
 #'   \code{"multinomial"}, \code{coef()} returns a \code{T x C} matrix of
 #'   class-conditional category probabilities
-#'   \eqn{\hat\pi_{tc} = P(Zo = c \mid X = t)} (rows sum to 1) instead of a
+#'   \eqn{\hat\pi_{tc} = P(Zo = c \mid X = t)} (rows sum to 1), not a
 #'   length-\code{T} vector, and \code{vcov()} returns its
 #'   \code{(T*C) x (T*C)} sandwich covariance (necessarily singular, since
 #'   each class's row sums to 1 -- see \code{\link{omnibus_test}()} for a
@@ -126,7 +126,7 @@
 #'   under \code{use.simple.cov = FALSE}, the same as the other families.
 #'   Default \code{"gaussian"}.
 #' @param correct.spec Logical. Use the model-robust outer-product Hessian for
-#'   Step-3 standard errors rather than the observed-data Hessian. Not appropriate
+#'   Step-3 standard errors, not the observed-data Hessian. Not appropriate
 #'   when the Step-3 model may be misspecified. Default \code{FALSE}.
 #' @param verbose Logical. Print convergence messages. Default \code{FALSE}.
 #'
@@ -141,19 +141,19 @@
 #'         \item{`AIC`, `BIC`}{Information criteria from the measurement model.}
 #'         \item{`R2entr`}{Entropy R\eqn{^2} of the measurement model.}
 #'         \item{`n_classes`}{Number of latent classes.}
-#'         \item{`posteriors`}{N x T matrix of soft posterior class probabilities.}
-#'         \item{`classifications`}{Length-N integer vector of modal class assignments.}
+#'         \item{`posteriors`}{n x T matrix of soft posterior class probabilities.}
+#'         \item{`classifications`}{Length-n integer vector of modal class assignments.}
 #'       }
 #'     }
 #'     \item{`tseLCA_covariate`}{Returned when \code{Zp.names} is supplied and
 #'       \code{Zo.name} is \code{NULL}. Contains all elements of
 #'       \code{tseLCA_measurement} plus:
 #'       \describe{
-#'         \item{`three_step`}{Q x (T-1) matrix of Step-3 gamma coefficients.}
-#'         \item{`three_step_vcov`}{Q(T-1) x Q(T-1) variance-covariance matrix
+#'         \item{`three_step`}{(Q+1) x (T-1) matrix of Step-3 gamma coefficients.}
+#'         \item{`three_step_vcov`}{(Q+1)(T-1) x (Q+1)(T-1) variance-covariance matrix
 #'           for \code{three_step}, with measurement-uncertainty correction
 #'           unless \code{use.simple.cov = TRUE}.}
-#'         \item{`two_step`}{Q x (T-1) matrix of two-step starting values, or
+#'         \item{`two_step`}{(Q+1) x (T-1) matrix of two-step starting values, or
 #'           \code{NULL} if \code{use.two.step = FALSE}.}
 #'         \item{`two_step_vcov`}{\pkg{multilevLCA} bias-corrected vcov for the
 #'           two-step estimates, or \code{NULL}.}
@@ -188,8 +188,8 @@
 #'           using the number of distal-complete observations.}
 #'         \item{`family`}{Character. The distal outcome family used.}
 #'         \item{`estimator`}{Character: \code{"ML"} or \code{"BCH"}.}
-#'         \item{`posteriors`}{N x T soft posterior matrix.}
-#'         \item{`classifications`}{Length-N modal class assignment vector.}
+#'         \item{`posteriors`}{n x T soft posterior matrix.}
+#'         \item{`classifications`}{Length-n modal class assignment vector.}
 #'       }
 #'     }
 #'     \item{`tseLCA_both`}{Returned when both \code{Zp.names} and
@@ -202,8 +202,8 @@
 #'           (see above), including \code{llik}, \code{AIC}, \code{BIC},
 #'           \code{three_step.llik}.}
 #'         \item{`family`, `n_classes`, `estimator`}{Shared top-level fields.}
-#'         \item{`posteriors`, `classifications`}{Shared N x T posterior
-#'           matrix and length-N modal class vector.}
+#'         \item{`posteriors`, `classifications`}{Shared n x T posterior
+#'           matrix and length-n modal class vector.}
 #'       }
 #'     }
 #'   }
@@ -307,7 +307,7 @@
 #' Deprecated as of tseLCA 2.0.0. It keeps working (and gives the same
 #' estimates) but warns once per session; set
 #' `options(tseLCA.warn.deprecated = FALSE)` to silence the warning. Use
-#' [tseLCA()] or the step-wise functions instead:
+#' [tseLCA()] or the step-wise functions:
 #'
 #' | `three_step()` | tseLCA 2.0 |
 #' |---|---|

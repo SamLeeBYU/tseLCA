@@ -16,21 +16,21 @@
 #'
 #' Assumes \code{fit0$mPhi} follows the \pkg{multilevLCA} storage convention:
 #' \itemize{
-#'   \item Dichotomous item h (\code{ivItemcat[h] == 2}): 1 row =
+#'   \item Dichotomous item k (\code{ivItemcat[k] == 2}): 1 row =
 #'     \eqn{P(Y=1|C)}; the base level \eqn{P(Y=0|C)} is excluded.
-#'   \item Polytomous item h (\code{ivItemcat[h] > 2}): \code{K_h} rows =
-#'     \eqn{P(Y=0|C), \ldots, P(Y=K_h-1|C)}; the base level is included.
+#'   \item Polytomous item k (\code{ivItemcat[k] > 2}): \code{R_k} rows =
+#'     \eqn{P(Y=0|C), \ldots, P(Y=R_k-1|C)}; the base level is included.
 #' }
 #' \code{expand_Y} produces one-hot columns in the same order so that
 #' \code{expand_Phi(fit0$mPhi, ivItemcat)} aligns column-wise with
 #' \code{expand_Y(mY, ivItemcat)}.  Free (estimable) parameters per item are
 #' the single \eqn{P(Y=1|C)} row for dichotomous items, and rows 2 through
-#' \eqn{K_h} for polytomous items (row 1, \eqn{P(Y=0|C)}, is the reference).
+#' \eqn{R_k} for polytomous items (row 1, \eqn{P(Y=0|C)}, is the reference).
 #' Boundary parameters (within \code{boundary.tol} of 0 or 1) are treated as
 #' fixed: their score columns are zeroed and they do not contribute to the
 #' information matrix.
 #'
-#' @param Y.exp       N x sum(K_h) expanded one-hot indicator matrix.
+#' @param Y.exp       n x sum(R_k) expanded one-hot indicator matrix.
 #' @param mDesign.exp Expanded design matrix (same dimensions as \code{Y.exp}),
 #'   or \code{NULL} for complete data.
 #' @param fit0        Step-1 fit object with \code{$vPi} and \code{$mPhi}.
@@ -39,7 +39,7 @@
 #'   \code{1e-2}.
 #' @param use.freq    Logical. Collapse duplicate score rows before computing
 #'   the cross-product, weighting by frequency. Default \code{TRUE}.
-#' @param u_post      Optional N x T matrix of posterior class probabilities.
+#' @param u_post      Optional n x T matrix of posterior class probabilities.
 #'   When supplied (e.g. extracted from \code{fit0$mU} with
 #'   \code{extract_Y_from_mU}), \code{compute_posteriors} is skipped.
 #'   Default \code{NULL}.
@@ -49,13 +49,13 @@
 #'     \item{`Infomat`}{Square BHHH information matrix of dimension p x p,
 #'       where p = (iT-1) + sum(ivItemcat - 1) * iT is the total number of free
 #'       parameters. Boundary parameters have zero rows and columns.}
-#'     \item{`Varmat`}{Inverse of \code{Infomat} divided by N, giving the
+#'     \item{`Varmat`}{Inverse of \code{Infomat} divided by n, giving the
 #'       asymptotic variance-covariance matrix on the same scale as
 #'       \pkg{multilevLCA}'s \code{$Varmat}. Boundary parameters have zero
 #'       rows and columns.}
 #'     \item{`SEs`}{Numeric vector of length p. Square root of the diagonal of
 #'       \code{Varmat}; zero for boundary parameters.}
-#'     \item{`mScore`}{N x p matrix of individual score contributions in the
+#'     \item{`mScore`}{n x p matrix of individual score contributions in the
 #'       unconstrained parameterization, used for sandwich variance propagation
 #'       in \code{lca_vcov} and \code{lca_vcov_distal}.}
 #'   }
@@ -449,7 +449,7 @@ lca_vcov_distal <- function(
 #' \code{use.bch = FALSE} and \code{use.simple.cov = FALSE}. The
 #' generalization from scalar \code{mu_t} (one parameter per class, as in
 #' \code{lca_vcov_distal()}) to \code{pi_hat[t, ]} (C parameters per class)
-#' only touches the "unit score" \code{g_it}: instead of dividing the
+#' only touches the "unit score" \code{g_it}: in place of dividing the
 #' length-\code{iT} score by \code{r_it} once, the length-\code{iT*C} score
 #' is divided by \code{r_it} replicated across the C categories, since
 #' neither chain-rule term (\code{dr}, through \code{d ae/d theta2}; nor

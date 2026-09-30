@@ -54,8 +54,8 @@ With a vector \code{nclass}, a model is fitted for each number of classes and
 the result is a class-enumeration table of fit statistics (see Details).
 
 The number of classes is chosen from the measurement model alone, before
-any structural variables are considered, typically by the BIC together
-with interpretability and class separation; see Nylund, Asparouhov, and
+any structural variables are considered, typically by the BIC, the
+interpretability of the classes, and their separation; see Nylund, Asparouhov, and
 \enc{Muthén}{Muthen} (2007) and Masyn (2013). The enumeration table reports, for each
 number of classes, the log-likelihood, number of free parameters, AIC,
 BIC, sample-size adjusted BIC (SABIC; Sclove 1987), entropy R\eqn{^2}, and

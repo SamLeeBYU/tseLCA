@@ -11,7 +11,7 @@
 
 \item{newdata}{Optional data frame with the covariates.}
 
-\item{type}{\code{"prob"} (default) for the N x T probability matrix, or
+\item{type}{\code{"prob"} (default) for the n x T probability matrix, or
 \code{"class"} for the most likely class.}
 
 \item{...}{Unused.}

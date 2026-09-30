@@ -82,7 +82,7 @@ tseLCA <- function(
   if (length(nclass) != 1L) {
     stop(
       "`nclass` must be a single number of classes. Compare numbers of ",
-      "classes with tse_lca(..., nclass = 1:K) first.",
+      "classes with tse_lca(..., nclass = 1:6), for example.",
       call. = FALSE
     )
   }

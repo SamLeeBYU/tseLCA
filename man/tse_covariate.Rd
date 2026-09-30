@@ -28,8 +28,8 @@ Factors, interactions, and transformations are allowed.}
 \item{ref}{Reference class of the multinomial logit: a class number or
 label such as \code{"C2"}.}
 
-\item{start}{Optional starting values: a Q x (T-1) coefficient matrix
-(Q design columns, T classes). By default, the two-step estimates
+\item{start}{Optional starting values: a (Q+1) x (T-1) coefficient matrix
+(Q covariates plus the intercept, T classes). By default, the two-step estimates
 (Bakk and Kuha 2018) are used.}
 
 \item{control}{Estimation settings; default: those of the measurement

@@ -22,7 +22,7 @@ Description: Bias-adjusted three-step estimation of latent class models with
     binomial, and multinomial distal outcomes, the two-step estimator of Bakk
     and Kuha (2018) <doi:10.1007/s11336-017-9592-7>, measurement models
     applied to new samples, and full-information maximum likelihood for
-    missing indicators, together with standard methods for fitted models and
+    missing indicators, standard methods for fitted models, and
     a data-generating process replicating the simulation design of Bakk and
     Kuha (2018).
 License: GPL (>= 3)

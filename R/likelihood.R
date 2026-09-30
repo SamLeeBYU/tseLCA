@@ -5,8 +5,8 @@
 
 #' One-hot expand an integer response matrix
 #'
-#' Converts an N x H matrix of 0-based integer category values into an
-#' N x sum(ivItemcat) binary indicator matrix, one column per category per item.
+#' Converts an n x K matrix of 0-based integer category values into an
+#' n x sum(ivItemcat) binary indicator matrix, one column per category per item.
 #' @noRd
 expand_Y <- function(mY_int, ivItemcat) {
   # mY_int: N x H matrix of integer category values (0-based)
@@ -73,7 +73,7 @@ expand_Phi_free <- function(phi_free, ivItemcat) {
 
 #' Per-observation class log-likelihood matrix
 #'
-#' Returns an N x T matrix where entry `[i, t]` is the conditional log-likelihood
+#' Returns an n x T matrix where entry `[i, t]` is the conditional log-likelihood
 #' log P(Y_i | X=t) under the expanded item-probability matrix mPhi.
 #' mDesign masks missing indicators (0 = missing, 1 = observed).
 #' @noRd
@@ -118,14 +118,14 @@ joint_log_lik <- function(Y, Z, mPhi, gamma.coefs, mDesign = NULL) {
 #' Computes sum_i log( sum_t P(X=t|Zp_i) * P(Zo_i|X=t) * P(Y_i|X=t) )
 #' When Zp is absent, P(X=t|Zp) = vPi (flat prevalences).
 #'
-#' @param Y       N x K_total expanded one-hot response matrix.
-#' @param Zo      Length-N distal outcome vector.
-#' @param mPhi    K_total x T expanded item-response probability matrix.
-#' @param p.zx    N x T matrix of log-densities log P(Zo_i|X=t).
-#' @param pi_mat  N x T matrix of class priors P(X=t|Zp_i). If NULL, uses
+#' @param Y       n x sum(R_k) expanded one-hot response matrix.
+#' @param Zo      Length-n distal outcome vector.
+#' @param mPhi    sum(R_k) x T expanded item-response probability matrix.
+#' @param p.zx    n x T matrix of log-densities log P(Zo_i|X=t).
+#' @param pi_mat  n x T matrix of class priors P(X=t|Zp_i). If NULL, uses
 #'   flat prevalences from the row means of p.zx (not used; vPi supplied).
 #' @param vPi     Length-T flat prevalences, used when pi_mat is NULL.
-#' @param mDesign N x K_total design matrix (NULL for complete data).
+#' @param mDesign n x sum(R_k) design matrix (NULL for complete data).
 #' @noRd
 joint_log_lik_distal <- function(
   Y,
@@ -167,7 +167,7 @@ joint_log_lik_distal <- function(
 #'
 #' Reconstructs vPi and phi from the stacked parameter vector theta1 =
 #' `c(vPi[-1], phi_free)` used internally by lca_step2, then returns the
-#' N x T soft posterior matrix P(X=t|Y_i).
+#' n x T soft posterior matrix P(X=t|Y_i).
 #' @noRd
 compute_posteriors <- function(Y, mDesign, theta1, ivItemcat, iT) {
   vPi_free <- theta1[1:(iT - 1L)]

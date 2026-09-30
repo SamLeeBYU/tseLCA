@@ -69,7 +69,7 @@ exclusive with \code{startval}. Default \code{NULL}.}
 \value{
 A list with the following elements:
 \describe{
-\item{\code{mGamma}}{Q x (T-1) numeric matrix of multinomial logit
+\item{\code{mGamma}}{(Q+1) x (T-1) numeric matrix of multinomial logit
 coefficients. Rows are named by covariate (including \code{"Intercept"}),
 columns by non-reference class (e.g. \code{"C2"}, \code{"C3"}).}
 \item{\code{mPhi}}{Item parameter matrix (items x classes) from the
@@ -93,7 +93,7 @@ multilevLCA's corrected standard errors for the two-step gamma estimates.
 }
 \section{Deprecated}{
 
-Deprecated as of tseLCA 2.0.0: use \code{\link[=tse_twostep]{tse_twostep()}} instead. It keeps
+Deprecated as of tseLCA 2.0.0: use \code{\link[=tse_twostep]{tse_twostep()}}. It keeps
 working and warns once per session when called directly.
 }
 

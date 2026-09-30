@@ -34,7 +34,7 @@ A \code{tseLCA_measurement} object, usable like one from \code{\link[=tse_lca]{t
 }
 \description{
 Creates a measurement model from given class sizes and item-response
-probabilities, evaluated on \code{data}, instead of estimating it. This allows
+probabilities, evaluated on \code{data}, without estimating it. This allows
 Steps 2 and 3 to be based on a measurement model estimated elsewhere: in
 another program, reported in a publication, or saved from an earlier
 analysis.

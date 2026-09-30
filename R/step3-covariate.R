@@ -5,7 +5,7 @@
 
 #' Step 3 (covariate): estimate multinomial logit gamma with either BCH or ML EM
 #'
-#' Optimizes the Q x (T-1) coefficient matrix gamma for P(X=t|Z_i) with
+#' Optimizes the (Q+1) x (T-1) coefficient matrix gamma for P(X=t|Z_i) with
 #' Newton-Raphson (BCH) or EM with an inner NR M-step (ML). Returns the
 #' parameter vector, the inverted Hessian H.3.inv (or NA matrix on failure),
 #' used by lca_vcov for sandwich variance propagation.
@@ -66,7 +66,7 @@ lca_step3 <- function(
             nr
           ),
           "This typically occurs under low class separation. ",
-          "Try use.bch = FALSE to use the ML estimator instead. Or you can try increasing em.maxIter...",
+          "Try the ML estimator (use.bch = FALSE), or increase em.maxIter.",
           call. = FALSE
         )
       }

@@ -686,7 +686,7 @@ test_that("three_step multinomial ML (simple and full) agree and full SEs are >=
 test_that("distal_multinomial_jacobian matches a numerical check of the estimating equation", {
   # distal_multinomial_jacobian() is a closed-form derivation (no numerical
   # differentiation in the package); this is a cheap regression check
-  # against a numerical Jacobian computed inline, entirely independent of
+  # against a numerical Jacobian computed inline, independent of
   # distal_multinomial_jacobian() itself.
   d <- make_multinomial_distal_data(600L, seed = 60L)
   # Pre-encode as integer categories, matching what three_step() itself
@@ -847,7 +847,7 @@ test_that("Step-2 covariate-uncertainty propagation is actually wired through fo
   # step1-only propagation, still >= the robust sandwich). This test
   # isolates the step-2 term's contribution directly through the internal
   # function, so a regression that drops the wiring shows up as "no
-  # difference" rather than merely "still bigger than simple.cov".
+  # difference", not merely "still bigger than simple.cov".
   d2 <- generate_data(400L, "high", "covariate", seed = 59L)
   # Pre-encode as integer categories, matching what three_step() itself
   # does internally before calling clean_data() -- required here since we

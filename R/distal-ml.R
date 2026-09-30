@@ -13,19 +13,15 @@
 # outside the log, as for the covariate model (Vermunt 2010).
 #
 # Per-record posteriors R_ist = a_it f(z_i | t) P(W = s | t) / M_is give the
-# E-step weights lambda_it = sum_s w_is R_ist. Every distal estimating
-# equation has the form Psi_p = sum_i sum_t lambda_it G^p_it, where
-# G^p_it = d log f(z_i | t) / d theta_p is the per-class unit score, so the
-# Hessian and the Step-1/Step-2 uncertainty terms below are generic in the
-# family.
+# E-step weights lambda_it = sum_s w_is R_ist.
 
 #' Per-record posteriors and log M_is of the three-step ML distal model
 #'
-#' @param log_f N x T matrix of log f(z_i | X = t).
-#' @param a N x T matrix of class priors a_it.
+#' @param log_f n x T matrix of log f(z_i | X = t).
+#' @param a n x T matrix of class priors a_it.
 #' @param pwx T x T classification-error matrix, pwx[s, t] = P(W = s | X = t).
-#' @return list(R = list of T matrices (N x T), R[[s]][i, t] = R_ist;
-#'   logM = N x T matrix of log M_is).
+#' @return list(R = list of T matrices (n x T), R[[s]][i, t] = R_ist;
+#'   logM = n x T matrix of log M_is).
 #' @noRd
 distal_records <- function(log_f, a, pwx) {
   row_max <- apply(log_f, 1L, max)
@@ -64,10 +60,10 @@ distal_loglik <- function(logM, w.is) {
 #'   column-major (index (c - 1) * T + t), with z holding categories 1..C.
 #'   Its unit score is 1(z_i = c) - pi_tc (the gradient in the softmax
 #'   parameterization, as used throughout); the Hessian is obtained from the
-#'   Jacobian of the estimating equation instead (distal_multinomial_jacobian).
+#'   Jacobian of the estimating equation (distal_multinomial_jacobian).
 #'
-#' @return list(G = list of P matrices (N x T), G[[p]][i, t] =
-#'   d log f(z_i | t) / d theta_p; D2 = function(p, q) returning the N x T
+#' @return list(G = list of P matrices (n x T), G[[p]][i, t] =
+#'   d log f(z_i | t) / d theta_p; D2 = function(p, q) returning the n x T
 #'   matrix of second derivatives, or NULL for multinomial).
 #' @noRd
 distal_unit_derivs <- function(theta, z, iT, family, C = NULL) {
@@ -124,13 +120,13 @@ distal_unit_derivs <- function(theta, z, iT, family, C = NULL) {
   list(G = G, D2 = D2)
 }
 
-#' Case-wise score (N x P): sum_t lambda_it G^p_it
+#' Case-wise score (n x P): sum_t lambda_it G^p_it
 #' @noRd
 distal_score <- function(lambda, G) {
   vapply(G, function(g) rowSums(lambda * g), numeric(nrow(lambda)))
 }
 
-#' K^p_is = sum_t R_ist G^p_it for every assigned class s (list of N x P)
+#' K^p_is = sum_t R_ist G^p_it for every assigned class s (list of n x P)
 #' @noRd
 distal_record_scores <- function(R, G) {
   lapply(R, function(Rs) distal_score(Rs, G))
@@ -180,10 +176,13 @@ distal_multinomial_jacobian <- function(pi_hat, rec, w.is, Y_cat) {
       next
     }
     R1 <- colSums(lambda[idx_i, , drop = FALSE])
-    R2 <- Reduce(`+`, lapply(seq_along(rec$R), function(s) {
-      Rs <- rec$R[[s]][idx_i, , drop = FALSE]
-      crossprod(Rs, Rs * w.is[idx_i, s])
-    }))
+    R2 <- Reduce(
+      `+`,
+      lapply(seq_along(rec$R), function(s) {
+        Rs <- rec$R[[s]][idx_i, , drop = FALSE]
+        crossprod(Rs, Rs * w.is[idx_i, s])
+      })
+    )
     for (tprime in seq_len(iT)) {
       col_idx <- (cprime - 1L) * iT + tprime
       denom <- pmax(pi_hat[tprime, cprime], 1e-300)
@@ -211,7 +210,7 @@ distal_multinomial_jacobian <- function(pi_hat, rec, w.is, Y_cat) {
 #' For gamma_(l, q) of a_it = P(X = t | Zp_i) (multinomial logit, class l + 1
 #' against the reference) the prior's own derivative cancels:
 #'   C[p, (l, q)] = sum_i z_iq sum_s w_is R_is,l+1 (G^p_i,l+1 - K^p_is).
-#' @return list(C1 = P x T(T-1) matrix, C_mat = P x Q(T-1) matrix or NULL).
+#' @return list(C1 = P x T(T-1) matrix, C_mat = P x (Q+1)(T-1) matrix or NULL).
 #' @noRd
 distal_cross_derivs <- function(rec, w.is, pwx, G, Z_mat = NULL) {
   iT <- ncol(pwx)
@@ -220,7 +219,11 @@ distal_cross_derivs <- function(rec, w.is, pwx, G, Z_mat = NULL) {
   K <- distal_record_scores(rec$R, G)
   resid_s <- function(s, t) {
     # N x P matrix of G^p_it - K^p_is
-    vapply(seq_len(P), function(p) G[[p]][, t] - K[[s]][, p], numeric(nrow(w.is)))
+    vapply(
+      seq_len(P),
+      function(p) G[[p]][, t] - K[[s]][, p],
+      numeric(nrow(w.is))
+    )
   }
 
   C1 <- matrix(0, P, iT * (iT - 1L))

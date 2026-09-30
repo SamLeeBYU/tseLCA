@@ -25,7 +25,7 @@
 #' @param control Estimation settings; default: those of `object`. See
 #'   [tse_control()].
 #'
-#' @return A `tseLCA_classify` object with components `posteriors` (N x T),
+#' @return A `tseLCA_classify` object with components `posteriors` (n x T),
 #'   `classifications` (modal classes), `weights` (the assignment weights
 #'   \eqn{P(W = s \mid Y_i)}), `D` (the T x T classification-error matrix),
 #'   `entropy.R2` (computed from these posteriors), and `data`. Pass it to

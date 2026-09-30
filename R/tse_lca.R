@@ -16,8 +16,8 @@
 #'
 #' @details
 #' The number of classes is chosen from the measurement model alone, before
-#' any structural variables are considered, typically by the BIC together
-#' with interpretability and class separation; see Nylund, Asparouhov, and
+#' any structural variables are considered, typically by the BIC, the
+#' interpretability of the classes, and their separation; see Nylund, Asparouhov, and
 #' \enc{Muthén}{Muthen} (2007) and Masyn (2013). The enumeration table reports, for each
 #' number of classes, the log-likelihood, number of free parameters, AIC,
 #' BIC, sample-size adjusted BIC (SABIC; Sclove 1987), entropy R\eqn{^2}, and
@@ -132,16 +132,16 @@ tse_lca <- function(
   rec <- .recode_indicators(data, Y.names)
   dat <- .prepare_data(rec$data, Y.names, NULL, NULL, "gaussian", opts, rec$levels)
 
-  fit_one <- function(K) {
-    fit <- if (K == 1L) {
+  fit_one <- function(iT) {
+    fit <- if (iT == 1L) {
       .fit_independence(dat)
     } else {
-      s1 <- .fit_step1(rec$data, Y.names, K, NULL, NULL, 1L, opts, Y.levels = rec$levels)
+      s1 <- .fit_step1(rec$data, Y.names, iT, NULL, NULL, 1L, opts, Y.levels = rec$levels)
       s1 <- .attach_step1_data(s1, dat, 1L, fitted_here = TRUE)
-      .new_measurement_fit(s1, dat, K)
+      .new_measurement_fit(s1, dat, iT)
     }
     cl_k <- cl
-    cl_k$nclass <- K
+    cl_k$nclass <- iT
     fit$call <- cl_k
     fit$formula <- formula
     fit$missing <- missing
@@ -367,7 +367,7 @@ plot.tseLCA_select <- function(x, which = c("AIC", "BIC", "SABIC"), ...) {
 #' @param object A `tseLCA_measurement` object.
 #' @param newdata Optional data frame with the indicator columns. Omitted:
 #'   the estimation sample.
-#' @param type `"posterior"` (default) for an N x T matrix of probabilities,
+#' @param type `"posterior"` (default) for an n x T matrix of probabilities,
 #'   or `"class"` for the modal class of each row.
 #' @param ... Unused.
 #' @return A matrix (`type = "posterior"`) or integer vector (`"class"`).
@@ -417,7 +417,7 @@ formula.tseLCA <- function(x, ...) {
 #' Use a measurement model with given parameters (Step 1)
 #'
 #' Creates a measurement model from given class sizes and item-response
-#' probabilities, evaluated on `data`, instead of estimating it. This allows
+#' probabilities, evaluated on `data`, without estimating it. This allows
 #' Steps 2 and 3 to be based on a measurement model estimated elsewhere: in
 #' another program, reported in a publication, or saved from an earlier
 #' analysis.
@@ -472,17 +472,17 @@ as_tse_lca <- function(
   ivItemcat <- dat$ivItemcat
 
   pi_t <- as.numeric(class_sizes)
-  K <- length(pi_t)
-  if (K < 2L || anyNA(pi_t) || any(pi_t <= 0)) {
+  iT <- length(pi_t)
+  if (iT < 2L || anyNA(pi_t) || any(pi_t <= 0)) {
     stop("`class_sizes` must be two or more positive proportions.", call. = FALSE)
   }
   pi_t <- pi_t / sum(pi_t)
   phi <- as.matrix(item_probs)
   n_rows <- sum(ifelse(ivItemcat == 2L, 1L, ivItemcat))
-  if (!identical(dim(phi), c(n_rows, K))) {
+  if (!identical(dim(phi), c(n_rows, iT))) {
     stop(sprintf(
       "`item_probs` must be a %d x %d matrix (item rows as in item_probs(), one column per class).",
-      n_rows, K
+      n_rows, iT
     ), call. = FALSE)
   }
   if (anyNA(phi) || any(phi <= 0 | phi >= 1)) {
@@ -499,14 +499,14 @@ as_tse_lca <- function(
   labels <- unlist(lapply(seq_along(ivItemcat), function(h) {
     if (ivItemcat[h] == 2L) Y.names[h] else paste0(Y.names[h], ".", seq_len(ivItemcat[h]) - 1L)
   }))
-  dimnames(phi) <- list(sprintf("P(%s|C)", labels), paste0("C", seq_len(K)))
+  dimnames(phi) <- list(sprintf("P(%s|C)", labels), paste0("C", seq_len(iT)))
 
   log_joint <- sweep(log_lik_matrix(dat$Y.obs, full, dat$mDesign), 2L, log(pi_t), "+")
   row_max <- apply(log_joint, 1L, max)
   llik <- sum(row_max + log(rowSums(exp(log_joint - row_max))))
-  npar <- (K - 1L) + K * sum(ivItemcat - 1L)
+  npar <- (iT - 1L) + iT * sum(ivItemcat - 1L)
   fit0 <- list(
-    vPi = matrix(pi_t, K, 1L, dimnames = list(sprintf("P(C%d)", seq_len(K)), "")),
+    vPi = matrix(pi_t, iT, 1L, dimnames = list(sprintf("P(C%d)", seq_len(iT)), "")),
     mPhi = phi,
     LLKSeries = matrix(llik),
     AIC = -2 * llik + 2 * npar,
@@ -515,7 +515,7 @@ as_tse_lca <- function(
   fit0$R2entr <- .entropy_R2(step1_posteriors(dat$Y.obs, dat$mDesign, fit0, ivItemcat))
 
   s1 <- .attach_step1_data(list(fit0 = fit0, fitZ = NULL), dat, 1L, fitted_here = TRUE)
-  fit <- .new_measurement_fit(s1, dat, K)
+  fit <- .new_measurement_fit(s1, dat, iT)
   fit$call <- cl
   fit$formula <- formula
   fit$missing <- missing

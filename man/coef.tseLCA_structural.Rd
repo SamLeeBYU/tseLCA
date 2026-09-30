@@ -25,7 +25,7 @@ then distal coefficients), \code{"covariate"}, or \code{"distal"}.}
 estimates used to initialize Step 3; covariate models only).}
 
 \item{matrix}{Logical. If \code{TRUE}, return the coefficients in their natural
-matrix layout instead: Q x (T-1) for covariate models, T x C for
+matrix layout: (Q+1) x (T-1) for covariate models, T x C for
 multinomial distal outcomes, a list of both for \code{tseLCA_both}.}
 
 \item{...}{Further arguments (currently unused).}

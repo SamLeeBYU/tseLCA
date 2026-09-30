@@ -35,8 +35,8 @@
 #' @param se Standard errors: `"corrected"` or `"robust"` (see Details).
 #' @param ref Reference class of the multinomial logit: a class number or
 #'   label such as `"C2"`.
-#' @param start Optional starting values: a Q x (T-1) coefficient matrix
-#'   (Q design columns, T classes). By default, the two-step estimates
+#' @param start Optional starting values: a (Q+1) x (T-1) coefficient matrix
+#'   (Q covariates plus the intercept, T classes). By default, the two-step estimates
 #'   (Bakk and Kuha 2018) are used.
 #' @param control Estimation settings; default: those of the measurement
 #'   model. See [tse_control()].
@@ -100,16 +100,16 @@ tse_covariate <- function(
   formula <- .covariate_formula(formula, NULL, TRUE)
   object <- .with_data(object, data)
   setup <- .structural_setup(object, formula, NULL, "gaussian", ref, method, se, control)
-  K <- object$n_classes
+  iT <- object$n_classes
   opts <- setup$opts
   s1 <- setup$s1
   Q <- ncol(setup$dat$Z_mat)
 
   if (!is.null(start)) {
-    if (!is.matrix(start) || !identical(dim(start), c(Q, K - 1L))) {
+    if (!is.matrix(start) || !identical(dim(start), c(Q, iT - 1L))) {
       stop(sprintf(
         "`start` must be a %d x %d matrix (design columns x non-reference classes).",
-        Q, K - 1L
+        Q, iT - 1L
       ), call. = FALSE)
     }
     opts$gamma_start <- start
@@ -120,7 +120,7 @@ tse_covariate <- function(
     opts$use.two.step <- FALSE
   }
 
-  res <- .fit_covariate(setup$dat, s1, setup$s2, setup$Sigma.1, K, opts)
+  res <- .fit_covariate(setup$dat, s1, setup$s2, setup$Sigma.1, iT, opts)
   .finish_structural(res$fit, cl, setup, method, se, object, formula = formula)
 }
 
@@ -275,7 +275,7 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   formula <- .covariate_formula(formula, NULL, TRUE)
   classify <- tse_classify(object, control = control)
   setup <- .structural_setup(classify, formula, NULL, "gaussian", ref, "ML", "robust", control)
-  K <- object$n_classes
+  iT <- object$n_classes
   s1 <- setup$s1
   dat <- setup$dat
   fz <- .two_step_start(setup, formula, ref)
@@ -294,7 +294,7 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   Y_cc <- dat$Y.obs[rows, , drop = FALSE]
   mDes_cc <- if (!is.null(dat$mDesign)) dat$mDesign[rows, , drop = FALSE] else NULL
   llik <- joint_log_lik(Y_cc, dat$Z_mat, expand_Phi(s1$fit0$mPhi, dat$ivItemcat), est, mDes_cc)
-  k <- K * sum(dat$ivItemcat - 1L) + ncol(dat$Z_mat) * (K - 1L)
+  k <- iT * sum(dat$ivItemcat - 1L) + ncol(dat$Z_mat) * (iT - 1L)
   fit <- structure(
     list(
       measurement_model = s1,
@@ -305,7 +305,7 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
       BIC = -2 * llik + k * log(nrow(Y_cc)),
       npar = k,
       nobs = nrow(Y_cc),
-      n_classes = K,
+      n_classes = iT,
       estimator = "two-step",
       posteriors = classify$posteriors,
       classifications = classify$classifications
@@ -361,10 +361,10 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
 #' @noRd
 .structural_setup <- function(classify, Zp.formula, Zo.name, family, ref, method, se, control) {
   s1 <- classify$measurement_model
-  K <- classify$n_classes
+  iT <- classify$n_classes
   if (is.null(control)) control <- classify$control
   if (is.null(control)) control <- tse_control()
-  ref_idx <- parse_rebase(ref, K)
+  ref_idx <- parse_rebase(ref, iT)
   opts <- .opts_from_control(
     control,
     incomplete = classify$missing == "fiml",
@@ -389,17 +389,17 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   if (ref_idx != 1L) {
     s1$fit0 <- permute_fit0_classes(s1$fit0, ref_idx)
     s1$ref_idx <- ref_idx
-    s2 <- .step2(dat, s1$fit0, K, opts)
+    s2 <- .step2(dat, s1$fit0, iT, opts)
   } else {
     s2 <- list(
       all = classify$step2,
-      cov = if (!is.null(dat$Z_mat)) .subset_step2(classify$step2, dat$keep_step3_Z_in_Y, dat, K),
-      dis = if (!is.null(dat$Zo_mat)) .subset_step2(classify$step2, dat$keep_step3_Zo_in_Y, dat, K)
+      cov = if (!is.null(dat$Z_mat)) .subset_step2(classify$step2, dat$keep_step3_Z_in_Y, dat, iT),
+      dis = if (!is.null(dat$Zo_mat)) .subset_step2(classify$step2, dat$keep_step3_Zo_in_Y, dat, iT)
     )
   }
   if (method == "none") {
-    if (!is.null(s2$cov)) s2$cov$p.wx_mat <- diag(K)
-    if (!is.null(s2$dis)) s2$dis$p.wx_mat <- diag(K)
+    if (!is.null(s2$cov)) s2$cov$p.wx_mat <- diag(iT)
+    if (!is.null(s2$dis)) s2$dis$p.wx_mat <- diag(iT)
   }
   Sigma.1 <- if (opts$use.simple.cov || opts$use.bch) {
     NULL
@@ -410,7 +410,7 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
   if (se_fallback) {
     warning(
       "The Step-1 information matrix is singular, so the standard errors cannot be ",
-      "corrected for the Step-1 uncertainty; robust standard errors are reported instead.",
+      "corrected for the Step-1 uncertainty; robust standard errors are reported.",
       call. = FALSE
     )
     Sigma.1 <- NULL
@@ -501,22 +501,22 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
 
 #' Change the reference class of multinomial logit coefficients
 #'
-#' `est` is Q x (K-1) with class 1 as the reference and `V` the variance of
+#' `est` is (Q+1) x (T-1) with class 1 as the reference and `V` the variance of
 #' `vec(est)`. Returns the coefficients against class `ref` (columns: the
 #' other classes in their original order) and the transformed variance.
 #' @noRd
 .rebase_logit <- function(est, V, ref) {
-  K <- ncol(est) + 1L
+  iT <- ncol(est) + 1L
   Q <- nrow(est)
-  M <- matrix(0, K - 1L, K - 1L) # new non-reference classes x old classes 2..K
-  for (i in seq_len(K - 1L)) {
-    t <- seq_len(K)[-ref][i]
+  M <- matrix(0, iT - 1L, iT - 1L) # new non-reference classes x old classes 2..iT
+  for (i in seq_len(iT - 1L)) {
+    t <- seq_len(iT)[-ref][i]
     if (t != 1L) M[i, t - 1L] <- 1
     if (ref != 1L) M[i, ref - 1L] <- -1
   }
   A <- kronecker(M, diag(Q))
-  new <- matrix(A %*% as.vector(est), Q, K - 1L,
-                dimnames = list(rownames(est), paste0("C", seq_len(K)[-ref])))
+  new <- matrix(A %*% as.vector(est), Q, iT - 1L,
+                dimnames = list(rownames(est), paste0("C", seq_len(iT)[-ref])))
   list(mGamma = new, vcov = A %*% V %*% t(A))
 }
 
@@ -527,13 +527,13 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
 #' the class-specific distal parameters, and their variance, back in the
 #' original class order, so that `C<t>` means class t as everywhere else.
 #' @noRd
-.distal_original_order <- function(dis, ref_idx, K) {
+.distal_original_order <- function(dis, ref_idx, iT) {
   if (ref_idx == 1L) {
     return(dis)
   }
-  back <- match(seq_len(K), c(ref_idx, seq_len(K)[-ref_idx]))
+  back <- match(seq_len(iT), c(ref_idx, seq_len(iT)[-ref_idx]))
   if (is.matrix(dis$three_step)) { # multinomial: classes x categories
-    idx <- as.vector(outer(back, (seq_len(ncol(dis$three_step)) - 1L) * K, "+"))
+    idx <- as.vector(outer(back, (seq_len(ncol(dis$three_step)) - 1L) * iT, "+"))
     dis$three_step[] <- dis$three_step[back, , drop = FALSE]
   } else {
     idx <- back
@@ -627,7 +627,7 @@ tse_twostep <- function(object, formula, ref = 1, se = FALSE, control = NULL) {
 #'
 #' @param object A `tseLCA_covariate` object from [tse_covariate()].
 #' @param newdata Optional data frame with the covariates.
-#' @param type `"prob"` (default) for the N x T probability matrix, or
+#' @param type `"prob"` (default) for the n x T probability matrix, or
 #'   `"class"` for the most likely class.
 #' @param ... Unused.
 #' @return A matrix (rows with missing covariates are `NA`) or integer vector.
