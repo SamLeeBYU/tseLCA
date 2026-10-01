@@ -10,5 +10,4 @@ tseLCA_output/
 ^CRAN-SUBMISSION$
 R/step1-local-maxima-ex\.R\.txt$
 Rplots.pdf
-gesis_creds.txt
 ^inst/examples$
