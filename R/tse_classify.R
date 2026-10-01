@@ -125,7 +125,7 @@ tse_classify <- function(
   if (!is.null(object$measurement_model$mDesign.exp)) "fiml" else "listwise"
 }
 
-#' T x T matrix D[t, s] = P(W = s | X = t) from the internal pwx[s, t]
+#' T x T matrix `D[t, s]` = P(W = s | X = t) from the internal `pwx[s, t]`
 #' @noRd
 .classification_error_matrix <- function(pwx) {
   iT <- ncol(pwx)

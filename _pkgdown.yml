@@ -13,6 +13,7 @@ reference:
   desc: Estimate the latent classes and choose the number of classes.
   contents:
   - tse_lca
+  - as_tse_lca
   - best_model
   - predict.tseLCA_measurement
   - class_sizes

@@ -19,8 +19,8 @@
 #'
 #' @param log_f n x T matrix of log f(z_i | X = t).
 #' @param a n x T matrix of class priors a_it.
-#' @param pwx T x T classification-error matrix, pwx[s, t] = P(W = s | X = t).
-#' @return list(R = list of T matrices (n x T), R[[s]][i, t] = R_ist;
+#' @param pwx T x T classification-error matrix, pwx\[s, t\] = P(W = s | X = t).
+#' @return list(R = list of T matrices (n x T), R\[\[s\]\]\[i, t\] = R_ist;
 #'   logM = n x T matrix of log M_is).
 #' @noRd
 distal_records <- function(log_f, a, pwx) {
@@ -62,7 +62,7 @@ distal_loglik <- function(logM, w.is) {
 #'   parameterization, as used throughout); the Hessian is obtained from the
 #'   Jacobian of the estimating equation (distal_multinomial_jacobian).
 #'
-#' @return list(G = list of P matrices (n x T), G[[p]][i, t] =
+#' @return list(G = list of P matrices (n x T), G\[\[p\]\]\[i, t\] =
 #'   d log f(z_i | t) / d theta_p; D2 = function(p, q) returning the n x T
 #'   matrix of second derivatives, or NULL for multinomial).
 #' @noRd
@@ -159,7 +159,7 @@ distal_neg_hessian <- function(rec, w.is, derivs) {
 #' Psi_(t,c) = sum_i lambda_it (1(z_i = c) - pi_tc), differentiated with
 #' respect to pi_(t',c'):
 #'   (1(c = c') - pi_tc) / pi_t'c' *
-#'     [1(t = t') sum_{i: z_i = c'} lambda_it
+#'     \[1(t = t') sum_{i: z_i = c'} lambda_it
 #'      - sum_{i: z_i = c'} sum_s w_is R_ist R_ist']
 #'   - 1(t = t', c = c') sum_i lambda_it.
 #' @noRd
@@ -205,11 +205,11 @@ distal_multinomial_jacobian <- function(pi_hat, rec, w.is, Y_cat) {
 #' coefficients of the class prior (Step-2 term)
 #'
 #' theta2 are the off-diagonal log-ratios of pwx (column softmax), ordered
-#' t0 then s0 != t0. With c_s = 1(s = s0) - pwx[s0, t0]:
-#'   C1[p, (s0, t0)] = sum_i sum_s w_is c_s R_ist0 (G^p_it0 - K^p_is).
+#' t0 then s0 != t0. With c_s = 1(s = s0) - pwx\[s0, t0\]:
+#'   C1\[p, (s0, t0)\] = sum_i sum_s w_is c_s R_ist0 (G^p_it0 - K^p_is).
 #' For gamma_(l, q) of a_it = P(X = t | Zp_i) (multinomial logit, class l + 1
 #' against the reference) the prior's own derivative cancels:
-#'   C[p, (l, q)] = sum_i z_iq sum_s w_is R_is,l+1 (G^p_i,l+1 - K^p_is).
+#'   C\[p, (l, q)\] = sum_i z_iq sum_s w_is R_is,l+1 (G^p_i,l+1 - K^p_is).
 #' @return list(C1 = P x T(T-1) matrix, C_mat = P x (Q+1)(T-1) matrix or NULL).
 #' @noRd
 distal_cross_derivs <- function(rec, w.is, pwx, G, Z_mat = NULL) {

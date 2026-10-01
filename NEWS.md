@@ -1,4 +1,4 @@
-# tseLCA 2.0.0 (development)
+# tseLCA 2.0.0
 
 ## Step-wise interface
 

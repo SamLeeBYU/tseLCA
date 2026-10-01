@@ -122,7 +122,7 @@
 #' One-line reminder printed after a multinomial distal-outcome table
 #'
 #' Standard errors are on the probability scale, the per-cell z test is
-#' against 0 (rarely of interest), and a symmetric interval can leave [0, 1];
+#' against 0 (rarely of interest), and a symmetric interval can extend below 0 or above 1;
 #' omnibus_test() gives the intended test of whether the distribution differs
 #' across classes.
 #' @noRd

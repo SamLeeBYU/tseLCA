@@ -1,16 +1,20 @@
+## Submission
+
+This is a major release (2.0.0) of tseLCA, which is currently on CRAN as
+1.1.1. The package now provides a step-wise interface with a formula interface
+and S3 classes and methods for each step (`tse_lca()`, `tse_classify()`,
+`tse_covariate()`, `tse_distal()`, `tse_twostep()`, and the one-call
+`tseLCA()`). The 1.x function `three_step()` is kept as a deprecated wrapper.
+Several estimation bugs are fixed; see NEWS.md.
+
 ## Test environments
-* local machine (Windows, WSL2), R 4.6.1
-* win-builder R-devel (x86_64-w64-mingw32, 2026-09-15 r90540)
+
+* local: Windows 11, R 4.5.1
 
 ## R CMD check results
+
 0 errors | 0 warnings | 0 notes
 
 ## Downstream dependencies
-There are no downstream dependencies for this package.
 
-## Resubmission
-
-This is a resubmission of 1.1.0 as 1.1.1. The only change is a correction to
-`Authors@R`: Jay Goodliffe's role is updated from contributor (`"ctb"`) to
-author and copyright holder (`c("aut", "cph")`), reflecting his contribution
-to the package. No code, documentation content, or behavior changes.
+There are no reverse dependencies on CRAN.
