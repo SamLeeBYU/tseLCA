@@ -31,5 +31,5 @@ X  <- draw_classes_given_Zp(Zp, bk2018_params$covariate_params)
 table(X) # Should be roughly uniform
 #> X
 #>   1   2   3 
-#> 294 341 365 
+#> 299 333 368 
 ```

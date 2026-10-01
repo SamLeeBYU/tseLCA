@@ -4,14 +4,14 @@ A thin wrapper around multilevLCA's deterministic initialization path.
 [`multilevLCA::multiLCA()`](https://rdrr.io/pkg/multilevLCA/man/multiLCA.html)'s
 default Step-1 initialization (k-means on principal components) is
 deterministic given the data and, on some datasets, converges to a local
-rather than global optimum of the Step-1 log-likelihood. If you have
-already found a better solution with an external solver run with many
-random starts (e.g. StepMix, poLCA, or similar), this function lets you
-inject that classification directly: it writes `startval` into a
-temporary column of `data` and calls
+optimum of the Step-1 log-likelihood. If you have already found a better
+solution with an external solver run with many random starts (e.g.
+StepMix, poLCA, or similar), this function lets you inject that
+classification directly: it writes `startval` into a temporary column of
+`data` and calls
 `multiLCA(..., startval = <that column>, kmea = FALSE)`, which skips
-k-means entirely and initializes the EM algorithm from the supplied
-classification instead.
+k-means and initializes the EM algorithm from the supplied
+classification.
 
 ## Usage
 
@@ -60,7 +60,7 @@ lca_step1_startval(
 
   :   A conditional item-response probability matrix \\P(Y_h = k \mid X
       = t)\\ with one row per (item, category) pair – items in `Y.names`
-      order, categories `0..K_h-1` within each item, matching the column
+      order, categories `0..R_k-1` within each item, matching the column
       order of `expand_Y(data[, Y.names], ivItemcat)` – and one column
       per class. A per-row classification is derived internally by
       naive-Bayes argmax under a flat class prior (see
@@ -75,7 +75,7 @@ lca_step1_startval(
   `iter.measurement`/`R2.threshold` restart logic, which applies only to
   multilevLCA's own k-means initialization, and its `n_init` argument,
   which does run unconditional random restarts but from independent
-  random classifications rather than a single fixed one).
+  random classifications, not a single fixed one).
 
 - maxIter.measurement:
 
@@ -121,10 +121,16 @@ Most users should not need to call this function directly. Pass
 [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
 (for structural estimation) or
 [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md)
-(for a measurement-only fit) instead – both implement the same mechanism
-and return the fitted measurement model as `$measurement_model$fit0` /
+(for a measurement-only fit) – both implement the same mechanism and
+return the fitted measurement model as `$measurement_model$fit0` /
 `$fit0` respectively. This function is documented mainly to describe
 what `startval` accepts and how it is used internally.
+
+## Deprecated
+
+Deprecated as of tseLCA 2.0.0: use
+[`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md).
+It keeps working and warns once per session when called directly.
 
 ## Examples
 
@@ -133,7 +139,7 @@ what `startval` accepts and how it is used internally.
 d <- generate_data(200, "high", "covariate", seed = 1)
 
 # Recommended: pass `startval` to three_step() (or lca_step1() for a
-# measurement-only fit) rather than calling this function directly --
+# measurement-only fit); do not call this function directly --
 # both use this same mechanism internally.
 
 # A starting classification from an external solver (here, the DGP's own

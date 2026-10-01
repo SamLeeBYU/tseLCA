@@ -7,9 +7,7 @@ family = &quot;gaussian&quot;, log-rates for &quot;poisson&quot;, logits for
 &quot;multinomial&quot;) – using a generalized Wald test with
 vcov(). This answers whether the outcome's distribution is
 associated with class membership at all, before drilling into which
-classes differ (a natural next step – not yet implemented in
-tseLCA – is pairwise post-hoc comparisons with multiplicity
-correction). The degrees of freedom equal the rank of the contrast
+classes differ. The degrees of freedom equal the rank of the contrast
 covariance (T - 1 for scalar outcomes; (T - 1) * (C - 1) for
 multinomial, i.e. the textbook chi-squared test of homogeneity in a
 \(T \times C\) table), computed with a Moore-Penrose pseudo-inverse so
@@ -22,9 +20,7 @@ family = &quot;gaussian&quot;, log-rates for &quot;poisson&quot;, logits for
 &quot;multinomial&quot;) – using a generalized Wald test with
 vcov(). This answers whether the outcome's distribution is
 associated with class membership at all, before drilling into which
-classes differ (a natural next step – not yet implemented in
-tseLCA – is pairwise post-hoc comparisons with multiplicity
-correction). The degrees of freedom equal the rank of the contrast
+classes differ. The degrees of freedom equal the rank of the contrast
 covariance (T - 1 for scalar outcomes; (T - 1) * (C - 1) for
 multinomial, i.e. the textbook chi-squared test of homogeneity in a
 \(T \times C\) table), computed with a Moore-Penrose pseudo-inverse so
@@ -37,7 +33,7 @@ covariance (each class's category probabilities sum to 1)."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,7 +59,7 @@ covariance (each class's category probabilities sum to 1)."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Omnibus Wald test of class equality for a distal outcome</h1>
-      <small class="dont-index">Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/R/three_step.R" class="external-link"><code>R/three_step.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/R/methods-tseLCA.R" class="external-link"><code>R/methods-tseLCA.R</code></a></small>
       <div class="d-none name"><code>omnibus_test.Rd</code></div>
     </div>
 
@@ -76,9 +72,7 @@ the class-specific distal parameters \(\theta_t\) (class means for
 <code>"multinomial"</code>) – using a generalized Wald test with
 <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>. This answers whether the outcome's distribution is
 associated with class membership at all, before drilling into which
-classes differ (a natural next step – not yet implemented in
-<span class="pkg">tseLCA</span> – is pairwise post-hoc comparisons with multiplicity
-correction). The degrees of freedom equal the rank of the contrast
+classes differ. The degrees of freedom equal the rank of the contrast
 covariance (<code>T - 1</code> for scalar outcomes; <code>(T - 1) * (C - 1)</code> for
 multinomial, i.e. the textbook chi-squared test of homogeneity in a
 \(T \times C\) table), computed with a Moore-Penrose pseudo-inverse so
@@ -94,10 +88,7 @@ covariance (each class's category probabilities sum to 1).</p>
 <span><span class="fu">omnibus_test</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'tseLCA_both'</span></span>
-<span><span class="fu">omnibus_test</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># S3 method for class 'tseLCA_omnibus'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">x</span>, digits <span class="op">=</span> <span class="fl">4</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">omnibus_test</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -106,26 +97,18 @@ covariance (each class's category probabilities sum to 1).</p>
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
 <dd><p>A <code>tseLCA_distal</code> object, or a <code>tseLCA_both</code>
-object (tests its <code>$distal</code> component).</p></dd>
+object (tests its distal component).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Unused; present for S3 method consistency.</p></dd>
 
-
-<dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A <code>tseLCA_omnibus</code> object.</p></dd>
-
-
-<dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
-<dd><p>Integer. Number of decimal places for the test statistic.</p></dd>
-
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of class <code>"tseLCA_omnibus"</code>: a list with
-<code>$statistic</code> (the Wald chi-squared statistic), <code>$df</code>, and
-<code>$p.value</code>.</p>
+    <p>A standard <code>"htest"</code> object: the Wald chi-squared
+<code>$statistic</code>, its degrees of freedom <code>$parameter</code> (also
+<code>$df</code>), and the <code>$p.value</code>.</p>
     </div>
 
     <div class="section level2">
@@ -135,9 +118,12 @@ object (tests its <code>$distal</code> component).</p></dd>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="three_step.html">three_step</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>, n_classes <span class="op">=</span> <span class="fl">3</span>,</span></span>
 <span class="r-in"><span>                  Zo.name <span class="op">=</span> <span class="st">"Zo"</span>, use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">omnibus_test</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Omnibus Wald test of class equality (distal outcome)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Family: gaussian   Classes: 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   W(2) = 196.5943, p &lt; 0.001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 	Wald test of equal distal outcome distributions across latent classes</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> data:  gaussian distal outcome, 3 classes</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> W = 168.99, df = 2, p-value &lt; 2.2e-16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
@@ -146,7 +132,7 @@ object (tests its <code>$distal</code> component).</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

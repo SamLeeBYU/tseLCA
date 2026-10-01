@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,7 +36,155 @@
     </div>
 
     <div class="section level2">
-      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
+      <h2 id="one-call-interface">One-call interface<a class="anchor" aria-label="anchor" href="#one-call-interface"></a></h2>
+
+      <div class="section-desc"><p>Fit a complete three-step model from one formula.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="tseLCA.html">tseLCA()</a></code>
+
+        </dt>
+        <dd>Three-step latent class analysis in one call</dd>
+
+        <dt>
+
+          <code><a href="measurement.html">measurement()</a></code> <code><a href="measurement.html">classification()</a></code> <code><a href="measurement.html">covariate()</a></code> <code><a href="measurement.html">distal()</a></code>
+
+        </dt>
+        <dd>Components of a fitted tseLCA model</dd>
+      </dl></div><div class="section level2">
+      <h2 id="step-measurement-model">Step 1: measurement model<a class="anchor" aria-label="anchor" href="#step-measurement-model"></a></h2>
+
+      <div class="section-desc"><p>Estimate the latent classes and choose the number of classes.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="tse_lca.html">tse_lca()</a></code>
+
+        </dt>
+        <dd>Fit a latent class measurement model (Step 1)</dd>
+
+        <dt>
+
+          <code><a href="as_tse_lca.html">as_tse_lca()</a></code>
+
+        </dt>
+        <dd>Use a measurement model with given parameters (Step 1)</dd>
+
+        <dt>
+
+          <code><a href="best_model.html">best_model()</a></code> <code><a href="best_model.html">`[[`(<i>&lt;tseLCA_select&gt;</i>)</a></code> <code><a href="best_model.html">as.data.frame(<i>&lt;tseLCA_select&gt;</i>)</a></code> <code><a href="best_model.html">print(<i>&lt;tseLCA_select&gt;</i>)</a></code> <code><a href="best_model.html">plot(<i>&lt;tseLCA_select&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Class enumeration results</dd>
+
+        <dt>
+
+          <code><a href="predict.tseLCA_measurement.html">predict(<i>&lt;tseLCA_measurement&gt;</i>)</a></code> <code><a href="predict.tseLCA_measurement.html">fitted(<i>&lt;tseLCA_measurement&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Class membership predictions from a measurement model</dd>
+
+        <dt>
+
+          <code><a href="class_sizes.html">class_sizes()</a></code> <code><a href="class_sizes.html">item_probs()</a></code>
+
+        </dt>
+        <dd>Class sizes and item-response probabilities of the measurement model</dd>
+      </dl></div><div class="section level2">
+      <h2 id="step-classification">Step 2: classification<a class="anchor" aria-label="anchor" href="#step-classification"></a></h2>
+
+      <div class="section-desc"><p>Assign observations to classes and estimate the classification error.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="tse_classify.html">tse_classify()</a></code> <code><a href="tse_classify.html">print(<i>&lt;tseLCA_classify&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Assign observations to latent classes (Step 2)</dd>
+
+        <dt>
+
+          <code><a href="posterior.html">posterior()</a></code> <code><a href="posterior.html">classes()</a></code>
+
+        </dt>
+        <dd>Posterior class-membership probabilities and modal class assignments</dd>
+      </dl></div><div class="section level2">
+      <h2 id="step-structural-models">Step 3: structural models<a class="anchor" aria-label="anchor" href="#step-structural-models"></a></h2>
+
+      <div class="section-desc"><p>Relate the classes to covariates and distal outcomes.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="tse_covariate.html">tse_covariate()</a></code>
+
+        </dt>
+        <dd>Relate latent classes to covariates (Step 3)</dd>
+
+        <dt>
+
+          <code><a href="tse_distal.html">tse_distal()</a></code>
+
+        </dt>
+        <dd>Relate latent classes to a distal outcome (Step 3)</dd>
+
+        <dt>
+
+          <code><a href="tse_twostep.html">tse_twostep()</a></code>
+
+        </dt>
+        <dd>Two-step estimates of covariate effects</dd>
+
+        <dt>
+
+          <code><a href="predict.tseLCA_covariate.html">predict(<i>&lt;tseLCA_covariate&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Class-membership probabilities from a covariate model</dd>
+
+        <dt>
+
+          <code><a href="relevel.tseLCA_covariate.html">relevel(<i>&lt;tseLCA_covariate&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Change the reference class of a covariate model</dd>
+
+        <dt>
+
+          <code><a href="anova.tseLCA_covariate.html">anova(<i>&lt;tseLCA_covariate&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Wald tests of covariate terms</dd>
+
+        <dt>
+
+          <code><a href="omnibus_test.html">omnibus_test()</a></code>
+
+        </dt>
+        <dd>Omnibus Wald test of class equality for a distal outcome</dd>
+      </dl></div><div class="section level2">
+      <h2 id="methods-for-fitted-models">Methods for fitted models<a class="anchor" aria-label="anchor" href="#methods-for-fitted-models"></a></h2>
 
 
 
@@ -47,17 +195,84 @@
 
       <dl><dt>
 
+          <code><a href="summary.tseLCA_structural.html">summary(<i>&lt;tseLCA_structural&gt;</i>)</a></code> <code><a href="summary.tseLCA_structural.html">coef(<i>&lt;summary.tseLCA_structural&gt;</i>)</a></code> <code><a href="summary.tseLCA_structural.html">print(<i>&lt;summary.tseLCA_structural&gt;</i>)</a></code> <code><a href="summary.tseLCA_structural.html">print(<i>&lt;tseLCA_structural&gt;</i>)</a></code> <code><a href="summary.tseLCA_structural.html">summary(<i>&lt;tseLCA_measurement&gt;</i>)</a></code> <code><a href="summary.tseLCA_structural.html">print(<i>&lt;summary.tseLCA_measurement&gt;</i>)</a></code> <code><a href="summary.tseLCA_structural.html">print(<i>&lt;tseLCA_measurement&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Summarize a fitted tseLCA model</dd>
+
+        <dt>
+
+          <code><a href="coef.tseLCA_structural.html">coef(<i>&lt;tseLCA_structural&gt;</i>)</a></code> <code><a href="coef.tseLCA_structural.html">coef(<i>&lt;tseLCA_measurement&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Coefficients of a fitted tseLCA model</dd>
+
+        <dt>
+
+          <code><a href="vcov.tseLCA_structural.html">vcov(<i>&lt;tseLCA_structural&gt;</i>)</a></code> <code><a href="vcov.tseLCA_structural.html">vcov(<i>&lt;tseLCA_measurement&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Variance-covariance matrix of a fitted tseLCA model</dd>
+
+        <dt>
+
+          <code><a href="logLik.tseLCA.html">logLik(<i>&lt;tseLCA&gt;</i>)</a></code> <code><a href="logLik.tseLCA.html">nobs(<i>&lt;tseLCA&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Log-likelihood, number of observations, and information criteria</dd>
+
+        <dt>
+
+          <code><a href="plot.tseLCA.html">plot(<i>&lt;tseLCA&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Plot item-response probability profiles for a tseLCA model</dd>
+      </dl></div><div class="section level2">
+      <h2 id="estimation-settings">Estimation settings<a class="anchor" aria-label="anchor" href="#estimation-settings"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="tse_control.html">tse_control()</a></code>
+
+        </dt>
+        <dd>Estimation settings for tseLCA models</dd>
+      </dl></div><div class="section level2">
+      <h2 id="simulation">Simulation<a class="anchor" aria-label="anchor" href="#simulation"></a></h2>
+
+      <div class="section-desc"><p>Data from the design of Bakk and Kuha (2018), used in the simulation study.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="generate_data.html">generate_data()</a></code>
+
+        </dt>
+        <dd>Generate one dataset following the Bakk &amp; Kuha (2018) simulation design</dd>
+
+        <dt>
+
+          <code><a href="generate_all_conditions.html">generate_all_conditions()</a></code>
+
+        </dt>
+        <dd>Generate datasets for all 18 conditions in the simulation design</dd>
+
+        <dt>
+
           <code><a href="bk2018_params.html">bk2018_params</a></code>
 
         </dt>
         <dd>Default population parameters for the Bakk &amp; Kuha (2018) simulation</dd>
-
-        <dt>
-
-          <code><a href="coef.tseLCA_measurement.html">coef(<i>&lt;tseLCA_measurement&gt;</i>)</a></code> <code><a href="coef.tseLCA_measurement.html">coef(<i>&lt;tseLCA_covariate&gt;</i>)</a></code> <code><a href="coef.tseLCA_measurement.html">coef(<i>&lt;tseLCA_distal&gt;</i>)</a></code> <code><a href="coef.tseLCA_measurement.html">coef(<i>&lt;tseLCA_both&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Extract coefficients from a tseLCA model object</dd>
 
         <dt>
 
@@ -96,41 +311,6 @@
 
         <dt>
 
-          <code><a href="fitZ_from_fit0.html">fitZ_from_fit0()</a></code>
-
-        </dt>
-        <dd>Estimate covariate effects with measurement parameters fixed (two-step EM)</dd>
-
-        <dt>
-
-          <code><a href="fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>
-
-        </dt>
-        <dd>Estimate two-step covariate model with multilevLCA (optional reference path)</dd>
-
-        <dt>
-
-          <code><a href="generate_all_conditions.html">generate_all_conditions()</a></code>
-
-        </dt>
-        <dd>Generate datasets for all 18 conditions in the simulation design</dd>
-
-        <dt>
-
-          <code><a href="generate_data.html">generate_data()</a></code>
-
-        </dt>
-        <dd>Generate one dataset following the Bakk &amp; Kuha (2018) simulation design</dd>
-
-        <dt>
-
-          <code><a href="lca_step1.html">lca_step1()</a></code>
-
-        </dt>
-        <dd>Fit the LCA measurement model (Step 1)</dd>
-
-        <dt>
-
           <code><a href="make_rho.html">make_rho()</a></code>
 
         </dt>
@@ -142,36 +322,17 @@
 
         </dt>
         <dd>Compute multinomial logistic class probabilities given covariates</dd>
+      </dl></div><div class="section level2">
+      <h2 id="deprecated">Deprecated<a class="anchor" aria-label="anchor" href="#deprecated"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>The tseLCA 1.x interface. These functions keep working but will be removed in a future version.</p></div>
 
-          <code><a href="omnibus_test.html">omnibus_test()</a></code> <code><a href="omnibus_test.html">print(<i>&lt;tseLCA_omnibus&gt;</i>)</a></code>
+      <dl></dl></div><div class="section level2">
 
-        </dt>
-        <dd>Omnibus Wald test of class equality for a distal outcome</dd>
 
-        <dt>
 
-          <code><a href="plot.tseLCA_measurement.html">plot(<i>&lt;tseLCA_measurement&gt;</i>)</a></code> <code><a href="plot.tseLCA_measurement.html">plot(<i>&lt;tseLCA_covariate&gt;</i>)</a></code> <code><a href="plot.tseLCA_measurement.html">plot(<i>&lt;tseLCA_distal&gt;</i>)</a></code> <code><a href="plot.tseLCA_measurement.html">plot(<i>&lt;tseLCA_both&gt;</i>)</a></code>
 
-        </dt>
-        <dd>Plot item-response probability profiles for a tseLCA model</dd>
-
-        <dt>
-
-          <code><a href="print.tseLCA_measurement.html">print(<i>&lt;tseLCA_measurement&gt;</i>)</a></code> <code><a href="print.tseLCA_measurement.html">print(<i>&lt;tseLCA_covariate&gt;</i>)</a></code> <code><a href="print.tseLCA_measurement.html">print(<i>&lt;tseLCA_distal&gt;</i>)</a></code> <code><a href="print.tseLCA_measurement.html">print(<i>&lt;tseLCA_both&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a tseLCA model object</dd>
-
-        <dt>
-
-          <code><a href="summary.tseLCA_measurement.html">summary(<i>&lt;tseLCA_measurement&gt;</i>)</a></code> <code><a href="summary.tseLCA_measurement.html">summary(<i>&lt;tseLCA_covariate&gt;</i>)</a></code> <code><a href="summary.tseLCA_measurement.html">summary(<i>&lt;tseLCA_distal&gt;</i>)</a></code> <code><a href="summary.tseLCA_measurement.html">summary(<i>&lt;tseLCA_both&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Summarize a tseLCA model object</dd>
-
-        <dt>
+      <dl><dt>
 
           <code><a href="three_step.html">three_step()</a></code>
 
@@ -180,16 +341,31 @@
 
         <dt>
 
-          <code><a href="vcov.tseLCA_measurement.html">vcov(<i>&lt;tseLCA_measurement&gt;</i>)</a></code> <code><a href="vcov.tseLCA_measurement.html">vcov(<i>&lt;tseLCA_covariate&gt;</i>)</a></code> <code><a href="vcov.tseLCA_measurement.html">vcov(<i>&lt;tseLCA_distal&gt;</i>)</a></code> <code><a href="vcov.tseLCA_measurement.html">vcov(<i>&lt;tseLCA_both&gt;</i>)</a></code>
+          <code><a href="lca_step1.html">lca_step1()</a></code>
 
         </dt>
-        <dd>Extract the variance-covariance matrix from a tseLCA model object</dd>
+        <dd>Fit the LCA measurement model (Step 1)</dd>
+
+        <dt>
+
+          <code><a href="fitZ_from_fit0.html">fitZ_from_fit0()</a></code>
+
+        </dt>
+        <dd>Estimate covariate effects with measurement parameters fixed (two-step EM)</dd>
+
+        <dt>
+
+          <code><a href="fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code>
+
+        </dt>
+        <dd>Estimate two-step covariate model with multilevLCA (optional reference path)</dd>
       </dl></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

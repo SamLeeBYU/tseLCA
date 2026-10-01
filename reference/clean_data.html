@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +50,9 @@
 <span>  Zo.name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  incomplete <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  include.intercept <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  Zp.formula <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  Y.levels <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -67,7 +69,8 @@
 
 
 <dt id="arg-zp-names">Zp.names<a class="anchor" aria-label="anchor" href="#arg-zp-names"></a></dt>
-<dd><p>Character vector of covariate column names, or <code>NULL</code>.</p></dd>
+<dd><p>Character vector of covariate column names, or <code>NULL</code>.
+Ignored when <code>Zp.formula</code> is given.</p></dd>
 
 
 <dt id="arg-zo-name">Zo.name<a class="anchor" aria-label="anchor" href="#arg-zo-name"></a></dt>
@@ -79,11 +82,23 @@
 
 
 <dt id="arg-include-intercept">include.intercept<a class="anchor" aria-label="anchor" href="#arg-include-intercept"></a></dt>
-<dd><p>Logical. Prepend intercept column to Z.</p></dd>
+<dd><p>Logical. Include an intercept in the covariate
+design built from <code>Zp.names</code>.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Logical. Print row-drop messages.</p></dd>
+
+
+<dt id="arg-zp-formula">Zp.formula<a class="anchor" aria-label="anchor" href="#arg-zp-formula"></a></dt>
+<dd><p>One-sided formula for the covariate design (e.g.
+<code>~ age + factor(region)</code>), or <code>NULL</code> to build one from <code>Zp.names</code>.</p></dd>
+
+
+<dt id="arg-y-levels">Y.levels<a class="anchor" aria-label="anchor" href="#arg-y-levels"></a></dt>
+<dd><p>Named list of indicator categories, as returned by
+<code>.recode_indicators()</code>, when <code>data</code> already holds 0-based codes; <code>NULL</code>
+recodes the indicators here.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -92,16 +107,23 @@
 <dd><p>N_Y x K expanded one-hot indicator matrix for Steps 1 &amp; 2.</p></dd>
 
 <dt>mDesign</dt>
-<dd><p>N_Y x K design/mask matrix (all 1s when incomplete = FALSE).</p></dd>
+<dd><p>N_Y x K design/mask matrix (NULL when incomplete = FALSE).</p></dd>
 
 <dt>ivItemcat</dt>
 <dd><p>Integer vector of category counts per item.</p></dd>
 
+<dt>Y.levels</dt>
+<dd><p>Named list of the categories of each item.</p></dd>
+
 <dt>keep_Y</dt>
-<dd><p>Integer indices of rows kept for Steps 1 &amp; 2 (into original N).</p></dd>
+<dd><p>Integer indices of rows kept for Steps 1 &amp; 2 (into original n).</p></dd>
 
 <dt>Z_mat</dt>
-<dd><p>N_Z x Q covariate design matrix, or NULL.</p></dd>
+<dd><p>n_Z x (Q+1) covariate design matrix, or NULL.</p></dd>
+
+<dt>Zp.formula, Z_terms, Z_xlevels</dt>
+<dd><p>The covariate formula, its terms,
+and the factor levels used, or NULL.</p></dd>
 
 <dt>keep_step3_Z_in_Y</dt>
 <dd><p>Positions of Z-complete rows within keep_Y.</p></dd>
@@ -112,6 +134,14 @@
 <dt>keep_step3_Zo_in_Y</dt>
 <dd><p>Positions of Zo-complete rows within keep_Y.</p></dd>
 
+<dt>keep_step3_Zo</dt>
+<dd><p>Indices of Zo-complete rows (into original n).</p></dd>
+
+<dt>keep_step3_Zo_in_Z</dt>
+<dd><p>With covariates, positions of the distal rows
+within the covariate rows (distal rows then also need complete
+covariates); otherwise NULL.</p></dd>
+
 
 </dl></div>
 
@@ -120,7 +150,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -5,21 +5,22 @@
 - **Sam Lee**. Author, maintainer, copyright holder.
   [](https://orcid.org/0009-0007-2977-6661)
 
-- **Jay Goodliffe**. Contributor.
+- **Jay Goodliffe**. Author, copyright holder.
 
 ## Citation
 
 Source:
 [`inst/CITATION`](https://github.com/SamLeeBYU/tseLCA/blob/main/inst/CITATION)
 
-Lee S (2026). *tseLCA: Three-Step Estimation for Latent Class Analysis*.
-R package version 1.1.0, <https://github.com/SamLeeBYU/tseLCA>.
+Lee S, Goodliffe J (2026). *tseLCA: Three-Step Estimation for Latent
+Class Analysis*. R package version 2.0.0,
+<https://github.com/SamLeeBYU/tseLCA>.
 
     @Manual{,
       title = {{tseLCA}: Three-Step Estimation for Latent Class Analysis},
-      author = {Sam Lee},
+      author = {Sam Lee and Jay Goodliffe},
       year = {2026},
-      note = {R package version 1.1.0},
+      note = {R package version 2.0.0},
       url = {https://github.com/SamLeeBYU/tseLCA},
       institution = {University of Arizona},
     }

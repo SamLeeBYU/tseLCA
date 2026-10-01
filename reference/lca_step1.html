@@ -11,7 +11,7 @@ initialization) with fitZ_from_fit0()."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -146,7 +146,7 @@ measurement model: either an integer vector of length <code>nrow(data)</code>
 item-response probabilities from which a classification is derived. See
 <code><a href="lca_step1_startval.html">lca_step1_startval()</a></code> for the full description of both forms. When
 supplied, <code>lca_step1()</code> fits the measurement model with
-<code><a href="lca_step1_startval.html">lca_step1_startval()</a></code> instead of multilevLCA's default
+<code><a href="lca_step1_startval.html">lca_step1_startval()</a></code>, not multilevLCA's default
 k-means-on-principal-components initialization, and <code>estimate.one.step</code>,
 <code>iter.measurement</code>, and <code>R2.threshold</code> (which govern the default
 restart-on-low-entropy behavior) are ignored. Mutually exclusive with
@@ -176,6 +176,13 @@ with <code>startval</code>. Default <code>NULL</code>.</p></dd>
     <p>A list with <code>$fit0</code> (<code><a href="https://rdrr.io/pkg/multilevLCA/man/multiLCA.html" class="external-link">multilevLCA::multiLCA()</a></code> measurement model) and <code>$fitZ</code>
 (two-step covariate model from <code><a href="fitZ_from_fit0.html">fitZ_from_fit0()</a></code>, or <code>NULL</code>).</p>
     </div>
+    <div class="section level2">
+    <h2 id="deprecated">Deprecated<a class="anchor" aria-label="anchor" href="#deprecated"></a></h2>
+
+
+<p>Deprecated as of tseLCA 2.0.0: use <code><a href="tse_lca.html">tse_lca()</a></code>. It keeps
+working and warns once per session when called directly.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -203,9 +210,9 @@ with <code>startval</code>. Default <code>NULL</code>.</p></dd>
 <span class="r-in"><span>                 Zp.names <span class="op">=</span> <span class="st">"Zp"</span>, use.two.step <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> fitZ EM converged in 9 iterations.</span>
 <span class="r-in"><span><span class="va">s1z</span><span class="op">$</span><span class="va">fitZ</span><span class="op">$</span><span class="va">mGamma</span>   <span class="co"># two-step gamma estimates</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  C2         C3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept  1.988800 -3.1317130</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Zp        -1.017498  0.9190021</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    C2         C3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)  1.988800 -3.1317130</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zp          -1.017498  0.9190021</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Many random-classification restarts, keeping the best (analogous to</span></span></span>
 <span class="r-in"><span><span class="co"># n_init in StepMix or nrep in poLCA)</span></span></span>
@@ -220,7 +227,7 @@ with <code>startval</code>. Default <code>NULL</code>.</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

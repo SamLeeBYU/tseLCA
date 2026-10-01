@@ -17,7 +17,9 @@ fitZ_from_fit0(
   include.intercept = TRUE,
   rebase = "C1",
   starting_val = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  Y.levels = NULL,
+  Zp.formula = NULL
 )
 ```
 
@@ -66,11 +68,22 @@ fitZ_from_fit0(
 
 - starting_val:
 
-  Optional Q x (T-1) starting value matrix for `mGamma`.
+  Optional (Q+1) x (T-1) starting value matrix for `mGamma`.
 
 - verbose:
 
   Logical. Print convergence messages. Default `FALSE`.
+
+- Y.levels:
+
+  Optional named list of indicator categories when `data` holds 0-based
+  codes (as stored with a fitted measurement model); `NULL` derives them
+  from `data`.
+
+- Zp.formula:
+
+  Optional one-sided formula for the covariate design; it replaces
+  `Zp.names` and `include.intercept`.
 
 ## Value
 
@@ -78,10 +91,10 @@ A list with the following elements:
 
 - `mGamma`:
 
-  Q x (T-1) numeric matrix of multinomial logit coefficients, where Q is
-  the number of columns in the covariate design matrix (including
-  intercept if `include.intercept = TRUE`). Rows are named by covariate,
-  columns by non-reference class (e.g. `"C2"`, `"C3"`).
+  (Q+1) x (T-1) numeric matrix of multinomial logit coefficients, where
+  Q + 1 is the number of columns in the covariate design matrix
+  (including intercept if `include.intercept = TRUE`). Rows are named by
+  covariate, columns by non-reference class (e.g. `"C2"`, `"C3"`).
 
 - `mPhi`:
 
@@ -109,12 +122,19 @@ A list with the following elements:
   Integer. Number of observations used in estimation after listwise
   deletion on covariates.
 
+## Deprecated
+
+Deprecated as of tseLCA 2.0.0: use
+[`tse_twostep()`](https://samleebyu.github.io/tseLCA/reference/tse_twostep.md).
+It keeps working and warns once per session when called directly.
+
 ## Examples
 
 ``` r
 # \donttest{
 d  <- generate_data(200, "high", "covariate", seed = 1)
 s1 <- lca_step1(d, Y.names = paste0("Y", 1:6), n_classes = 3)
+#> Warning: lca_step1() is deprecated as of tseLCA 2.0.0; use tse_lca(). (Shown once per session; see NEWS for the new interface.)
 
 # Estimate two-step gamma with mPhi fixed at Step-1 values
 fZ <- fitZ_from_fit0(
@@ -124,11 +144,12 @@ fZ <- fitZ_from_fit0(
   Zp.names = "Zp",
   verbose  = TRUE
 )
+#> Warning: fitZ_from_fit0() is deprecated as of tseLCA 2.0.0; use tse_twostep(). (Shown once per session; see NEWS for the new interface.)
 #> fitZ EM converged in 9 iterations.
-fZ$mGamma   # Q x (T-1) coefficient matrix
-#>                  C2         C3
-#> Intercept  1.988800 -3.1317130
-#> Zp        -1.017498  0.9190021
+fZ$mGamma   # (Q+1) x (T-1) coefficient matrix
+#>                    C2         C3
+#> (Intercept)  1.988800 -3.1317130
+#> Zp          -1.017498  0.9190021
 fZ$converged
 #> [1] TRUE
 # }

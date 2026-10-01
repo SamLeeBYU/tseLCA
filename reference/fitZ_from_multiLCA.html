@@ -13,7 +13,7 @@ multilevLCA's corrected standard errors for the two-step gamma estimates."></hea
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -149,7 +149,7 @@ exclusive with <code>startval</code>. Default <code>NULL</code>.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with the following elements:</p><dl><dt><code>mGamma</code></dt>
-<dd><p>Q x (T-1) numeric matrix of multinomial logit
+<dd><p>(Q+1) x (T-1) numeric matrix of multinomial logit
 coefficients. Rows are named by covariate (including <code>"Intercept"</code>),
 columns by non-reference class (e.g. <code>"C2"</code>, <code>"C3"</code>).</p></dd>
 
@@ -174,6 +174,13 @@ available.</p></dd>
 
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="deprecated">Deprecated<a class="anchor" aria-label="anchor" href="#deprecated"></a></h2>
+
+
+<p>Deprecated as of tseLCA 2.0.0: use <code><a href="tse_twostep.html">tse_twostep()</a></code>. It keeps
+working and warns once per session when called directly.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -192,15 +199,16 @@ available.</p></dd>
 <span class="r-in"><span>  iter.measurement    <span class="op">=</span> <span class="fl">10L</span>,</span></span>
 <span class="r-in"><span>  R2.threshold        <span class="op">=</span> <span class="fl">0.70</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>fitZ_from_multiLCA() is deprecated as of tseLCA 2.0.0; use tse_twostep(se = TRUE). (Shown once per session; see NEWS for the new interface.)</span>
 <span class="r-in"><span><span class="va">fZ_ml</span><span class="op">$</span><span class="va">mGamma</span>           <span class="co"># two-step estimates</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  C2         C3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept  1.990672 -3.1319909</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Zp        -1.018352  0.9190157</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    C2         C3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)  1.990672 -3.1319909</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zp          -1.018352  0.9190157</span>
 <span class="r-in"><span><span class="va">fZ_ml</span><span class="op">$</span><span class="va">raw_fit</span><span class="op">$</span><span class="va">Varmat_cor</span>   <span class="co"># multilevLCA corrected vcov</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             [,1]         [,2]         [,3]         [,4]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  0.28553970 -0.119040291  0.051831952 -0.016507545</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -0.11904029  0.065539163 -0.009799449  0.005370232</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,]  0.05183195 -0.009799449  0.613479391 -0.157124127</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,]  0.05183195 -0.009799449  0.613479393 -0.157124127</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [4,] -0.01650754  0.005370232 -0.157124127  0.043473866</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
@@ -210,7 +218,7 @@ available.</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

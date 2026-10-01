@@ -114,9 +114,9 @@ A list with the following elements:
 
 - `mGamma`:
 
-  Q x (T-1) numeric matrix of multinomial logit coefficients. Rows are
-  named by covariate (including `"Intercept"`), columns by non-reference
-  class (e.g. `"C2"`, `"C3"`).
+  (Q+1) x (T-1) numeric matrix of multinomial logit coefficients. Rows
+  are named by covariate (including `"Intercept"`), columns by
+  non-reference class (e.g. `"C2"`, `"C3"`).
 
 - `mPhi`:
 
@@ -142,6 +142,12 @@ A list with the following elements:
   `$SEs_cor_gamma` (corrected standard errors for `mGamma`) if
   available.
 
+## Deprecated
+
+Deprecated as of tseLCA 2.0.0: use
+[`tse_twostep()`](https://samleebyu.github.io/tseLCA/reference/tse_twostep.md).
+It keeps working and warns once per session when called directly.
+
 ## Examples
 
 ``` r
@@ -160,15 +166,16 @@ fZ_ml <- fitZ_from_multiLCA(
   iter.measurement    = 10L,
   R2.threshold        = 0.70
 )
+#> Warning: fitZ_from_multiLCA() is deprecated as of tseLCA 2.0.0; use tse_twostep(se = TRUE). (Shown once per session; see NEWS for the new interface.)
 fZ_ml$mGamma           # two-step estimates
-#>                  C2         C3
-#> Intercept  1.990672 -3.1319909
-#> Zp        -1.018352  0.9190157
+#>                    C2         C3
+#> (Intercept)  1.990672 -3.1319909
+#> Zp          -1.018352  0.9190157
 fZ_ml$raw_fit$Varmat_cor   # multilevLCA corrected vcov
 #>             [,1]         [,2]         [,3]         [,4]
 #> [1,]  0.28553970 -0.119040291  0.051831952 -0.016507545
 #> [2,] -0.11904029  0.065539163 -0.009799449  0.005370232
-#> [3,]  0.05183195 -0.009799449  0.613479391 -0.157124127
+#> [3,]  0.05183195 -0.009799449  0.613479393 -0.157124127
 #> [4,] -0.01650754  0.005370232 -0.157124127  0.043473866
 # }
 ```

@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Three-Step Estimation for Latent Class Analysis">
-<meta name="description" content="Implements BCH (Bolck-Croon-Hagenaars) &lt;doi:10.1093/pan/mph001&gt; and ML (Vermunts maximum likelihood) &lt;doi:10.1093/pan/mpq025&gt; approaches for three-step estimation of latent class models with covariates and distal outcomes, following Bakk, Tekle &amp; Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, Bakk, Oberski &amp; Vermunt (2014) &lt;https://www.jstor.org/stable/24573086&gt;, and Bakk &amp; Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;. Built on multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt; for Step-1 measurement model estimation, this package extends it with support for Gaussian, Poisson, and binomial distal outcome families. Unlike poLCA', which relies on one-step estimation and cannot accommodate a measurement model from a different sample, this package uses a stepwise approach to prevent the structural model from influencing latent class formation. Implements correct sandwich variance estimation that propagates measurement uncertainty from the first-step through classification-error correction in the final step (Bakk, Oberski &amp; Vermunt, 2014). Supports polytomous items and missing data in the measurement model with full information maximum likelihood. A data-generating process replicating the Bakk &amp; Kuha (2018) simulation study is included.">
-<meta property="og:description" content="Implements BCH (Bolck-Croon-Hagenaars) &lt;doi:10.1093/pan/mph001&gt; and ML (Vermunts maximum likelihood) &lt;doi:10.1093/pan/mpq025&gt; approaches for three-step estimation of latent class models with covariates and distal outcomes, following Bakk, Tekle &amp; Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, Bakk, Oberski &amp; Vermunt (2014) &lt;https://www.jstor.org/stable/24573086&gt;, and Bakk &amp; Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;. Built on multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt; for Step-1 measurement model estimation, this package extends it with support for Gaussian, Poisson, and binomial distal outcome families. Unlike poLCA', which relies on one-step estimation and cannot accommodate a measurement model from a different sample, this package uses a stepwise approach to prevent the structural model from influencing latent class formation. Implements correct sandwich variance estimation that propagates measurement uncertainty from the first-step through classification-error correction in the final step (Bakk, Oberski &amp; Vermunt, 2014). Supports polytomous items and missing data in the measurement model with full information maximum likelihood. A data-generating process replicating the Bakk &amp; Kuha (2018) simulation study is included.">
+<meta name="description" content="Bias-adjusted three-step estimation of latent class models with covariates and distal outcomes. The latent class measurement model is estimated first, with multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt;, and held fixed; observations are then classified; and the classes are related to covariates and distal outcomes with the maximum likelihood correction of Vermunt (2010) &lt;doi:10.1093/pan/mpq025&gt; and Bakk, Tekle and Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, or the correction of Bolck, Croon and Hagenaars (2004) &lt;doi:10.1093/pan/mph001&gt;. Standard errors account for the uncertainty of the measurement model (Bakk, Oberski and Vermunt, 2014) &lt;doi:10.1093/pan/mpu003&gt;. Includes class enumeration, modal and proportional class assignment, covariate formulas, Gaussian, Poisson, binomial, and multinomial distal outcomes, the two-step estimator of Bakk and Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;, measurement models applied to new samples, and full-information maximum likelihood for missing indicators, standard methods for fitted models, and a data-generating process replicating the simulation design of Bakk and Kuha (2018).">
+<meta property="og:description" content="Bias-adjusted three-step estimation of latent class models with covariates and distal outcomes. The latent class measurement model is estimated first, with multilevLCA (Lyrvall et al., 2025) &lt;doi:10.1080/00273171.2025.2473935&gt;, and held fixed; observations are then classified; and the classes are related to covariates and distal outcomes with the maximum likelihood correction of Vermunt (2010) &lt;doi:10.1093/pan/mpq025&gt; and Bakk, Tekle and Vermunt (2013) &lt;doi:10.1177/0081175012470644&gt;, or the correction of Bolck, Croon and Hagenaars (2004) &lt;doi:10.1093/pan/mph001&gt;. Standard errors account for the uncertainty of the measurement model (Bakk, Oberski and Vermunt, 2014) &lt;doi:10.1093/pan/mpu003&gt;. Includes class enumeration, modal and proportional class assignment, covariate formulas, Gaussian, Poisson, binomial, and multinomial distal outcomes, the two-step estimator of Bakk and Kuha (2018) &lt;doi:10.1007/s11336-017-9592-7&gt;, measurement models applied to new samples, and full-information maximum likelihood for missing indicators, standard methods for fitted models, and a data-generating process replicating the simulation design of Bakk and Kuha (2018).">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,91 +61,73 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><strong>tseLCA</strong> (<em>Three-Step Estimation for Latent Class Analysis</em>) introduces bias-adjusted three-step estimation for structural latent class models in R. The package provides a comprehensive framework for estimating latent class models with covariates and distal outcomes while preserving the measurement structure established during class formation.</p>
-<p>Building upon the efficient measurement-model estimation procedures implemented in <strong>multilevLCA</strong>, <strong>tseLCA</strong> extends existing functionality through modern three-step estimators, classification-error corrections, and variance estimation procedures that appropriately account for uncertainty from the latent class measurement stage.</p>
+<p><strong>tseLCA</strong> (<em>Three-Step Estimation for Latent Class Analysis</em>) relates latent classes to covariates and distal outcomes by bias-adjusted three-step estimation.</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Measurement model</strong> (<code><a href="reference/tse_lca.html">tse_lca()</a></code>). The latent classes are estimated from the indicators alone, and the number of classes is chosen from a class-enumeration table.</li>
+<li>
+<strong>Classification</strong> (<code><a href="reference/tse_classify.html">tse_classify()</a></code>). Observations are assigned to classes, and the classification error is estimated.</li>
+<li>
+<strong>Structural model</strong> (<code><a href="reference/tse_covariate.html">tse_covariate()</a></code>, <code><a href="reference/tse_distal.html">tse_distal()</a></code>). The classes are related to covariates and/or distal outcomes, with the ML (Vermunt 2010) or BCH (Bolck, Croon &amp; Hagenaars 2004) correction for classification error.</li>
+</ol>
+<p>Because the measurement model is fixed before any structural variable enters, covariates and outcomes cannot change what the classes mean. This is the key difference from one-step estimation (e.g. <strong>poLCA</strong>), where the class solution can shift with every change to the structural model. The standard errors of the structural estimates account for the uncertainty of the measurement model (Bakk, Oberski &amp; Vermunt 2014). Measurement models are estimated with <strong>multilevLCA</strong>.</p>
 </div>
 <div class="section level2">
-<h2 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
-<div class="section level3">
-<h3 id="bias-adjusted-three-step-estimation">Bias-Adjusted Three-step Estimation<a class="anchor" aria-label="anchor" href="#bias-adjusted-three-step-estimation"></a>
-</h3>
-<p><strong>tseLCA</strong> is the first R package to provide a unified implementation of modern bias-adjusted three-step estimators for latent class analysis. In contrast to traditional one-step approaches (implemented by the popular package, <strong>poLCA</strong>), where the inclusion of covariates may alter the underlying latent class definitions, three-step methods preserve the measurement model estimated in the first stage and subsequently adjust for classification error when estimating structural relationships.</p>
-<p>The package implements both BCH- and ML-based three-step estimators with sandwich variance estimators that propagate uncertainty from the measurement model through the classification-error correction process.</p>
-</div>
-<div class="section level3">
-<h3 id="flexible-measurement-and-structural-samples">Flexible Measurement and Structural Samples<a class="anchor" aria-label="anchor" href="#flexible-measurement-and-structural-samples"></a>
-</h3>
-<p>Unlike conventional latent class software that uses a one-step estimation approach, <strong>tseLCA</strong> allows measurement and structural models to be estimated using different datasets. This flexibility enables researchers to calibrate a measurement model on a primary or reference sample and subsequently apply the resulting class definitions to an external dataset.</p>
-</div>
-<div class="section level3">
-<h3 id="support-for-multiple-distal-outcome-types">Support for Multiple Distal Outcome Types<a class="anchor" aria-label="anchor" href="#support-for-multiple-distal-outcome-types"></a>
-</h3>
-<p><strong>tseLCA</strong> provides native support for a broad range of distal outcome distributions, including:</p>
 <ul>
-<li>Continuous outcomes (Gaussian)</li>
-<li>Count outcomes (Poisson)</li>
-<li>Binary outcomes (Bernoulli)</li>
-<li>Nominal categorical outcomes (multinomial).</li>
+<li>Class enumeration with AIC, BIC, SABIC, entropy, and class sizes.</li>
+<li>ML and BCH three-step estimators, with modal or proportional assignment. The uncorrected estimator is also available, for comparison.</li>
+<li>Standard errors corrected for the uncertainty of the measurement model.</li>
+<li>Covariate formulas with factors, interactions, and transformations. Wald tests by term, predicted class probabilities, and any reference class.</li>
+<li>Gaussian, Poisson, binomial, and multinomial distal outcomes, alone or combined with covariates, and an omnibus test of equality across classes.</li>
+<li>Measurement models estimated on one sample and applied to another.</li>
+<li>Indicators as factors, logicals, characters, or numeric codes. Full-information maximum likelihood for missing indicator values.</li>
+<li>Standard R methods throughout: <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>, <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>, <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code>, <code><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik()</a></code>, <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code>, <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code>, <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>, <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>.</li>
 </ul>
-</div>
-<div class="section level3">
-<h3 id="automated-model-optimization">Automated Model Optimization<a class="anchor" aria-label="anchor" href="#automated-model-optimization"></a>
-</h3>
-<p>Latent class estimation is often susceptible to local maxima and convergence to suboptimal solutions. To improve estimation reliability, <strong>tseLCA</strong> incorporates automated diagnostic procedures that monitor model quality during measurement-model estimation.</p>
-</div>
-<div class="section level3">
-<h3 id="missing-data-handling">Missing Data Handling<a class="anchor" aria-label="anchor" href="#missing-data-handling"></a>
-</h3>
-<p>Following a similar approach as <strong>multilevLCA</strong>, <strong>tseLCA</strong> employs Full-Information Maximum Likelihood (FIML) estimation to accommodate partially observed response patterns without discarding incomplete observations.</p>
-</div>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Simply install tseLCA from CRAN.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install tseLCA from CRAN</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tseLCA"</span><span class="op">)</span></span></code></pre></div>
-<p>You can also install the development version of tseLCA from GitHub like so:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install developmental tseLCA from the GitHub repository</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://pak.r-lib.org/" class="external-link">"pak"</a></span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pak"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tseLCA"</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># development version</span></span>
+<span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"SamLeeBYU/tseLCA"</span><span class="op">)</span></span></code></pre></div>
-<p>Then read the introductory vignette on this package’s webpage here: <a href="https://SamLeeBYU.github.io/tseLCA/articles/tseLCA-workflow.html" class="external-link uri">https://SamLeeBYU.github.io/tseLCA/articles/tseLCA-workflow.html</a></p>
 </div>
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
-<p>This is a basic example which shows you how to simulate data and run a three-step LCA with a covariate in a single function call:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://samleebyu.github.io/tseLCA/">tseLCA</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Generate synthetic data </span></span>
-<span><span class="co"># (3 classes, 6 dichotomous items, and a multinomial logit covariate 'Zp')</span></span>
-<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
-<span>  n <span class="op">=</span> <span class="fl">500</span>, </span>
-<span>  separation <span class="op">=</span> <span class="st">"high"</span>, </span>
-<span>  scenario <span class="op">=</span> <span class="st">"covariate"</span>, </span>
-<span>  seed <span class="op">=</span> <span class="fl">1</span></span>
-<span><span class="op">)</span></span>
+<span><span class="co"># Simulated data: six binary indicators, a covariate Zp, and a distal outcome Zo</span></span>
+<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/generate_data.html">generate_data</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1000</span>, separation <span class="op">=</span> <span class="st">"high"</span>, scenario <span class="op">=</span> <span class="st">"covariate"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="va">Zo</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/draw_Zo.html">draw_Zo</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">X</span>, <span class="va">bk2018_params</span><span class="op">$</span><span class="va">distal_params</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Estimate the three-step model</span></span>
-<span><span class="co"># This automatically fits the measurement model and estimates covariate effects</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  <span class="co"># Proportional assignment is recommended for better uncertainty propagation</span></span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
+<span><span class="co"># Step 1: choose the number of classes from the measurement model</span></span>
+<span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tse_lca.html">tse_lca</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Y1</span>, <span class="va">Y2</span>, <span class="va">Y3</span>, <span class="va">Y4</span>, <span class="va">Y5</span>, <span class="va">Y6</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">d</span>, nclass <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">sel</span></span>
+<span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/best_model.html">best_model</a></span><span class="op">(</span><span class="va">sel</span>, criterion <span class="op">=</span> <span class="st">"BIC"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 3. View the measurement and structural model estimates</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Step 2: classification</span></span>
+<span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tse_classify.html">tse_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Step 3: covariate and distal outcome models</span></span>
+<span><span class="va">fc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="va">cl</span>, <span class="op">~</span> <span class="va">Zp</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fc</span><span class="op">)</span></span>
+<span><span class="va">fb</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tse_distal.html">tse_distal</a></span><span class="op">(</span><span class="va">fc</span>, <span class="va">Zo</span> <span class="op">~</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fb</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># The same model in one call</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tseLCA.html">tseLCA</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Y1</span>, <span class="va">Y2</span>, <span class="va">Y3</span>, <span class="va">Y4</span>, <span class="va">Y5</span>, <span class="va">Y6</span><span class="op">)</span> <span class="op">~</span> <span class="va">Zp</span> <span class="op">|</span> <span class="va">Zo</span>, data <span class="op">=</span> <span class="va">d</span>, nclass <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<p>See the <a href="https://SamLeeBYU.github.io/tseLCA/articles/tseLCA-workflow.html" class="external-link">introductory vignette</a> for the full workflow.</p>
+</div>
+<div class="section level2">
+<h2 id="upgrading-from-tselca-1x">Upgrading from tseLCA 1.x<a class="anchor" aria-label="anchor" href="#upgrading-from-tselca-1x"></a>
+</h2>
+<p><code><a href="reference/three_step.html">three_step()</a></code> still works, with the same estimates, but is deprecated. Its help page, and the vignette, map each of its arguments to the new functions. Version 2.0.0 also fixes several estimation bugs; see <a href="NEWS.html">NEWS</a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -176,7 +158,7 @@
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Sam Lee <br><small class="roles"> Author, maintainer, copyright holder </small> <a href="https://orcid.org/0009-0007-2977-6661" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
-<li><a href="authors.html">More about authors...</a></li>
+<li>Jay Goodliffe <br><small class="roles"> Author, copyright holder </small>   </li>
 </ul>
 </div>
 
@@ -192,7 +174,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

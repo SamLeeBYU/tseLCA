@@ -1,5 +1,317 @@
 # Changelog
 
+## tseLCA 2.0.0
+
+### Step-wise interface
+
+- New
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)
+  fits the Step-1 measurement model from a formula,
+  `cbind(Y1, Y2, ...) ~ 1`, with a `control = tse_control()` argument.
+  With several numbers of classes (e.g. `nclass = 1:6`) it returns a
+  `tseLCA_select` class-enumeration table: log-likelihood, parameters,
+  AIC, BIC, SABIC, entropy R^2, and smallest class. The table has
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html),
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html),
+  [`best_model()`](https://samleebyu.github.io/tseLCA/reference/best_model.md),
+  and `[[` methods. The one-class (independence) model is fitted in
+  closed form.
+- New
+  [`tse_classify()`](https://samleebyu.github.io/tseLCA/reference/tse_classify.md)
+  (Step 2) assigns observations to classes with a fixed measurement
+  model (`assignment = "modal"` or `"proportional"`). It reports the
+  classification-error probabilities P(W = s \| X = t) and entropy R^2.
+  With `newdata` it classifies another sample, replacing the `step1 =`
+  route for using a measurement model from one sample on another.
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)
+  models now keep their `data` for this purpose.
+- New Step-3 functions:
+  - [`tse_covariate()`](https://samleebyu.github.io/tseLCA/reference/tse_covariate.md)
+    fits the multinomial logit of class membership on a covariate
+    formula (factors, interactions, transformations). Arguments:
+    `method = "ML"`, `"BCH"`, or `"none"` (the uncorrected three-step
+    estimator, for comparison); `se = "corrected"` or `"robust"`; `ref`
+    (reference class); `start`. Methods:
+    [`predict()`](https://rdrr.io/r/stats/predict.html) (class
+    probabilities given covariates),
+    [`relevel()`](https://rdrr.io/r/stats/relevel.html), and
+    [`anova()`](https://rdrr.io/r/stats/anova.html) (Wald tests per
+    term).
+  - [`tse_distal()`](https://samleebyu.github.io/tseLCA/reference/tse_distal.md)
+    fits a distal outcome (`Zo ~ 1`, any supported `family`, as a string
+    or family object). Given a
+    [`tse_covariate()`](https://samleebyu.github.io/tseLCA/reference/tse_covariate.md)
+    model it fits the combined model.
+  - [`tse_twostep()`](https://samleebyu.github.io/tseLCA/reference/tse_twostep.md)
+    gives two-step estimates (Bakk & Kuha 2018). With `se = TRUE` they
+    come with multilevLCA’s corrected standard errors.
+- New
+  [`tseLCA()`](https://samleebyu.github.io/tseLCA/reference/tseLCA.md)
+  fits a whole model in one call:
+  `cbind(indicators) ~ covariates | distal outcome` (Formula package).
+  It chains the step-wise functions. Accessors
+  [`measurement()`](https://samleebyu.github.io/tseLCA/reference/measurement.md),
+  [`classification()`](https://samleebyu.github.io/tseLCA/reference/measurement.md),
+  [`covariate()`](https://samleebyu.github.io/tseLCA/reference/measurement.md),
+  and
+  [`distal()`](https://samleebyu.github.io/tseLCA/reference/measurement.md)
+  extract the components of any fitted model.
+- [`tse_covariate()`](https://samleebyu.github.io/tseLCA/reference/tse_covariate.md)
+  and
+  [`tse_distal()`](https://samleebyu.github.io/tseLCA/reference/tse_distal.md)
+  accept `data`: the classified data (same rows) with additional
+  columns, e.g. variables created after classification.
+- [`omnibus_test()`](https://samleebyu.github.io/tseLCA/reference/omnibus_test.md)
+  returns a standard `htest` object.
+- The vignette, README, package help page, and pkgdown reference index
+  are rewritten for the step-wise interface. The vignette ends with a
+  table mapping
+  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+  arguments to the new functions.
+- [`predict()`](https://rdrr.io/r/stats/predict.html) for measurement
+  models gives posterior class probabilities (or modal classes) for new
+  data, coded with the model’s stored categories.
+  [`fitted()`](https://rdrr.io/r/stats/fitted.values.html),
+  [`formula()`](https://rdrr.io/r/stats/formula.html), and
+  [`update()`](https://rdrr.io/r/stats/update.html) also work.
+- `item_probs(se = TRUE)` and `class_sizes(se = TRUE)` also return
+  standard errors (delta method from the measurement model’s variance).
+- Fitted objects no longer keep multilevLCA’s unused observation-level
+  score matrix, which made up most of their size (about 80% smaller).
+- `start` in
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)
+  and
+  [`tseLCA()`](https://samleebyu.github.io/tseLCA/reference/tseLCA.md)
+  accepts
+  [`item_probs()`](https://samleebyu.github.io/tseLCA/reference/class_sizes.md)
+  of a fitted model directly, e.g. to refit a chosen model with
+  covariates.
+- New
+  [`as_tse_lca()`](https://samleebyu.github.io/tseLCA/reference/as_tse_lca.md)
+  builds a measurement model from given class sizes and item-response
+  probabilities (e.g. estimates reported elsewhere, or saved from an
+  earlier fit) without re-estimating it. The result can be passed to
+  [`tse_classify()`](https://samleebyu.github.io/tseLCA/reference/tse_classify.md)
+  like any
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)
+  model.
+- The replication and simulation scripts of the accompanying manuscript
+  are no longer installed with the package; they are part of the
+  manuscript’s replication materials.
+
+### Classes and methods
+
+- Fitted objects now share a class hierarchy. `tseLCA` is the parent
+  class of every fit; `tseLCA_structural` is the parent of
+  `tseLCA_covariate`, `tseLCA_distal`, and `tseLCA_both`. Methods are
+  defined once on the parent classes, not separately for each subclass.
+- New methods on all fits:
+  [`logLik()`](https://rdrr.io/r/stats/logLik.html) (with `df` and
+  `nobs`, so [`AIC()`](https://rdrr.io/r/stats/AIC.html) and
+  [`BIC()`](https://rdrr.io/r/stats/AIC.html) work),
+  [`nobs()`](https://rdrr.io/r/stats/nobs.html),
+  [`posterior()`](https://samleebyu.github.io/tseLCA/reference/posterior.md),
+  [`classes()`](https://samleebyu.github.io/tseLCA/reference/posterior.md),
+  [`class_sizes()`](https://samleebyu.github.io/tseLCA/reference/class_sizes.md),
+  and
+  [`item_probs()`](https://samleebyu.github.io/tseLCA/reference/class_sizes.md).
+- [`summary()`](https://rdrr.io/r/base/summary.html) now returns a
+  `summary.tseLCA_structural` or `summary.tseLCA_measurement` object.
+  Its tables print with
+  [`printCoefmat()`](https://rdrr.io/r/stats/printCoefmat.html) and are
+  extracted with `coef(summary(fit))`.
+- [`plot()`](https://rdrr.io/r/graphics/plot.default.html) now works on
+  distal-outcome fits. These objects previously did not store the
+  measurement model, so the plot failed.
+
+### Data input
+
+- Indicators can be factors, logicals, character, or numeric codes in
+  any coding (e.g. 1..K). They are recoded to 0..K-1 internally, and
+  their categories are stored with the measurement model
+  (`$measurement_model$Y.levels`). Previously they had to be integers
+  starting at 0. Codes such as 1..K were accepted but silently misread:
+  the highest category was never matched.
+- A measurement model reused through `step1` applies its own categories
+  to new data. The new data may omit categories, and values outside them
+  are an error.
+- Covariate designs are built with
+  [`model.frame()`](https://rdrr.io/r/stats/model.frame.html)/[`model.matrix()`](https://rdrr.io/r/stats/model.matrix.html),
+  so factor covariates are dummy coded and unused factor levels are
+  dropped. The intercept is named `"(Intercept)"` (was `"Intercept"`).
+- Distal outcomes are validated for their family. Binomial outcomes may
+  also be logical or two-category factors/characters.
+- New
+  [`tse_control()`](https://samleebyu.github.io/tseLCA/reference/tse_control.md)
+  collects the numerical estimation settings.
+
+### Bug fixes
+
+- `tse_lca(missing = "fiml")` with random starts (`n_init`) failed with
+  a cryptic error from multilevLCA (“sort_index(): detected NaN”) when
+  indicator values were missing: multilevLCA cannot start from a given
+  classification on incomplete data. It now warns and uses multilevLCA’s
+  default initialization; a user-supplied `start` gives a clear error.
+
+- Corrected (ML) standard errors: the Jacobian of the
+  classification-error matrix with respect to the Step-1 parameters,
+  which carries the Step-1 uncertainty into Step 3, had its
+  item-parameter columns ordered item by item, while the Step-1 variance
+  is ordered class by class; with modal assignment it also
+  differentiated the assignment as if it were the posterior
+  probabilities. Both are fixed (checked against numerical derivatives).
+  Point estimates, robust, and BCH standard errors are unchanged;
+  corrected covariate standard errors typically increase by a few
+  percent, and corrected standard errors no longer depend on the choice
+  of reference class.
+
+- Structural models with a reference class other than the first
+  (`ref =`):
+  [`posterior()`](https://samleebyu.github.io/tseLCA/reference/posterior.md),
+  [`classes()`](https://samleebyu.github.io/tseLCA/reference/posterior.md),
+  [`item_probs()`](https://samleebyu.github.io/tseLCA/reference/class_sizes.md),
+  [`class_sizes()`](https://samleebyu.github.io/tseLCA/reference/class_sizes.md),
+  and [`plot()`](https://rdrr.io/r/graphics/plot.default.html) reported
+  the classes in the rebased order under the original labels, and in
+  combined covariate + distal models the distal parameters of class t
+  belonged to another class. All now use the measurement model’s class
+  order.
+
+- Step-1 variance of polytomous indicators when the first (reference)
+  category of an item has a boundary probability in some class: the free
+  parameters of that item are log-ratios against this category, and
+  their common shift, log P(Y = first \| class), is not informed by the
+  data. It is now treated as fixed, like other boundary parameters.
+  Previously the variance of these log-ratios was huge (the information
+  matrix was nearly singular) or all `NA` (singular), which made the
+  corrected standard errors of the Step-3 models `NA`.
+
+- If the Step-1 information matrix is still singular, Step-3 models warn
+  and report robust standard errors (was `NA`).
+
+- `tse_twostep(se = TRUE)` with a reference class other than the first
+  returned the class-1-reference estimates and variance under the new
+  class labels. They are now transformed to the requested reference
+  class. It also no longer warns, wrongly, that multilevLCA’s
+  measurement model differs.
+
+- For measurement-only fits,
+  [`posterior()`](https://samleebyu.github.io/tseLCA/reference/posterior.md)
+  / `$posteriors` and
+  [`classes()`](https://samleebyu.github.io/tseLCA/reference/posterior.md)
+  / `$classifications` were not in data-row order. They were read from
+  multilevLCA’s `fit0$mU`, which is sorted by response pattern. They are
+  now computed from the Step-1 data in data-row order. Code that used
+  `$classifications` from a measurement model, e.g. as `startval`,
+  received mismatched rows in 1.1.x.
+
+- Polytomous indicators were decoded from `fit0$mU` as category 0
+  whenever the measurement model was fitted with listwise deletion
+  (`incomplete = FALSE`). The Step-1 information matrix was then
+  singular, so [`vcov()`](https://rdrr.io/r/stats/vcov.html) of a
+  polytomous measurement model and the Step-1-corrected Step-3 variance
+  (`use.simple.cov = FALSE`) were all `NA`. The measurement model now
+  stores its Step-1 sample in data-row order and uses it for all of
+  these computations. The fallback decoder for objects without stored
+  data handles both of multilevLCA’s codings.
+
+- Parameter counts behind the reported AIC/BIC were wrong. Covariate
+  models counted one-hot indicator columns, not free item parameters
+  (e.g. 40, not 22, for six binary items, three classes, one covariate).
+  Combined covariate + distal models counted class sizes, not the
+  covariate coefficients. Reported `AIC`/`BIC` for these models change;
+  estimates and standard errors do not.
+
+- Gaussian distal outcomes: the within-class variance was fixed at
+  sigma2 = 1 in the Step-3 likelihood. Three-step ML now estimates a
+  common sigma2 jointly with the class means, as in Bakk, Tekle &
+  Vermunt (2013). Unlike ordinary regression, sigma2 does not factor out
+  of the mean estimates here: it enters the posterior weights P(X = t \|
+  W, Zo). With the variance fixed at 1, ML class means were biased
+  whenever the outcome’s variance differed from 1 (e.g. roughly 3.5x too
+  far apart for a residual SD of 3) and were not equivariant to
+  rescaling the outcome. The Hessian, score, and Step-1/Step-2
+  uncertainty propagation now include sigma2. It is reported as
+  `$sigma2` (estimate and, under ML, standard error), and counted in the
+  log-likelihood’s degrees of freedom. BCH class means were unaffected;
+  their log-likelihood now uses the estimated variance.
+
+- Three-step ML for distal outcomes with proportional assignment
+  (`use.modal.assignment = FALSE`) maximized the wrong likelihood. It
+  used log sum_t P(t) f(z\|t) sum_s w_s P(W=s\|t), with the assignment
+  weights inside the log. The likelihood of Bakk, Tekle & Vermunt
+  (2013), for the expanded data file weighted by the posterior
+  assignment probabilities, is sum_s w_s log sum_t P(t) f(z\|t)
+  P(W=s\|t). The covariate model already used this form. The E-step,
+  score, Hessian/Jacobian, and Step-1/Step-2 uncertainty propagation now
+  use the correct likelihood for all distal families.
+  Proportional-assignment ML distal estimates were biased away from zero
+  (e.g. class means of -1.07 and 1.06, not -1 and 1, at mid separation).
+  Modal-assignment fits, whose single assignment makes the two forms
+  identical, BCH, and covariate models are unchanged.
+
+- Covariate models with `include.intercept = FALSE` failed with a
+  “length of ‘dimnames’” error. The coefficient rows were always labeled
+  with an `Intercept` row.
+
+- In combined covariate + distal models, rows with a missing covariate
+  but an observed distal outcome were kept in the distal model with `NA`
+  class priors. The distal model now uses rows with complete covariates.
+
+### Deprecated
+
+- [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+  is deprecated in favor of
+  [`tseLCA()`](https://samleebyu.github.io/tseLCA/reference/tseLCA.md)
+  and the step-wise functions. It keeps working, with the same
+  estimates, and warns once per session. Its help page maps each
+  argument to the 2.0 interface.
+- [`lca_step1()`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md),
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md),
+  [`fitZ_from_fit0()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md),
+  and
+  [`fitZ_from_multiLCA()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md)
+  are deprecated in favor of
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)
+  and
+  [`tse_twostep()`](https://samleebyu.github.io/tseLCA/reference/tse_twostep.md).
+  They warn once per session when called directly.
+- `options(tseLCA.warn.deprecated = FALSE)` silences these warnings.
+
+### Breaking changes
+
+- [`coef()`](https://rdrr.io/r/stats/coef.html) returns a named vector
+  whose names match [`vcov()`](https://rdrr.io/r/stats/vcov.html), so
+  [`confint()`](https://rdrr.io/r/stats/confint.html) works.
+  `coef(fit, matrix = TRUE)` gives the previous Q x (T-1) (covariate) or
+  T x C (multinomial distal) layout.
+- [`coef()`](https://rdrr.io/r/stats/coef.html) on a measurement model
+  returns the log-ratio parameters that
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html) describes. The previous
+  list is now available as
+  [`class_sizes()`](https://samleebyu.github.io/tseLCA/reference/class_sizes.md)
+  and
+  [`item_probs()`](https://samleebyu.github.io/tseLCA/reference/class_sizes.md).
+- Covariate coefficient names use `"(Intercept)"` (was `"Intercept"`),
+  e.g. `"(Intercept):C2"`.
+- The `which` argument of [`coef()`](https://rdrr.io/r/stats/coef.html)
+  and [`vcov()`](https://rdrr.io/r/stats/vcov.html) is replaced by
+  `component` (`"covariate"` or `"distal"`) and `step` (`"two_step"`).
+  Passing `which` gives an error, so old code cannot silently return a
+  different quantity.
+- [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a `tseLCA_both`
+  object returns one matrix. The covariate and distal blocks are on the
+  diagonal; the cross-covariances are not computed and are `NA`.
+
+## tseLCA 1.1.1
+
+CRAN release: 2026-09-23
+
+- Corrected Jay Goodliffe’s role in `Authors@R` from contributor
+  (`"ctb"`) to author and copyright holder (`c("aut", "cph")`),
+  reflecting his contribution to the package. No code changes.
+
 ## tseLCA 1.1.0
 
 CRAN release: 2026-09-20

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,94 @@
       <small>Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.0.0" id="tselca-200">tseLCA 2.0.0<a class="anchor" aria-label="anchor" href="#tselca-200"></a></h2>
+<div class="section level3">
+<h3 id="step-wise-interface-2-0-0">Step-wise interface<a class="anchor" aria-label="anchor" href="#step-wise-interface-2-0-0"></a></h3>
+<ul><li>New <code><a href="../reference/tse_lca.html">tse_lca()</a></code> fits the Step-1 measurement model from a formula, <code>cbind(Y1, Y2, ...) ~ 1</code>, with a <code>control = tse_control()</code> argument. With several numbers of classes (e.g. <code>nclass = 1:6</code>) it returns a <code>tseLCA_select</code> class-enumeration table: log-likelihood, parameters, AIC, BIC, SABIC, entropy R^2, and smallest class. The table has <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>, <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code>, <code><a href="../reference/best_model.html">best_model()</a></code>, and <code>[[</code> methods. The one-class (independence) model is fitted in closed form.</li>
+<li>New <code><a href="../reference/tse_classify.html">tse_classify()</a></code> (Step 2) assigns observations to classes with a fixed measurement model (<code>assignment = "modal"</code> or <code>"proportional"</code>). It reports the classification-error probabilities P(W = s | X = t) and entropy R^2. With <code>newdata</code> it classifies another sample, replacing the <code>step1 =</code> route for using a measurement model from one sample on another. <code><a href="../reference/tse_lca.html">tse_lca()</a></code> models now keep their <code>data</code> for this purpose.</li>
+<li>New Step-3 functions:
+<ul><li>
+<code><a href="../reference/tse_covariate.html">tse_covariate()</a></code> fits the multinomial logit of class membership on a covariate formula (factors, interactions, transformations). Arguments: <code>method = "ML"</code>, <code>"BCH"</code>, or <code>"none"</code> (the uncorrected three-step estimator, for comparison); <code>se = "corrected"</code> or <code>"robust"</code>; <code>ref</code> (reference class); <code>start</code>. Methods: <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> (class probabilities given covariates), <code><a href="https://rdrr.io/r/stats/relevel.html" class="external-link">relevel()</a></code>, and <code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code> (Wald tests per term).</li>
+<li>
+<code><a href="../reference/tse_distal.html">tse_distal()</a></code> fits a distal outcome (<code>Zo ~ 1</code>, any supported <code>family</code>, as a string or family object). Given a <code><a href="../reference/tse_covariate.html">tse_covariate()</a></code> model it fits the combined model.</li>
+<li>
+<code><a href="../reference/tse_twostep.html">tse_twostep()</a></code> gives two-step estimates (Bakk &amp; Kuha 2018). With <code>se = TRUE</code> they come with multilevLCA’s corrected standard errors.</li>
+</ul></li>
+<li>New <code><a href="../reference/tseLCA.html">tseLCA()</a></code> fits a whole model in one call: <code>cbind(indicators) ~ covariates | distal outcome</code> (Formula package). It chains the step-wise functions. Accessors <code><a href="../reference/measurement.html">measurement()</a></code>, <code><a href="../reference/measurement.html">classification()</a></code>, <code><a href="../reference/measurement.html">covariate()</a></code>, and <code><a href="../reference/measurement.html">distal()</a></code> extract the components of any fitted model.</li>
+<li>
+<code><a href="../reference/tse_covariate.html">tse_covariate()</a></code> and <code><a href="../reference/tse_distal.html">tse_distal()</a></code> accept <code>data</code>: the classified data (same rows) with additional columns, e.g. variables created after classification.</li>
+<li>
+<code><a href="../reference/omnibus_test.html">omnibus_test()</a></code> returns a standard <code>htest</code> object.</li>
+<li>The vignette, README, package help page, and pkgdown reference index are rewritten for the step-wise interface. The vignette ends with a table mapping <code><a href="../reference/three_step.html">three_step()</a></code> arguments to the new functions.</li>
+<li>
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for measurement models gives posterior class probabilities (or modal classes) for new data, coded with the model’s stored categories. <code><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted()</a></code>, <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula()</a></code>, and <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> also work.</li>
+<li>
+<code>item_probs(se = TRUE)</code> and <code>class_sizes(se = TRUE)</code> also return standard errors (delta method from the measurement model’s variance).</li>
+<li>Fitted objects no longer keep multilevLCA’s unused observation-level score matrix, which made up most of their size (about 80% smaller).</li>
+<li>
+<code>start</code> in <code><a href="../reference/tse_lca.html">tse_lca()</a></code> and <code><a href="../reference/tseLCA.html">tseLCA()</a></code> accepts <code><a href="../reference/class_sizes.html">item_probs()</a></code> of a fitted model directly, e.g. to refit a chosen model with covariates.</li>
+<li>New <code><a href="../reference/as_tse_lca.html">as_tse_lca()</a></code> builds a measurement model from given class sizes and item-response probabilities (e.g. estimates reported elsewhere, or saved from an earlier fit) without re-estimating it. The result can be passed to <code><a href="../reference/tse_classify.html">tse_classify()</a></code> like any <code><a href="../reference/tse_lca.html">tse_lca()</a></code> model.</li>
+<li>The replication and simulation scripts of the accompanying manuscript are no longer installed with the package; they are part of the manuscript’s replication materials.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="classes-and-methods-2-0-0">Classes and methods<a class="anchor" aria-label="anchor" href="#classes-and-methods-2-0-0"></a></h3>
+<ul><li>Fitted objects now share a class hierarchy. <code>tseLCA</code> is the parent class of every fit; <code>tseLCA_structural</code> is the parent of <code>tseLCA_covariate</code>, <code>tseLCA_distal</code>, and <code>tseLCA_both</code>. Methods are defined once on the parent classes, not separately for each subclass.</li>
+<li>New methods on all fits: <code><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik()</a></code> (with <code>df</code> and <code>nobs</code>, so <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code> and <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code> work), <code><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs()</a></code>, <code><a href="../reference/posterior.html">posterior()</a></code>, <code><a href="../reference/posterior.html">classes()</a></code>, <code><a href="../reference/class_sizes.html">class_sizes()</a></code>, and <code><a href="../reference/class_sizes.html">item_probs()</a></code>.</li>
+<li>
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> now returns a <code>summary.tseLCA_structural</code> or <code>summary.tseLCA_measurement</code> object. Its tables print with <code><a href="https://rdrr.io/r/stats/printCoefmat.html" class="external-link">printCoefmat()</a></code> and are extracted with <code>coef(summary(fit))</code>.</li>
+<li>
+<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> now works on distal-outcome fits. These objects previously did not store the measurement model, so the plot failed.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="data-input-2-0-0">Data input<a class="anchor" aria-label="anchor" href="#data-input-2-0-0"></a></h3>
+<ul><li>Indicators can be factors, logicals, character, or numeric codes in any coding (e.g. 1..K). They are recoded to 0..K-1 internally, and their categories are stored with the measurement model (<code>$measurement_model$Y.levels</code>). Previously they had to be integers starting at 0. Codes such as 1..K were accepted but silently misread: the highest category was never matched.</li>
+<li>A measurement model reused through <code>step1</code> applies its own categories to new data. The new data may omit categories, and values outside them are an error.</li>
+<li>Covariate designs are built with <code><a href="https://rdrr.io/r/stats/model.frame.html" class="external-link">model.frame()</a></code>/<code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix()</a></code>, so factor covariates are dummy coded and unused factor levels are dropped. The intercept is named <code>"(Intercept)"</code> (was <code>"Intercept"</code>).</li>
+<li>Distal outcomes are validated for their family. Binomial outcomes may also be logical or two-category factors/characters.</li>
+<li>New <code><a href="../reference/tse_control.html">tse_control()</a></code> collects the numerical estimation settings.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-0-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-0-0"></a></h3>
+<ul><li><p><code>tse_lca(missing = "fiml")</code> with random starts (<code>n_init</code>) failed with a cryptic error from multilevLCA (“sort_index(): detected NaN”) when indicator values were missing: multilevLCA cannot start from a given classification on incomplete data. It now warns and uses multilevLCA’s default initialization; a user-supplied <code>start</code> gives a clear error.</p></li>
+<li><p>Corrected (ML) standard errors: the Jacobian of the classification-error matrix with respect to the Step-1 parameters, which carries the Step-1 uncertainty into Step 3, had its item-parameter columns ordered item by item, while the Step-1 variance is ordered class by class; with modal assignment it also differentiated the assignment as if it were the posterior probabilities. Both are fixed (checked against numerical derivatives). Point estimates, robust, and BCH standard errors are unchanged; corrected covariate standard errors typically increase by a few percent, and corrected standard errors no longer depend on the choice of reference class.</p></li>
+<li><p>Structural models with a reference class other than the first (<code>ref =</code>): <code><a href="../reference/posterior.html">posterior()</a></code>, <code><a href="../reference/posterior.html">classes()</a></code>, <code><a href="../reference/class_sizes.html">item_probs()</a></code>, <code><a href="../reference/class_sizes.html">class_sizes()</a></code>, and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> reported the classes in the rebased order under the original labels, and in combined covariate + distal models the distal parameters of class t belonged to another class. All now use the measurement model’s class order.</p></li>
+<li><p>Step-1 variance of polytomous indicators when the first (reference) category of an item has a boundary probability in some class: the free parameters of that item are log-ratios against this category, and their common shift, log P(Y = first | class), is not informed by the data. It is now treated as fixed, like other boundary parameters. Previously the variance of these log-ratios was huge (the information matrix was nearly singular) or all <code>NA</code> (singular), which made the corrected standard errors of the Step-3 models <code>NA</code>.</p></li>
+<li><p>If the Step-1 information matrix is still singular, Step-3 models warn and report robust standard errors (was <code>NA</code>).</p></li>
+<li><p><code>tse_twostep(se = TRUE)</code> with a reference class other than the first returned the class-1-reference estimates and variance under the new class labels. They are now transformed to the requested reference class. It also no longer warns, wrongly, that multilevLCA’s measurement model differs.</p></li>
+<li><p>For measurement-only fits, <code><a href="../reference/posterior.html">posterior()</a></code> / <code>$posteriors</code> and <code><a href="../reference/posterior.html">classes()</a></code> / <code>$classifications</code> were not in data-row order. They were read from multilevLCA’s <code>fit0$mU</code>, which is sorted by response pattern. They are now computed from the Step-1 data in data-row order. Code that used <code>$classifications</code> from a measurement model, e.g. as <code>startval</code>, received mismatched rows in 1.1.x.</p></li>
+<li><p>Polytomous indicators were decoded from <code>fit0$mU</code> as category 0 whenever the measurement model was fitted with listwise deletion (<code>incomplete = FALSE</code>). The Step-1 information matrix was then singular, so <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> of a polytomous measurement model and the Step-1-corrected Step-3 variance (<code>use.simple.cov = FALSE</code>) were all <code>NA</code>. The measurement model now stores its Step-1 sample in data-row order and uses it for all of these computations. The fallback decoder for objects without stored data handles both of multilevLCA’s codings.</p></li>
+<li><p>Parameter counts behind the reported AIC/BIC were wrong. Covariate models counted one-hot indicator columns, not free item parameters (e.g. 40, not 22, for six binary items, three classes, one covariate). Combined covariate + distal models counted class sizes, not the covariate coefficients. Reported <code>AIC</code>/<code>BIC</code> for these models change; estimates and standard errors do not.</p></li>
+<li><p>Gaussian distal outcomes: the within-class variance was fixed at sigma2 = 1 in the Step-3 likelihood. Three-step ML now estimates a common sigma2 jointly with the class means, as in Bakk, Tekle &amp; Vermunt (2013). Unlike ordinary regression, sigma2 does not factor out of the mean estimates here: it enters the posterior weights P(X = t | W, Zo). With the variance fixed at 1, ML class means were biased whenever the outcome’s variance differed from 1 (e.g. roughly 3.5x too far apart for a residual SD of 3) and were not equivariant to rescaling the outcome. The Hessian, score, and Step-1/Step-2 uncertainty propagation now include sigma2. It is reported as <code>$sigma2</code> (estimate and, under ML, standard error), and counted in the log-likelihood’s degrees of freedom. BCH class means were unaffected; their log-likelihood now uses the estimated variance.</p></li>
+<li><p>Three-step ML for distal outcomes with proportional assignment (<code>use.modal.assignment = FALSE</code>) maximized the wrong likelihood. It used log sum_t P(t) f(z|t) sum_s w_s P(W=s|t), with the assignment weights inside the log. The likelihood of Bakk, Tekle &amp; Vermunt (2013), for the expanded data file weighted by the posterior assignment probabilities, is sum_s w_s log sum_t P(t) f(z|t) P(W=s|t). The covariate model already used this form. The E-step, score, Hessian/Jacobian, and Step-1/Step-2 uncertainty propagation now use the correct likelihood for all distal families. Proportional-assignment ML distal estimates were biased away from zero (e.g. class means of -1.07 and 1.06, not -1 and 1, at mid separation). Modal-assignment fits, whose single assignment makes the two forms identical, BCH, and covariate models are unchanged.</p></li>
+<li><p>Covariate models with <code>include.intercept = FALSE</code> failed with a “length of ‘dimnames’” error. The coefficient rows were always labeled with an <code>Intercept</code> row.</p></li>
+<li><p>In combined covariate + distal models, rows with a missing covariate but an observed distal outcome were kept in the distal model with <code>NA</code> class priors. The distal model now uses rows with complete covariates.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="deprecated-2-0-0">Deprecated<a class="anchor" aria-label="anchor" href="#deprecated-2-0-0"></a></h3>
+<ul><li>
+<code><a href="../reference/three_step.html">three_step()</a></code> is deprecated in favor of <code><a href="../reference/tseLCA.html">tseLCA()</a></code> and the step-wise functions. It keeps working, with the same estimates, and warns once per session. Its help page maps each argument to the 2.0 interface.</li>
+<li>
+<code><a href="../reference/lca_step1.html">lca_step1()</a></code>, <code><a href="../reference/lca_step1_startval.html">lca_step1_startval()</a></code>, <code><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0()</a></code>, and <code><a href="../reference/fitZ_from_multiLCA.html">fitZ_from_multiLCA()</a></code> are deprecated in favor of <code><a href="../reference/tse_lca.html">tse_lca()</a></code> and <code><a href="../reference/tse_twostep.html">tse_twostep()</a></code>. They warn once per session when called directly.</li>
+<li>
+<code>options(tseLCA.warn.deprecated = FALSE)</code> silences these warnings.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="breaking-changes-2-0-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-2-0-0"></a></h3>
+<ul><li>
+<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> returns a named vector whose names match <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>, so <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> works. <code>coef(fit, matrix = TRUE)</code> gives the previous Q x (T-1) (covariate) or T x C (multinomial distal) layout.</li>
+<li>
+<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> on a measurement model returns the log-ratio parameters that <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> describes. The previous list is now available as <code><a href="../reference/class_sizes.html">class_sizes()</a></code> and <code><a href="../reference/class_sizes.html">item_probs()</a></code>.</li>
+<li>Covariate coefficient names use <code>"(Intercept)"</code> (was <code>"Intercept"</code>), e.g. <code>"(Intercept):C2"</code>.</li>
+<li>The <code>which</code> argument of <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> is replaced by <code>component</code> (<code>"covariate"</code> or <code>"distal"</code>) and <code>step</code> (<code>"two_step"</code>). Passing <code>which</code> gives an error, so old code cannot silently return a different quantity.</li>
+<li>
+<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> on a <code>tseLCA_both</code> object returns one matrix. The covariate and distal blocks are on the diagonal; the cross-covariances are not computed and are <code>NA</code>.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.1.1" id="tselca-111">tseLCA 1.1.1<a class="anchor" aria-label="anchor" href="#tselca-111"></a></h2><p class="text-muted">CRAN release: 2026-09-23</p>
+<ul><li>Corrected Jay Goodliffe’s role in <code>Authors@R</code> from contributor (<code>"ctb"</code>) to author and copyright holder (<code>c("aut", "cph")</code>), reflecting his contribution to the package. No code changes.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.0" id="tselca-110">tseLCA 1.1.0<a class="anchor" aria-label="anchor" href="#tselca-110"></a></h2><p class="text-muted">CRAN release: 2026-09-20</p>
 <div class="section level3">
@@ -126,7 +214,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

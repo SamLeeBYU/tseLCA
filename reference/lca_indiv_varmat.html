@@ -11,7 +11,7 @@ matrix for LCA measurement model parameters in the unconstrained
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,7 +37,7 @@ matrix for LCA measurement model parameters in the unconstrained
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Individual-level BHHH variance matrix for binary and polytomous LCA</h1>
-      <small class="dont-index">Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/R/three_step.R" class="external-link"><code>R/three_step.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/SamLeeBYU/tseLCA/blob/main/R/vcov.R" class="external-link"><code>R/vcov.R</code></a></small>
       <div class="d-none name"><code>lca_indiv_varmat.Rd</code></div>
     </div>
 
@@ -65,7 +65,7 @@ matrix for LCA measurement model parameters in the unconstrained
 
 
 <dl><dt id="arg-y-exp">Y.exp<a class="anchor" aria-label="anchor" href="#arg-y-exp"></a></dt>
-<dd><p>N x sum(K_h) expanded one-hot indicator matrix.</p></dd>
+<dd><p>n x sum(R_k) expanded one-hot indicator matrix.</p></dd>
 
 
 <dt id="arg-mdesign-exp">mDesign.exp<a class="anchor" aria-label="anchor" href="#arg-mdesign-exp"></a></dt>
@@ -92,7 +92,7 @@ the cross-product, weighting by frequency. Default <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-u-post">u_post<a class="anchor" aria-label="anchor" href="#arg-u-post"></a></dt>
-<dd><p>Optional N x T matrix of posterior class probabilities.
+<dd><p>Optional n x T matrix of posterior class probabilities.
 When supplied (e.g. extracted from <code>fit0$mU</code> with
 <code>extract_Y_from_mU</code>), <code>compute_posteriors</code> is skipped.
 Default <code>NULL</code>.</p></dd>
@@ -106,7 +106,7 @@ where p = (iT-1) + sum(ivItemcat - 1) * iT is the total number of free
 parameters. Boundary parameters have zero rows and columns.</p></dd>
 
 <dt><code>Varmat</code></dt>
-<dd><p>Inverse of <code>Infomat</code> divided by N, giving the
+<dd><p>Inverse of <code>Infomat</code> divided by n, giving the
 asymptotic variance-covariance matrix on the same scale as
 <span class="pkg">multilevLCA</span>'s <code>$Varmat</code>. Boundary parameters have zero
 rows and columns.</p></dd>
@@ -116,7 +116,7 @@ rows and columns.</p></dd>
 <code>Varmat</code>; zero for boundary parameters.</p></dd>
 
 <dt><code>mScore</code></dt>
-<dd><p>N x p matrix of individual score contributions in the
+<dd><p>n x p matrix of individual score contributions in the
 unconstrained parameterization, used for sandwich variance propagation
 in <code>lca_vcov</code> and <code>lca_vcov_distal</code>.</p></dd>
 
@@ -127,15 +127,15 @@ in <code>lca_vcov</code> and <code>lca_vcov_distal</code>.</p></dd>
     <p>The score in unconstrained space is
 \(s_{it} = u_{it}(y_i - d_i \circ p_{it})\),
 where \(d_i\) is the missing-data design indicator matrix.</p>
-<p>Assumes <code>fit0$mPhi</code> follows the <span class="pkg">multilevLCA</span> storage convention:</p><ul><li><p>Dichotomous item h (<code>ivItemcat[h] == 2</code>): 1 row =
+<p>Assumes <code>fit0$mPhi</code> follows the <span class="pkg">multilevLCA</span> storage convention:</p><ul><li><p>Dichotomous item k (<code>ivItemcat[k] == 2</code>): 1 row =
 \(P(Y=1|C)\); the base level \(P(Y=0|C)\) is excluded.</p></li>
-<li><p>Polytomous item h (<code>ivItemcat[h] &gt; 2</code>): <code>K_h</code> rows =
-\(P(Y=0|C), \ldots, P(Y=K_h-1|C)\); the base level is included.</p></li>
+<li><p>Polytomous item k (<code>ivItemcat[k] &gt; 2</code>): <code>R_k</code> rows =
+\(P(Y=0|C), \ldots, P(Y=R_k-1|C)\); the base level is included.</p></li>
 </ul><p><code>expand_Y</code> produces one-hot columns in the same order so that
 <code>expand_Phi(fit0$mPhi, ivItemcat)</code> aligns column-wise with
 <code>expand_Y(mY, ivItemcat)</code>.  Free (estimable) parameters per item are
 the single \(P(Y=1|C)\) row for dichotomous items, and rows 2 through
-\(K_h\) for polytomous items (row 1, \(P(Y=0|C)\), is the reference).
+\(R_k\) for polytomous items (row 1, \(P(Y=0|C)\), is the reference).
 Boundary parameters (within <code>boundary.tol</code> of 0 or 1) are treated as
 fixed: their score columns are zeroed and they do not contribute to the
 information matrix.</p>
@@ -146,7 +146,7 @@ information matrix.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

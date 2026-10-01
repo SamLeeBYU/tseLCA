@@ -1,152 +1,123 @@
 # tseLCA: Three-Step Estimation for Latent Class Analysis
 
-tseLCA implements bias-adjusted three-step estimators for structural
-latent class models with covariates and distal outcomes. Building on the
-efficient measurement-model estimation in multilevLCA (Lyrvall et al.,
-2025), tseLCA adds modern three-step estimators, classification-error
-corrections, and analytic sandwich variance estimation that propagates
-measurement uncertainty from the latent class measurement stage through
-to the final structural parameter estimates.
+tseLCA relates latent classes to covariates and distal outcomes by
+bias-adjusted three-step estimation. The latent class measurement model
+is estimated first and held fixed, so the structural variables cannot
+change the meaning of the classes; the structural estimates are
+corrected for the classification error of the class assignments (BCH and
+ML estimators), and their standard errors account for the uncertainty of
+the measurement model. Measurement models are estimated with multilevLCA
+(Lyrvall et al., 2025).
 
-In contrast to one-step approaches such as poLCA, where including
-covariates may alter the underlying latent class definitions, three-step
-methods fix the measurement model before estimating structural
-relationships and adjust for classification error at the final stage.
-tseLCA also allows the measurement and structural models to be estimated
-on different datasets, enabling researchers to calibrate a measurement
-model on a large reference sample and apply it to a separate analysis
-sample.
+## The three steps
 
-## The three-step approach
+1.  **Measurement model**
+    ([`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)):
+    class sizes and class-conditional item-response probabilities,
+    estimated from the indicators alone. With several numbers of
+    classes, a class-enumeration table (AIC, BIC, SABIC, entropy) for
+    choosing the number of classes.
 
-1.  **Measurement model**: estimate class-conditional item-response
-    probabilities \\\phi\\ and class prevalences \\\pi\\ using
-    multilevLCA (Lyrvall et al., 2025 ).
+2.  **Classification**
+    ([`tse_classify()`](https://samleebyu.github.io/tseLCA/reference/tse_classify.md)):
+    posterior class probabilities, modal or proportional class
+    assignments, and the classification-error probabilities \\P(W = s
+    \mid X = t)\\.
 
-2.  **Classification-error matrix**: assign posterior class
-    probabilities and compute the T x T misclassification matrix \\P(W =
-    s \mid X = t)\\, with standard errors corrected for
-    classification-error propagation (Bakk, Oberski & Vermunt, 2014).
+3.  **Structural model**: a multinomial logit of class membership on
+    covariates
+    ([`tse_covariate()`](https://samleebyu.github.io/tseLCA/reference/tse_covariate.md)),
+    and/or class-specific distributions of a distal outcome
+    ([`tse_distal()`](https://samleebyu.github.io/tseLCA/reference/tse_distal.md)),
+    with the ML (Vermunt 2010; Bakk, Tekle & Vermunt 2013) or BCH
+    (Bolck, Croon & Hagenaars 2004) correction.
 
-3.  **Structural model**: estimate covariate effects using two-step
-    starting values (Bakk & Kuha, 2018) and/or distal outcome (Bakk,
-    Tekle & Vermunt) means with either the ML correction (Vermunt, 2010)
-    or the BCH correction (Bolck, Croon & Hagenaars, 2004).
+[`tseLCA()`](https://samleebyu.github.io/tseLCA/reference/tseLCA.md)
+runs all three steps from one formula,
+`indicators ~ covariates | distal outcome`;
+[`measurement()`](https://samleebyu.github.io/tseLCA/reference/measurement.md),
+[`classification()`](https://samleebyu.github.io/tseLCA/reference/measurement.md),
+[`covariate()`](https://samleebyu.github.io/tseLCA/reference/measurement.md),
+and
+[`distal()`](https://samleebyu.github.io/tseLCA/reference/measurement.md)
+extract the components of a fitted model.
 
-## Main functions
+## Estimators and standard errors
 
-- [`three_step`](https://samleebyu.github.io/tseLCA/reference/three_step.md):
+- `method = "ML"` (default):
 
-  Full three-step estimation pipeline. Accepts covariates (`Zp.names`),
-  distal outcomes (`Zo.name`), or both. Handles Steps 1–3 in a single
-  call, with optional pre-fitted Step-1 input through `step1`.
+  Vermunt's (2010) maximum likelihood correction, treating the assigned
+  class as an indicator of the true class with known
+  classification-error probabilities.
 
-- [`lca_step1`](https://samleebyu.github.io/tseLCA/reference/lca_step1.md):
+- `method = "BCH"`:
 
-  Standalone Step-1 measurement model estimation with multilevLCA.
-  Returns a reusable fit object that can be passed to
-  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
-  to avoid re-estimating the measurement model across multiple
-  structural specifications.
+  The Bolck-Croon-Hagenaars correction, reweighting the assignments by
+  the inverse classification-error matrix. Reliable when classes are
+  well separated.
 
-- [`fitZ_from_fit0`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md):
+- `method = "none"`:
 
-  Two-step covariate estimation by fixing measurement parameters at
-  their Step-1 values and estimating multinomial logit coefficients
-  \\\gamma\\ with an EM algorithm. Returns starting values for Step 3.
-  Custom starting values can be supplied with `starting_val`.
+  The uncorrected three-step estimator, for comparison.
 
-- [`fitZ_from_multiLCA`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_multiLCA.md):
+- `se = "corrected"` (default):
 
-  Two-step covariate estimation with `multiLCA(fixedpars = 1)`,
-  returning multilevLCA's bias-corrected standard errors. Called
-  automatically when `get.twostep.vcov = TRUE` in
-  [`three_step`](https://samleebyu.github.io/tseLCA/reference/three_step.md).
+  Sandwich standard errors plus the propagated uncertainty of the Step-1
+  measurement model (Bakk, Oberski & Vermunt 2014), and, for combined
+  models, of the covariate model.
 
-- [`generate_data`](https://samleebyu.github.io/tseLCA/reference/generate_data.md):
+- `se = "robust"`:
 
-  Simulate data replicating the Bakk & Kuha (2018) three-class design:
-  six binary indicators across three separation levels (`"low"`,
-  `"medium"`, `"high"`) and two scenarios (`"covariate"` or `"distal"`).
+  Sandwich standard errors of Step 3 only.
 
-## Estimators
+The two-step estimator of Bakk & Kuha (2018) is available with
+[`tse_twostep()`](https://samleebyu.github.io/tseLCA/reference/tse_twostep.md).
 
-- ML (default, `use.bch = FALSE`):
+## Features
 
-  The Vermunt (2010) ML correction uses a weighted pseudo-likelihood
-  with the misclassification matrix as a bias adjustment. Preferred when
-  class separation is low or moderate.
+- Binary and polytomous indicators, coded as factors, logicals,
+  characters, or numbers; full-information maximum likelihood for
+  missing indicator values (`missing = "fiml"`).
 
-- BCH (`use.bch = TRUE`):
+- Covariate formulas with factors, interactions, and transformations;
+  Wald tests by term
+  ([`anova.tseLCA_covariate()`](https://samleebyu.github.io/tseLCA/reference/anova.tseLCA_covariate.md));
+  predicted class probabilities
+  ([`predict.tseLCA_covariate()`](https://samleebyu.github.io/tseLCA/reference/predict.tseLCA_covariate.md));
+  any reference class.
 
-  The Bolck, Croon & Hagenaars (2004) correction inverts the
-  misclassification matrix to obtain direct class weights. Works well
-  under high separation but may produce an ill-conditioned Hessian
-  (non-positive semi-definite covariance matrix) when separation is low;
-  use the ML estimator in that case.
+- Gaussian, Poisson, binomial, and multinomial distal outcomes, with an
+  omnibus test of equality across classes
+  ([`omnibus_test()`](https://samleebyu.github.io/tseLCA/reference/omnibus_test.md)).
 
-## Variance estimation
+- Measurement models estimated on one sample and applied to another
+  ([`tse_classify()`](https://samleebyu.github.io/tseLCA/reference/tse_classify.md)
+  with `newdata`).
 
-- Full correction (`use.simple.cov = FALSE`, default):
+- Standard methods for fitted models:
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html),
+  [`coef()`](https://rdrr.io/r/stats/coef.html),
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html),
+  [`confint()`](https://rdrr.io/r/stats/confint.html),
+  [`logLik()`](https://rdrr.io/r/stats/logLik.html),
+  [`AIC()`](https://rdrr.io/r/stats/AIC.html),
+  [`BIC()`](https://rdrr.io/r/stats/AIC.html),
+  [`nobs()`](https://rdrr.io/r/stats/nobs.html),
+  [`predict()`](https://rdrr.io/r/stats/predict.html),
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html), and
+  [`update()`](https://rdrr.io/r/stats/update.html).
 
-  Analytic propagation of Step-1 measurement uncertainty through the
-  classification-error correction, following Bakk, Oberski & Vermunt
-  (2014). Uses soft (proportional) posteriors for the Jacobian
-  \\\partial\theta_2/\partial\theta_1\\ regardless of
-  `use.modal.assignment`. Recommended when separation is moderate or
-  low.
+- Simulation from the design of Bakk & Kuha (2018)
+  ([`generate_data()`](https://samleebyu.github.io/tseLCA/reference/generate_data.md)).
 
-- Simple/robust (`use.simple.cov = TRUE`):
-
-  Sandwich SEs from Step 3 only, ignoring measurement uncertainty. A
-  useful computational shortcut when separation is high and the
-  correction is negligible.
-
-## Class assignment
-
-- Modal (`use.modal.assignment = TRUE`, default):
-
-  Each observation is assigned to its most probable class (hard
-  assignment). The Jacobian for variance correction is still computed
-  from soft posteriors.
-
-- Proportional (`use.modal.assignment = FALSE`):
-
-  Soft posterior weights are used throughout Steps 2 and 3. Recommended
-  when separation is moderate or low, and required for a mathematically
-  well-defined analytic Jacobian.
-
-## Supported features
-
-- Binary and polytomous indicators, following multilevLCA coding
-  conventions.
-
-- Gaussian, Poisson, binomial, and multinomial distal outcome families.
-
-- Full-information maximum likelihood (FIML) for partially observed
-  indicator patterns (`incomplete = TRUE`). Step 3 always performs
-  listwise deletion on missing covariates or distal outcomes.
-
-- Flexible measurement and structural samples: fit the measurement model
-  on a reference sample and apply it to a different analysis sample with
-  the `step1` argument.
-
-- Arbitrary reference class for the multinomial logit parameterization
-  with the `rebase` argument. Log-likelihoods are invariant to this
-  choice.
-
-- Joint covariate and distal outcome estimation (`Zp.names` and
-  `Zo.name` supplied together). The covariate model is estimated first;
-  covariate-adjusted posteriors are then used as priors in the distal
-  outcome step.
-
-- S3 methods (`print`, `summary`, `coef`, `vcov`, `plot`) for all four
-  return subclasses: `tseLCA_measurement`, `tseLCA_covariate`,
-  `tseLCA_distal`, `tseLCA_both`.
+The 1.x function
+[`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+is deprecated; its help page maps each of its arguments to the current
+interface.
 
 ## Getting started
 
-    # Introductory vignette
     vignette("tseLCA-workflow", package = "tseLCA")
 
 ## References
@@ -193,4 +164,4 @@ Useful links:
 
 ## Author
 
-Sam Lee <samlee@arizona.edu>
+Sam Lee <samlee@arizona.edu>, Jay Goodliffe <goodliffe@byu.edu>

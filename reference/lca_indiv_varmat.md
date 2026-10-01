@@ -22,7 +22,7 @@ lca_indiv_varmat(
 
 - Y.exp:
 
-  N x sum(K_h) expanded one-hot indicator matrix.
+  n x sum(R_k) expanded one-hot indicator matrix.
 
 - mDesign.exp:
 
@@ -48,7 +48,7 @@ lca_indiv_varmat(
 
 - u_post:
 
-  Optional N x T matrix of posterior class probabilities. When supplied
+  Optional n x T matrix of posterior class probabilities. When supplied
   (e.g. extracted from `fit0$mU` with `extract_Y_from_mU`),
   `compute_posteriors` is skipped. Default `NULL`.
 
@@ -64,7 +64,7 @@ A list with the following elements:
 
 - `Varmat`:
 
-  Inverse of `Infomat` divided by N, giving the asymptotic
+  Inverse of `Infomat` divided by n, giving the asymptotic
   variance-covariance matrix on the same scale as multilevLCA's
   `$Varmat`. Boundary parameters have zero rows and columns.
 
@@ -75,7 +75,7 @@ A list with the following elements:
 
 - `mScore`:
 
-  N x p matrix of individual score contributions in the unconstrained
+  n x p matrix of individual score contributions in the unconstrained
   parameterization, used for sandwich variance propagation in `lca_vcov`
   and `lca_vcov_distal`.
 
@@ -86,17 +86,17 @@ p\_{it})\\, where \\d_i\\ is the missing-data design indicator matrix.
 
 Assumes `fit0$mPhi` follows the multilevLCA storage convention:
 
-- Dichotomous item h (`ivItemcat[h] == 2`): 1 row = \\P(Y=1\|C)\\; the
+- Dichotomous item k (`ivItemcat[k] == 2`): 1 row = \\P(Y=1\|C)\\; the
   base level \\P(Y=0\|C)\\ is excluded.
 
-- Polytomous item h (`ivItemcat[h] > 2`): `K_h` rows = \\P(Y=0\|C),
-  \ldots, P(Y=K_h-1\|C)\\; the base level is included.
+- Polytomous item k (`ivItemcat[k] > 2`): `R_k` rows = \\P(Y=0\|C),
+  \ldots, P(Y=R_k-1\|C)\\; the base level is included.
 
 `expand_Y` produces one-hot columns in the same order so that
 `expand_Phi(fit0$mPhi, ivItemcat)` aligns column-wise with
 `expand_Y(mY, ivItemcat)`. Free (estimable) parameters per item are the
 single \\P(Y=1\|C)\\ row for dichotomous items, and rows 2 through
-\\K_h\\ for polytomous items (row 1, \\P(Y=0\|C)\\, is the reference).
+\\R_k\\ for polytomous items (row 1, \\P(Y=0\|C)\\, is the reference).
 Boundary parameters (within `boundary.tol` of 0 or 1) are treated as
 fixed: their score columns are zeroed and they do not contribute to the
 information matrix.

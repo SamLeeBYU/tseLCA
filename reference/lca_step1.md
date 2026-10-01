@@ -112,8 +112,8 @@ lca_step1(
   [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
   for the full description of both forms. When supplied, `lca_step1()`
   fits the measurement model with
-  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md)
-  instead of multilevLCA's default k-means-on-principal-components
+  [`lca_step1_startval()`](https://samleebyu.github.io/tseLCA/reference/lca_step1_startval.md),
+  not multilevLCA's default k-means-on-principal-components
   initialization, and `estimate.one.step`, `iter.measurement`, and
   `R2.threshold` (which govern the default restart-on-low-entropy
   behavior) are ignored. Mutually exclusive with `n_init`. Default
@@ -145,6 +145,12 @@ measurement model) and `$fitZ` (two-step covariate model from
 [`fitZ_from_fit0()`](https://samleebyu.github.io/tseLCA/reference/fitZ_from_fit0.md),
 or `NULL`).
 
+## Deprecated
+
+Deprecated as of tseLCA 2.0.0: use
+[`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md).
+It keeps working and warns once per session when called directly.
+
 ## Examples
 
 ``` r
@@ -172,9 +178,9 @@ s1z <- lca_step1(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                  Zp.names = "Zp", use.two.step = TRUE, verbose = TRUE)
 #> fitZ EM converged in 9 iterations.
 s1z$fitZ$mGamma   # two-step gamma estimates
-#>                  C2         C3
-#> Intercept  1.988800 -3.1317130
-#> Zp        -1.017498  0.9190021
+#>                    C2         C3
+#> (Intercept)  1.988800 -3.1317130
+#> Zp          -1.017498  0.9190021
 
 # Many random-classification restarts, keeping the best (analogous to
 # n_init in StepMix or nrep in poLCA)

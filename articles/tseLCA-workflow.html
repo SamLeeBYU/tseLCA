@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,1349 +70,573 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><code>tseLCA</code> implements the BCH and ML bias-adjusted
-three-step estimators for latent class analysis (LCA) with covariates
-and distal outcomes, following the methodological framework for both BCH
-and Vermunt’s ML approaches from Bakk, Tekle &amp; Vermunt (2013).
-<code>tseLCA</code> also builds on top of the two-step LCA estimation
-procedure outlined by Bakk &amp; Kuha (2018), and using the R package
-<code>multilevLCA</code> for efficient measurement model estimation from
-Lyrvall et al. (2025). <code>tseLCA</code> provides analytic sandwich
-variance estimation that propagates measurement uncertainty through the
-classification-error correction in the final step.</p>
-<p>The three-step approach separates the model into:</p>
+<p>Latent class analysis (LCA) groups observations into unobserved
+classes from a set of categorical indicators. Researchers usually also
+want to know how the classes relate to other variables:
+<em>covariates</em> that predict class membership, and <em>distal
+outcomes</em> that the classes predict.</p>
+<p><code>tseLCA</code> does this with <strong>three-step
+estimation</strong>:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Step 1</strong> — Estimate the LCA measurement model
-(class-conditional item probabilities and class prevalences).</li>
+<strong>Measurement model.</strong> Estimate the latent classes from
+the indicators alone (<code><a href="../reference/tse_lca.html">tse_lca()</a></code>).</li>
 <li>
-<strong>Step 2</strong> — Assign posterior class probabilities and
-compute the misclassification matrix.</li>
+<strong>Classification.</strong> Assign observations to classes and
+quantify the classification error (<code><a href="../reference/tse_classify.html">tse_classify()</a></code>).</li>
 <li>
-<strong>Step 3</strong> — Estimate the structural model (covariate
-effects or distal outcome means) using the bias-adjusted weights.</li>
+<strong>Structural model.</strong> Relate the classes to covariates
+(<code><a href="../reference/tse_covariate.html">tse_covariate()</a></code>) or distal outcomes
+(<code><a href="../reference/tse_distal.html">tse_distal()</a></code>), correcting for the classification error of
+Step 2.</li>
 </ol>
-<hr>
+<p>Because the measurement model is fixed before any structural variable
+enters, the covariates and outcomes cannot change what the classes mean.
+That is the main reason to prefer three-step over one-step estimation,
+in which indicators, covariates, and outcomes are modeled jointly and
+the class solution can shift with every change in the structural
+specification. Assigning observations to classes and then analyzing the
+assignments, as if they were the true classes, biases the structural
+estimates toward zero; the bias-adjusted estimators of Bolck, Croon, and
+Hagenaars (2004; “BCH”) and Vermunt (2010; “ML”) remove that bias, and
+<code>tseLCA</code> adds standard errors that account for the
+uncertainty of the Step-1 measurement model (Bakk, Oberski, and Vermunt
+2014).</p>
+<p>Each step returns an object that can be inspected with the usual R
+tools (<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>, <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>,
+<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>, <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>, <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code>,
+<code><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik()</a></code>, <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code>, <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code>,
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>) before moving to the next.
+The one-call interface <code><a href="../reference/tseLCA.html">tseLCA()</a></code> runs all steps at once.</p>
 </div>
 <div class="section level2">
-<h2 id="synthetic-data">Synthetic data<a class="anchor" aria-label="anchor" href="#synthetic-data"></a>
+<h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>
 </h2>
-<p>The built-in data-generating process replicates the design of Bakk
-&amp; Kuha (2018). Each dataset has six binary indicators
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>Y</mi><mn>6</mn></msub></mrow><annotation encoding="application/x-tex">Y_1, \ldots, Y_6</annotation></semantics></math>)
-drawn from a three-class LCA, plus either a covariate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Z</mi><mi>p</mi></msub><mo>∼</mo><mtext mathvariant="normal">Uniform</mtext><mo stretchy="false" form="prefix">{</mo><mn>1</mn><mo>,</mo><mi>…</mi><mo>,</mo><mn>5</mn><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">Z_p \sim \text{Uniform}\{1,\ldots,5\}</annotation></semantics></math>
-predicting class membership, or a continuous distal outcome
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>o</mi></msub><annotation encoding="application/x-tex">Z_o</annotation></semantics></math>
-predicted by class membership.</p>
+<p><code><a href="../reference/generate_data.html">generate_data()</a></code> simulates data from the design of Bakk
+and Kuha (2018): three classes, six binary indicators
+<code>Y1</code>–<code>Y6</code>, and either a covariate <code>Zp</code>
+(<code>scenario = "covariate"</code>) or a continuous distal outcome
+<code>Zo</code> (<code>scenario = "distal"</code>).
+<code>separation</code> controls how well the indicators separate the
+classes; the true class <code>X</code> is included for reference.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># High separation: P(Y_h = 1 | class) = 0.9 / 0.1</span></span>
-<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
-<span>  n <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  separation <span class="op">=</span> <span class="st">"high"</span>,</span>
-<span>  scenario <span class="op">=</span> <span class="st">"covariate"</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">1</span></span>
-<span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1000</span>, separation <span class="op">=</span> <span class="st">"high"</span>, scenario <span class="op">=</span> <span class="st">"covariate"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="va">Zo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/draw_Zo.html">draw_Zo</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">X</span>, <span class="va">bk2018_params</span><span class="op">$</span><span class="va">distal_params</span><span class="op">)</span> <span class="co"># add a distal outcome</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Y1 Y2 Y3 Y4 Y5 Y6 X Zp</span></span>
-<span><span class="co">#&gt; 1  1  1  1  0  0  0 2  1</span></span>
-<span><span class="co">#&gt; 2  0  0  0  0  0  0 3  4</span></span>
-<span><span class="co">#&gt; 3  1  0  1  0  0  0 2  1</span></span>
-<span><span class="co">#&gt; 4  1  1  0  1  1  1 1  2</span></span>
-<span><span class="co">#&gt; 5  0  0  0  0  0  0 3  5</span></span>
-<span><span class="co">#&gt; 6  1  1  1  1  1  1 1  3</span></span></code></pre></div>
+<span><span class="co">#&gt;   Y1 Y2 Y3 Y4 Y5 Y6 X Zp           Zo</span></span>
+<span><span class="co">#&gt; 1  1  1  1  0  0  0 2  1 -0.230182622</span></span>
+<span><span class="co">#&gt; 2  0  1  1  0  0  0 3  4  0.769758959</span></span>
+<span><span class="co">#&gt; 3  1  1  0  0  0  0 2  1  0.175955765</span></span>
+<span><span class="co">#&gt; 4  0  1  1  0  1  0 2  2  2.670139514</span></span>
+<span><span class="co">#&gt; 5  0  0  1  0  0  0 3  5  0.005199824</span></span>
+<span><span class="co">#&gt; 6  1  0  1  1  1  1 1  3 -1.356208871</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="step-1-the-measurement-model">Step 1: the measurement model<a class="anchor" aria-label="anchor" href="#step-1-the-measurement-model"></a>
+</h2>
+<div class="section level3">
+<h3 id="choosing-the-number-of-classes">Choosing the number of classes<a class="anchor" aria-label="anchor" href="#choosing-the-number-of-classes"></a>
+</h3>
+<p>The number of classes is chosen from the measurement model alone,
+before any covariates or outcomes are considered. With several values of
+<code>nclass</code>, <code><a href="../reference/tse_lca.html">tse_lca()</a></code> returns a class-enumeration
+table of fit statistics (see Nylund, Asparouhov, and Muthén 2007, and
+Masyn 2013, for guidance on using them).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Low separation: P(Y_h = 1 | class) = 0.7 / 0.3</span></span>
-<span><span class="co"># Zp and X are identical to 'd' because seed = 1</span></span>
-<span><span class="va">d.low</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
-<span>  n <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  separation <span class="op">=</span> <span class="st">"low"</span>,</span>
-<span>  scenario <span class="op">=</span> <span class="st">"covariate"</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">1</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d.low</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Y1 Y2 Y3 Y4 Y5 Y6 X Zp</span></span>
-<span><span class="co">#&gt; 1  1  1  1  0  0  0 2  1</span></span>
-<span><span class="co">#&gt; 2  1  0  0  1  0  1 3  4</span></span>
-<span><span class="co">#&gt; 3  0  0  1  0  0  0 2  1</span></span>
-<span><span class="co">#&gt; 4  1  1  0  0  1  1 1  2</span></span>
-<span><span class="co">#&gt; 5  0  0  1  1  1  0 3  5</span></span>
-<span><span class="co">#&gt; 6  1  1  1  1  1  1 1  3</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="step-1-measurement-model">Step 1: Measurement model<a class="anchor" aria-label="anchor" href="#step-1-measurement-model"></a>
-</h2>
-<p><code><a href="../reference/three_step.html">three_step()</a></code> with no <code>Zp.names</code> or
-<code>Zo.name</code> fits the measurement model only, returning a
-<code>tseLCA_measurement</code> object. Internally this calls
-<code><a href="https://rdrr.io/pkg/multilevLCA/man/multiLCA.html" class="external-link">multilevLCA::multiLCA()</a></code> with random restarts when entropy
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>
-is low.</p>
+<code class="sourceCode R"><span><span class="va">f_items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Y1</span>, <span class="va">Y2</span>, <span class="va">Y3</span>, <span class="va">Y4</span>, <span class="va">Y5</span>, <span class="va">Y6</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span></span>
+<span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_lca.html">tse_lca</a></span><span class="op">(</span><span class="va">f_items</span>, data <span class="op">=</span> <span class="va">d</span>, nclass <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">sel</span></span>
+<span><span class="co">#&gt; Latent class enumeration (measurement model)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  nclass logLik npar      AIC      BIC    SABIC entropy.R2 min.class</span></span>
+<span><span class="co">#&gt;       1  -3989    6 7989.70  8019.15  8000.09          NA   1.00000</span></span>
+<span><span class="co">#&gt;       2  -3232   13 6490.52  6554.33  6513.04      0.8651   0.38942</span></span>
+<span><span class="co">#&gt;       3  -2960   20 5959.92  6058.07* 5994.55*     0.8720   0.31573</span></span>
+<span><span class="co">#&gt;       4  -2953   27 5959.59* 6092.10  6006.35      0.8672   0.01781</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; * smallest value of each criterion. N = 1000</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  measurement.tol <span class="op">=</span> <span class="fl">1e-8</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.measurement</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Measurement Model --------------------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1455.5052</span></span>
-<span><span class="co">#&gt; AIC            : 2951.0104</span></span>
-<span><span class="co">#&gt; BIC            : 3035.3025</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8780</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Class prevalences:</span></span>
-<span><span class="co">#&gt;             </span></span>
-<span><span class="co">#&gt; P(C1) 0.3570</span></span>
-<span><span class="co">#&gt; P(C2) 0.3308</span></span>
-<span><span class="co">#&gt; P(C3) 0.3122</span></span>
-<span><span class="co">#&gt; attr(,"names")</span></span>
-<span><span class="co">#&gt; [1] "C1" "C2" "C3"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Item-response probabilities (P(Y=1|class)):</span></span>
-<span><span class="co">#&gt;             C1     C2     C3</span></span>
-<span><span class="co">#&gt; P(Y1|C) 0.9237 0.8621 0.1187</span></span>
-<span><span class="co">#&gt; P(Y2|C) 0.9083 0.9219 0.1178</span></span>
-<span><span class="co">#&gt; P(Y3|C) 0.9148 0.9571 0.0731</span></span>
-<span><span class="co">#&gt; P(Y4|C) 0.8843 0.1481 0.0875</span></span>
-<span><span class="co">#&gt; P(Y5|C) 0.8817 0.1340 0.1118</span></span>
-<span><span class="co">#&gt; P(Y6|C) 0.9174 0.0889 0.1252</span></span></code></pre></div>
-<p>With low separation the measurement model can struggle to find the
-global maximum. Use <code>iter.measurement</code> to trigger the number
-of random restarts whenever entropy
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>
-falls below <code>R2.threshold</code>.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tseLCA-workflow_files/figure-html/enumeration-plot-1.png" class="r-plt" alt="" width="672"></p>
+<p>The BIC and the sample-size adjusted BIC (SABIC) favor three classes.
+The AIC, which penalizes additional parameters less, marginally prefers
+four, but the fourth class holds less than 2% of the sample, a common
+sign of over-extraction; the three-class model is also the more
+interpretable. In practice the choice combines these criteria with class
+sizes, separation (entropy), and substantive interpretation.
+<code><a href="../reference/best_model.html">best_model()</a></code> extracts the model selected by a criterion;
+<code>sel[[k]]</code> extracts the <code>k</code>-class model.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.low.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.low</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  iter.measurement <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  R2.threshold <span class="op">=</span> <span class="fl">0.9</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.low.measurement</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Measurement Model --------------------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Log-likelihood : -2019.2458</span></span>
-<span><span class="co">#&gt; AIC            : 4078.4916</span></span>
-<span><span class="co">#&gt; BIC            : 4162.7837</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.3328</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Class prevalences:</span></span>
-<span><span class="co">#&gt;             </span></span>
-<span><span class="co">#&gt; P(C1) 0.2744</span></span>
-<span><span class="co">#&gt; P(C2) 0.4561</span></span>
-<span><span class="co">#&gt; P(C3) 0.2695</span></span>
-<span><span class="co">#&gt; attr(,"names")</span></span>
-<span><span class="co">#&gt; [1] "C1" "C2" "C3"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Item-response probabilities (P(Y=1|class)):</span></span>
-<span><span class="co">#&gt;             C1     C2     C3</span></span>
-<span><span class="co">#&gt; P(Y1|C) 0.7330 0.6418 0.3345</span></span>
-<span><span class="co">#&gt; P(Y2|C) 0.5721 0.7545 0.3224</span></span>
-<span><span class="co">#&gt; P(Y3|C) 0.6937 0.7101 0.3035</span></span>
-<span><span class="co">#&gt; P(Y4|C) 0.6849 0.4590 0.2104</span></span>
-<span><span class="co">#&gt; P(Y5|C) 0.6952 0.4060 0.3787</span></span>
-<span><span class="co">#&gt; P(Y6|C) 0.8659 0.3556 0.2457</span></span></code></pre></div>
-<p>The <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> S3 method delegates to
-<code>multilevLCA</code>’s item-profile plot.</p>
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/best_model.html">best_model</a></span><span class="op">(</span><span class="va">sel</span>, criterion <span class="op">=</span> <span class="st">"BIC"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="inspecting-the-measurement-model">Inspecting the measurement model<a class="anchor" aria-label="anchor" href="#inspecting-the-measurement-model"></a>
+</h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">d.measurement</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tseLCA-workflow_files/figure-html/plot-measurement-1.png" class="r-plt" alt="" width="576"></p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="two-step-estimates">Two-step estimates<a class="anchor" aria-label="anchor" href="#two-step-estimates"></a>
-</h2>
-<p><code><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0()</a></code> fixes the measurement parameters at
-their Step-1 values and estimates multinomial logit coefficients
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-with EM. These two-step estimates serve as starting values for Step 3
-and are generally close to the final three-step estimates.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Latent class measurement model</span></span>
+<span><span class="co">#&gt;   Classes: 3   N: 1000</span></span>
+<span><span class="co">#&gt;   Log-lik: -2959.9591 (df = 20)   AIC: 5959.92   BIC: 6058.07</span></span>
+<span><span class="co">#&gt;   Entropy R²: 0.8720</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Class sizes:</span></span>
+<span><span class="co">#&gt;     C1     C2     C3 </span></span>
+<span><span class="co">#&gt; 0.3501 0.3157 0.3341 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Item-response probabilities:</span></span>
+<span><span class="co">#&gt;             C1     C2      C3</span></span>
+<span><span class="co">#&gt; P(Y1|C) 0.8938 0.8915 0.07963</span></span>
+<span><span class="co">#&gt; P(Y2|C) 0.9045 0.8671 0.13936</span></span>
+<span><span class="co">#&gt; P(Y3|C) 0.8907 0.8505 0.07364</span></span>
+<span><span class="co">#&gt; P(Y4|C) 0.8969 0.1062 0.10002</span></span>
+<span><span class="co">#&gt; P(Y5|C) 0.9218 0.1032 0.10981</span></span>
+<span><span class="co">#&gt; P(Y6|C) 0.9034 0.1081 0.09452</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.fitZ</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0</a></span><span class="op">(</span></span>
-<span>  fit0 <span class="op">=</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">measurement_model</span><span class="op">$</span><span class="va">fit0</span>,</span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co"># True slopes: -1 (C2) and +1 (C3) relative to C1</span></span>
-<span><span class="va">d.fitZ</span><span class="op">$</span><span class="va">mGamma</span></span>
-<span><span class="co">#&gt;                   C2         C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934130 -3.4524271</span></span>
-<span><span class="co">#&gt; Zp        -0.9411383  0.8971774</span></span></code></pre></div>
-<p>Starting values from the high-separation fit can be passed to the
-low-separation fit to help it converge.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tseLCA-workflow_files/figure-html/measurement-plot-1.png" class="r-plt" alt="" width="672"></p>
+<p><code><a href="../reference/class_sizes.html">class_sizes()</a></code> and <code><a href="../reference/class_sizes.html">item_probs()</a></code> give the
+parameters on the probability scale; <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> and
+<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> give them on the unconstrained log-ratio scale in
+which they are estimated.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.low.fitZ</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0</a></span><span class="op">(</span></span>
-<span>  fit0 <span class="op">=</span> <span class="va">d.low.measurement</span><span class="op">$</span><span class="va">measurement_model</span><span class="op">$</span><span class="va">fit0</span>,</span>
-<span>  data <span class="op">=</span> <span class="va">d.low</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  starting_val <span class="op">=</span> <span class="va">d.fitZ</span><span class="op">$</span><span class="va">mGamma</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">d.low.fitZ</span><span class="op">$</span><span class="va">mGamma</span></span>
-<span><span class="co">#&gt;                   C2         C3</span></span>
-<span><span class="co">#&gt; Intercept  3.0476417 -3.6909745</span></span>
-<span><span class="co">#&gt; Zp        -0.9816197  0.9483004</span></span></code></pre></div>
-<hr>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/class_sizes.html">class_sizes</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        C1        C2        C3 </span></span>
+<span><span class="co">#&gt; 0.3501193 0.3157328 0.3341479</span></span>
+<span><span class="fu"><a href="../reference/class_sizes.html">item_probs</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                C1        C2         C3</span></span>
+<span><span class="co">#&gt; P(Y1|C) 0.8937779 0.8914562 0.07963285</span></span>
+<span><span class="co">#&gt; P(Y2|C) 0.9044773 0.8670541 0.13936231</span></span>
+<span><span class="co">#&gt; P(Y3|C) 0.8906931 0.8505388 0.07364458</span></span>
+<span><span class="co">#&gt; P(Y4|C) 0.8969491 0.1062298 0.10001735</span></span>
+<span><span class="co">#&gt; P(Y5|C) 0.9217944 0.1031584 0.10980622</span></span>
+<span><span class="co">#&gt; P(Y6|C) 0.9034094 0.1080517 0.09451956</span></span></code></pre></div>
+<p>Latent class models can have several local optima. By default
+<code><a href="../reference/tse_lca.html">tse_lca()</a></code> uses the k-means initialization of
+<strong>multilevLCA</strong>, with additional random starts when the
+entropy is low; <code>control = tse_control(n_init = 20)</code> fits the
+model from 20 random starts, and <code>start</code> fixes a starting
+classification.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="three-step-estimation">Three-Step estimation<a class="anchor" aria-label="anchor" href="#three-step-estimation"></a>
+<h2 id="step-2-classification">Step 2: classification<a class="anchor" aria-label="anchor" href="#step-2-classification"></a>
 </h2>
-<div class="section level3">
-<h3 id="ml-estimator-default">ML estimator (default)<a class="anchor" aria-label="anchor" href="#ml-estimator-default"></a>
-</h3>
-<p>A single <code><a href="../reference/three_step.html">three_step()</a></code> call handles all three steps. By
-default it uses the ML correction of Vermunt (2010) and modal class
-assignment.</p>
+<p><code><a href="../reference/tse_classify.html">tse_classify()</a></code> assigns each observation to its most
+likely class (modal assignment) or, with
+<code>assignment = "proportional"</code>, to every class with its
+posterior probability as weight. It reports the classification-error
+probabilities
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo>=</mo><mi>s</mi><mo>∣</mo><mi>X</mi><mo>=</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">P(W = s \mid X = t)</annotation></semantics></math>
+between the true class
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
+and the assigned class
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>,
+which the Step-3 estimators correct for.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.three_step</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1299</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7143</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
+<code class="sourceCode R"><span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_classify.html">tse_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="va">cl</span></span>
+<span><span class="co">#&gt; Latent class assignment (Step 2)</span></span>
+<span><span class="co">#&gt;   Classes: 3   Assignment: modal   N: 1000   Entropy R²: 0.8721</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
+<span><span class="co">#&gt; Classification error probabilities P(W = s | X = t)</span></span>
+<span><span class="co">#&gt; (rows: true class X; columns: assigned class W)</span></span>
+<span><span class="co">#&gt;       W=C1  W=C2  W=C3</span></span>
+<span><span class="co">#&gt; X=C1 0.973 0.023 0.004</span></span>
+<span><span class="co">#&gt; X=C2 0.031 0.924 0.046</span></span>
+<span><span class="co">#&gt; X=C3 0.004 0.025 0.971</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.0411    0.3237  6.3050 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8821    0.1406 -6.2730 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.4836    0.5913 -5.8913 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.8985    0.1435  6.2606 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<p>The standard <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> S3 methods
-work on any <code>tseLCA</code> object.</p>
+<span><span class="co">#&gt; Class proportions: estimated (measurement model) and assigned</span></span>
+<span><span class="co">#&gt;              C1    C2    C3</span></span>
+<span><span class="co">#&gt; estimated 0.350 0.316 0.334</span></span>
+<span><span class="co">#&gt; assigned  0.352 0.308 0.340</span></span></code></pre></div>
+<p>With these well-separated classes, 92–97% of the members of each
+class are assigned to it. <code><a href="../reference/posterior.html">posterior()</a></code> and
+<code><a href="../reference/posterior.html">classes()</a></code> return the posterior probabilities and the modal
+classes.</p>
+</div>
+<div class="section level2">
+<h2 id="step-3-covariates">Step 3: covariates<a class="anchor" aria-label="anchor" href="#step-3-covariates"></a>
+</h2>
+<p><code><a href="../reference/tse_covariate.html">tse_covariate()</a></code> estimates a multinomial logistic
+regression of class membership on the covariates. The default estimator
+is ML with standard errors corrected for the Step-1 uncertainty.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">d.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   C2         C3</span></span>
-<span><span class="co">#&gt; Intercept  2.0410764 -3.4835616</span></span>
-<span><span class="co">#&gt; Zp        -0.8820801  0.8984978</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">d.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              Intercept:C2        Zp:C2 Intercept:C3        Zp:C3</span></span>
-<span><span class="co">#&gt; Intercept:C2  0.104798063 -0.041343485  -0.01048872  0.001510799</span></span>
-<span><span class="co">#&gt; Zp:C2        -0.041343485  0.019772531   0.01121397 -0.001932282</span></span>
-<span><span class="co">#&gt; Intercept:C3 -0.010488717  0.011213968   0.34964328 -0.082842095</span></span>
-<span><span class="co">#&gt; Zp:C3         0.001510799 -0.001932282  -0.08284210  0.020597096</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="proportional-assignment">Proportional assignment<a class="anchor" aria-label="anchor" href="#proportional-assignment"></a>
-</h3>
-<p>With modal assignment (<code>use.modal.assignment = TRUE</code>, the
-default), the Jacobian in the measurement-uncertainty correction is not
-mathematically defined. Setting
-<code>use.modal.assignment = FALSE</code> uses soft posterior weights
-throughout, giving an analytic Jacobian and is recommended when
-separation is moderate or low. When
-<code>use.modal.assignment = TRUE</code>, the Jacobian
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mfrac><mrow><mi>∂</mi><msub><mi>θ</mi><mn>2</mn></msub></mrow><mrow><mi>∂</mi><msub><mi>θ</mi><mn>1</mn></msub></mrow></mfrac><annotation encoding="application/x-tex">\frac{\partial\theta_2}{\partial\theta_1}</annotation></semantics></math>
-computed using the full posterior weights (e.g., behaving as if
-<code>use.modal.assignment = FALSE</code>) to maintain well-defined
-derivatives, though three-step estimates would still be computed with
-modal assignment as specified. The different is negligible when
-separation is high.</p>
+<code class="sourceCode R"><span><span class="va">fc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="va">cl</span>, <span class="op">~</span> <span class="va">Zp</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fc</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Three-step latent class model: covariates</span></span>
+<span><span class="co">#&gt;   Classes: 3   Estimator: ML   N: 1000</span></span>
+<span><span class="co">#&gt;   Log-lik: -2717.7982 (df = 22)   AIC: 5479.60   BIC: 5587.57</span></span>
+<span><span class="co">#&gt;   Entropy R² (covariate-adjusted): 0.8861</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Covariate effects on class membership (multinomial logit):</span></span>
+<span><span class="co">#&gt;                Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span><span class="co">#&gt; (Intercept):C2  1.96000    0.24865   7.882 3.21e-15 ***</span></span>
+<span><span class="co">#&gt; Zp:C2          -0.90913    0.11546  -7.874 3.43e-15 ***</span></span>
+<span><span class="co">#&gt; (Intercept):C3 -3.79821    0.37232 -10.201  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; Zp:C3           1.03333    0.09398  10.996  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<p>The coefficients are named <code>covariate:class</code> and the first
+class is the reference. The generic tools work as usual:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.three_step.prop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.prop</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0617</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1234</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7078</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8680  (covariate-adjusted)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fc</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                     2.5 %     97.5 %</span></span>
+<span><span class="co">#&gt; (Intercept):C2  1.4726472  2.4473489</span></span>
+<span><span class="co">#&gt; Zp:C2          -1.1354206 -0.6828305</span></span>
+<span><span class="co">#&gt; (Intercept):C3 -4.5279423 -3.0684755</span></span>
+<span><span class="co">#&gt; Zp:C3           0.8491445  1.2175239</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC</a></span><span class="op">(</span><span class="va">fc</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 5479.596</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fc</span><span class="op">)</span> <span class="co"># Wald test of each covariate term, across all classes</span></span>
+<span><span class="co">#&gt; Wald tests of covariate terms (all class contrasts)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.1096    0.3287  6.4183 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.9121    0.1460 -6.2456 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.6508    0.6430 -5.6777 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.9367    0.1547  6.0563 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt;    Df Chisq Pr(&gt;Chisq)    </span></span>
+<span><span class="co">#&gt; Zp  2 183.4  &lt; 2.2e-16 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="simple-robust-standard-errors">Simple (robust) standard errors<a class="anchor" aria-label="anchor" href="#simple-robust-standard-errors"></a>
-</h3>
-<p>Setting <code>use.simple.cov = TRUE</code> skips the
-measurement-uncertainty correction and returns the robust sandwich SEs
-from Step 3 only. When separation is high the correction is negligible,
-so this is a useful computational shortcut for large samples.</p>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<p><code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> gives the class-membership probabilities at
+given covariate values:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.three_step.simple</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simple</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1299</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7143</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.0411    0.3214  6.3504 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8821    0.1394 -6.3257 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.4836    0.5876 -5.9281 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.8985    0.1426  6.3008 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fc</span>, newdata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Zp <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          C1         C2         C3</span></span>
+<span><span class="co">#&gt; 1 0.2548985 0.72904693 0.01605453</span></span>
+<span><span class="co">#&gt; 2 0.4293142 0.49469228 0.07599355</span></span>
+<span><span class="co">#&gt; 3 0.5097606 0.23664534 0.25359408</span></span>
+<span><span class="co">#&gt; 4 0.3868254 0.07234665 0.54082798</span></span>
+<span><span class="co">#&gt; 5 0.1998141 0.01505572 0.78513019</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="estimators-and-standard-errors">Estimators and standard errors<a class="anchor" aria-label="anchor" href="#estimators-and-standard-errors"></a>
+</h3>
+<p>The BCH estimator and the uncorrected three-step estimator (which
+analyzes the assigned classes as if they were the true classes) are
+available for comparison; so is the two-step estimator of Bakk and Kuha
+(2018).</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fc_bch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="va">cl</span>, <span class="op">~</span> <span class="va">Zp</span>, method <span class="op">=</span> <span class="st">"BCH"</span><span class="op">)</span></span>
+<span><span class="va">fc_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="va">cl</span>, <span class="op">~</span> <span class="va">Zp</span>, method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
+<span><span class="va">ft</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_twostep.html">tse_twostep</a></span><span class="op">(</span><span class="va">m</span>, <span class="op">~</span> <span class="va">Zp</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  ML <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fc</span><span class="op">)</span>, BCH <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fc_bch</span><span class="op">)</span>, uncorrected <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fc_raw</span><span class="op">)</span>, two.step <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">ft</span><span class="op">)</span></span>
+<span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                    ML    BCH uncorrected two.step</span></span>
+<span><span class="co">#&gt; (Intercept):C2  1.960  1.911       1.521    1.856</span></span>
+<span><span class="co">#&gt; Zp:C2          -0.909 -0.873      -0.703   -0.866</span></span>
+<span><span class="co">#&gt; (Intercept):C3 -3.798 -3.901      -3.156   -3.729</span></span>
+<span><span class="co">#&gt; Zp:C3           1.033  1.055       0.875    1.020</span></span></code></pre></div>
+<p>The uncorrected estimates are attenuated toward zero (the true slopes
+are
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>1</mn></mrow><annotation encoding="application/x-tex">-1</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>1</mn><annotation encoding="application/x-tex">1</annotation></semantics></math>);
+the bias-adjusted estimates are not.</p>
+<p><code>se = "robust"</code> omits the Step-1 correction. With
+well-separated classes the two are close; the correction matters more
+when classes are less distinct.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  corrected <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">fc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  robust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="fu"><a href="../reference/tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="va">cl</span>, <span class="op">~</span> <span class="va">Zp</span>, se <span class="op">=</span> <span class="st">"robust"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                corrected robust</span></span>
+<span><span class="co">#&gt; (Intercept):C2    0.2487 0.2417</span></span>
+<span><span class="co">#&gt; Zp:C2             0.1155 0.1093</span></span>
+<span><span class="co">#&gt; (Intercept):C3    0.3723 0.3608</span></span>
+<span><span class="co">#&gt; Zp:C3             0.0940 0.0923</span></span></code></pre></div>
+<p>Under low separation, proportional assignment
+(<code>tse_classify(m, assignment = "proportional")</code>) with the ML
+estimator is generally the most reliable choice.</p>
 </div>
 <div class="section level3">
-<h3 id="bch-estimator">BCH estimator<a class="anchor" aria-label="anchor" href="#bch-estimator"></a>
+<h3 id="reference-class-and-covariate-formulas">Reference class and covariate formulas<a class="anchor" aria-label="anchor" href="#reference-class-and-covariate-formulas"></a>
 </h3>
-<p>The BCH correction of Bolck, Croon &amp; Hagenaars (2004) is
-available with <code>use.bch = TRUE</code>. It works well with high
-separation but can produce an ill-conditioned Hessian when separation is
-low (resulting in a covariance matrix that is not positive
-semi-definite), in which case the ML estimator is preferred.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.three_step.bch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.bch <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.bch</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : BCH</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.1908</span></span>
-<span><span class="co">#&gt; AIC            : 2758.3815</span></span>
-<span><span class="co">#&gt; BIC            : 2926.9658</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8704  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.0073    0.3157  6.3588 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8634    0.1330 -6.4912 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.3019    0.5410 -6.1032 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.8558    0.1326  6.4544 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<p>BCH with low-separation data can fail to produce a positive
-semi-definite Hessian. The ML estimator with proportional assignment is
-more reliable in this setting.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Not run in vignette build (slow and and produces warnings)</span></span>
-<span><span class="va">bch.fail</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.low</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.bch <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  maxIter.measurement <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>  iter.measurement <span class="op">=</span> <span class="fl">10</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<p><code>ref</code> (or <code><a href="https://rdrr.io/r/stats/relevel.html" class="external-link">relevel()</a></code> on a fitted model)
+changes the reference class. Covariates follow the usual formula syntax,
+including factors, interactions, and transformations. A variable created
+after classification is supplied with <code>data</code>, which must hold
+the classified rows (it may add columns).</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Preferred approach for low separation</span></span>
-<span><span class="va">d.low.three_step.prop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.low</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.low.three_step.prop</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1979.3512</span></span>
-<span><span class="co">#&gt; AIC            : 4038.7025</span></span>
-<span><span class="co">#&gt; BIC            : 4207.2868</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.3520  (covariate-adjusted)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/relevel.html" class="external-link">relevel</a></span><span class="op">(</span><span class="va">fc</span>, ref <span class="op">=</span> <span class="st">"C3"</span><span class="op">)</span>, matrix <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                    C1        C2</span></span>
+<span><span class="co">#&gt; (Intercept)  3.798209  5.758207</span></span>
+<span><span class="co">#&gt; Zp          -1.033334 -1.942460</span></span>
+<span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">Zp</span> <span class="op">&gt;</span> <span class="fl">3</span>, <span class="st">"high"</span>, <span class="st">"low"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="fu"><a href="../reference/tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="va">cl</span>, <span class="op">~</span> <span class="va">Zp</span> <span class="op">+</span> <span class="va">group</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Wald tests of covariate terms (all class contrasts)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  3.0301 -3.6881</span></span>
-<span><span class="co">#&gt; Zp        -0.9752  0.9477</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   3.2062    2.2801  1.4062 0.1597     </span></span>
-<span><span class="co">#&gt; Zp:C2         -1.0742    1.8972 -0.5662 0.5713     </span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.8414    3.0021 -1.2796 0.2007     </span></span>
-<span><span class="co">#&gt; Zp:C3          0.9554    0.6046  1.5802 0.1141     </span></span>
+<span><span class="co">#&gt;       Df   Chisq Pr(&gt;Chisq)    </span></span>
+<span><span class="co">#&gt; Zp     2 98.3038     &lt;2e-16 ***</span></span>
+<span><span class="co">#&gt; group  2  1.5912     0.4513    </span></span>
 <span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<hr>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="choosing-the-reference-class">Choosing the reference class<a class="anchor" aria-label="anchor" href="#choosing-the-reference-class"></a>
+<h2 id="step-3-distal-outcomes">Step 3: distal outcomes<a class="anchor" aria-label="anchor" href="#step-3-distal-outcomes"></a>
 </h2>
-<p>By default, class 1 (<code>"C1"</code>) is the reference category for
-the multinomial logit parameterization. The <code>rebase</code> argument
-changes this. Estimates are reparameterized consistently:
-log-likelihoods are invariant, and the coefficients satisfy the
-transitivity relation
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>π</mi><mi>t</mi></msub><mi>/</mi><msub><mi>π</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>π</mi><mi>t</mi></msub><mi>/</mi><msub><mi>π</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>π</mi><mi>j</mi></msub><mi>/</mi><msub><mi>π</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\log(\pi_t / \pi_j) = \log(\pi_t / \pi_1) - \log(\pi_j / \pi_1)</annotation></semantics></math>.</p>
+<p><code><a href="../reference/tse_distal.html">tse_distal()</a></code> estimates the distribution of a distal
+outcome in each class. Outcomes can be <code>"gaussian"</code> (class
+means with a common variance), <code>"poisson"</code>,
+<code>"binomial"</code>, or <code>"multinomial"</code> (nominal).</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Default: C1 as reference</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simple</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1299</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7143</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
+<code class="sourceCode R"><span><span class="va">fd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_distal.html">tse_distal</a></span><span class="op">(</span><span class="va">cl</span>, <span class="va">Zo</span> <span class="op">~</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fd</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Three-step latent class model: distal outcome</span></span>
+<span><span class="co">#&gt;   Classes: 3   Estimator: ML   Family: gaussian   N: 1000</span></span>
+<span><span class="co">#&gt;   Log-lik: -4429.4154 (df = 24)   AIC: 8906.83   BIC: 9024.62</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.0411    0.3214  6.3504 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8821    0.1394 -6.3257 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.4836    0.5876 -5.9281 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.8985    0.1426  6.3008 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Distal outcome means by class:</span></span>
+<span><span class="co">#&gt;       Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span><span class="co">#&gt; mu_C1 -0.88911    0.05593 -15.896   &lt;2e-16 ***</span></span>
+<span><span class="co">#&gt; mu_C2  1.04803    0.06688  15.669   &lt;2e-16 ***</span></span>
+<span><span class="co">#&gt; mu_C3 -0.10743    0.06087  -1.765   0.0776 .  </span></span>
 <span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<p><code><a href="../reference/omnibus_test.html">omnibus_test()</a></code> tests whether the outcome’s distribution
+differs across classes:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.three_step.simpleC2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  rebase <span class="op">=</span> <span class="st">"C2"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simpleC2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1299</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7143</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/omnibus_test.html">omnibus_test</a></span><span class="op">(</span><span class="va">fd</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C1      C3</span></span>
-<span><span class="co">#&gt; Intercept -2.1941 -5.6433</span></span>
-<span><span class="co">#&gt; Zp         0.9413  1.8377</span></span>
+<span><span class="co">#&gt;  Wald test of equal distal outcome distributions across latent classes</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C1  -2.0411    0.3214 -6.3504 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C1          0.8821    0.1394  6.3257 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -5.5246    0.6823 -8.0976 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.7806    0.2078  8.5696 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<span><span class="co">#&gt; data:  gaussian distal outcome, 3 classes</span></span>
+<span><span class="co">#&gt; W = 510.3, df = 2, p-value &lt; 2.2e-16</span></span></code></pre></div>
+<p>For a nominal outcome, <code>coef(fit, matrix = TRUE)</code> gives
+the class-by-category probability matrix:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.three_step.simpleC3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.simple.cov <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  rebase <span class="op">=</span> <span class="st">"C3"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.simpleC3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1299</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7143</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
+<code class="sourceCode R"><span><span class="va">d</span><span class="op">$</span><span class="va">Zcat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">Zo</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="op">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="cn">Inf</span><span class="op">)</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"mid"</span>, <span class="st">"high"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_distal.html">tse_distal</a></span><span class="op">(</span><span class="va">cl</span>, <span class="va">Zcat</span> <span class="op">~</span> <span class="fl">1</span>, family <span class="op">=</span> <span class="st">"multinomial"</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fm</span>, matrix <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      low   mid  high</span></span>
+<span><span class="co">#&gt; C1 0.627 0.312 0.061</span></span>
+<span><span class="co">#&gt; C2 0.086 0.218 0.696</span></span>
+<span><span class="co">#&gt; C3 0.361 0.350 0.289</span></span>
+<span><span class="fu"><a href="../reference/omnibus_test.html">omnibus_test</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C1      C2</span></span>
-<span><span class="co">#&gt; Intercept  3.4492  5.6433</span></span>
-<span><span class="co">#&gt; Zp        -0.8964 -1.8377</span></span>
+<span><span class="co">#&gt;  Wald test of equal distal outcome distributions across latent classes</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C1   3.4836    0.5876  5.9281 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C1         -0.8985    0.1426 -6.3008 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C2   5.5246    0.6823  8.0976 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -1.7806    0.2078 -8.5696 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="passing-a-pre-fitted-measurement-model">Passing a pre-fitted measurement model<a class="anchor" aria-label="anchor" href="#passing-a-pre-fitted-measurement-model"></a>
-</h2>
-<p>The <code>step1</code> argument accepts any previously fitted
-<code>tseLCA</code> object or the raw output of
-<code><a href="../reference/lca_step1.html">lca_step1()</a></code>. This is useful when you want to:</p>
-<ul>
-<li>Reuse an expensive measurement model across multiple structural
-models.</li>
-<li>Estimate the measurement model on a large reference sample and apply
-it to a smaller analysis sample.</li>
-<li>Inject custom two-step starting values computed with
-<code><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0()</a></code>.</li>
-</ul>
+<span><span class="co">#&gt; data:  multinomial distal outcome, 3 classes</span></span>
+<span><span class="co">#&gt; W = 417.4, df = 4, p-value &lt; 2.2e-16</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="covariates-and-a-distal-outcome">Covariates and a distal outcome<a class="anchor" aria-label="anchor" href="#covariates-and-a-distal-outcome"></a>
+</h3>
+<p>Passing a covariate model to <code><a href="../reference/tse_distal.html">tse_distal()</a></code> fits both
+parts. The class prior then depends on the covariates, and the
+uncertainty of the covariate model is propagated to the distal
+estimates.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Reuse the measurement model estimated above</span></span>
-<span><span class="va">d.three_step.prop2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">measurement_model</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.prop2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0617</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1234</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7078</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8680  (covariate-adjusted)</span></span>
+<code class="sourceCode R"><span><span class="va">fb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_distal.html">tse_distal</a></span><span class="op">(</span><span class="va">fc</span>, <span class="va">Zo</span> <span class="op">~</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">fb</span></span>
+<span><span class="co">#&gt; Three-step latent class model: covariates and distal outcome</span></span>
+<span><span class="co">#&gt;   Classes: 3   Estimator: ML   Family: gaussian   N: 1000</span></span>
+<span><span class="co">#&gt;   Log-lik: -4176.2103 (df = 26)   AIC: 8404.42   BIC: 8532.02</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.1096    0.3287  6.4183 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.9121    0.1460 -6.2456 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.6508    0.6430 -5.6777 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.9367    0.1547  6.0563 &lt; 0.001 ***</span></span>
+<span><span class="co">#&gt; Covariate effects on class membership (multinomial logit):</span></span>
+<span><span class="co">#&gt;                Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span><span class="co">#&gt; (Intercept):C2  1.96000    0.24865   7.882 3.21e-15 ***</span></span>
+<span><span class="co">#&gt; Zp:C2          -0.90913    0.11546  -7.874 3.43e-15 ***</span></span>
+<span><span class="co">#&gt; (Intercept):C3 -3.79821    0.37232 -10.201  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; Zp:C3           1.03333    0.09398  10.996  &lt; 2e-16 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Distal outcome means by class:</span></span>
+<span><span class="co">#&gt;       Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span><span class="co">#&gt; mu_C1 -0.89181    0.05550 -16.070   &lt;2e-16 ***</span></span>
+<span><span class="co">#&gt; mu_C2  1.05856    0.06580  16.087   &lt;2e-16 ***</span></span>
+<span><span class="co">#&gt; mu_C3 -0.07797    0.05580  -1.397    0.162    </span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="all-steps-in-one-call">All steps in one call<a class="anchor" aria-label="anchor" href="#all-steps-in-one-call"></a>
+</h2>
+<p><code><a href="../reference/tseLCA.html">tseLCA()</a></code> runs the three steps from one formula,
+<code>indicators ~ covariates | distal outcome</code>. The components
+remain available through <code><a href="../reference/measurement.html">measurement()</a></code>,
+<code><a href="../reference/measurement.html">classification()</a></code>, <code><a href="../reference/measurement.html">covariate()</a></code>, and
+<code><a href="../reference/measurement.html">distal()</a></code>.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Measurement model from a larger low-separation sample</span></span>
-<span><span class="va">d.low2000</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
-<span>  n <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>  separation <span class="op">=</span> <span class="st">"low"</span>,</span>
-<span>  scenario <span class="op">=</span> <span class="st">"covariate"</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">2</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">d.low.measurement2000</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.low2000</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Apply to the smaller sample; get.twostep.vcov returns multilevLCA's</span></span>
-<span><span class="co"># bias-corrected vcov for the two-step estimates</span></span>
-<span><span class="va">d.low.three_step.prop2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.low</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">d.low.measurement2000</span><span class="op">$</span><span class="va">measurement_model</span>,</span>
-<span>  get.twostep.vcov <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.low.three_step.prop2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1983.8159</span></span>
-<span><span class="co">#&gt; AIC            : 4047.6319</span></span>
-<span><span class="co">#&gt; BIC            : 4216.2162</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.3770  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.5856 -4.2916</span></span>
-<span><span class="co">#&gt; Zp        -1.3548  1.0808</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.7061    1.1851  2.2835 0.0224  *  </span></span>
-<span><span class="co">#&gt; Zp:C2         -1.3765    0.9785 -1.4068 0.1595     </span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.9495    2.0920 -1.8879 0.0590  .  </span></span>
-<span><span class="co">#&gt; Zp:C3          1.0305    0.4740  2.1741 0.0297  *  </span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<p>You can also compute two-step starting values separately and inject
-them before calling <code><a href="../reference/three_step.html">three_step()</a></code>.</p>
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tseLCA.html">tseLCA</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Y1</span>, <span class="va">Y2</span>, <span class="va">Y3</span>, <span class="va">Y4</span>, <span class="va">Y5</span>, <span class="va">Y6</span><span class="op">)</span> <span class="op">~</span> <span class="va">Zp</span> <span class="op">|</span> <span class="va">Zo</span>, data <span class="op">=</span> <span class="va">d</span>, nclass <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fb</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="../reference/measurement.html">classification</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">$</span><span class="va">D</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       W=C1  W=C2  W=C3</span></span>
+<span><span class="co">#&gt; X=C1 0.973 0.023 0.004</span></span>
+<span><span class="co">#&gt; X=C2 0.031 0.924 0.046</span></span>
+<span><span class="co">#&gt; X=C3 0.004 0.025 0.971</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="a-measurement-model-from-another-sample">A measurement model from another sample<a class="anchor" aria-label="anchor" href="#a-measurement-model-from-another-sample"></a>
+</h2>
+<p>Because the measurement model is fixed in Step 1, it can be estimated
+on one sample and applied to another, for example when covariates are
+observed only in a subsample.
+<code>tse_classify(m, newdata = ...)</code> classifies the new sample
+with the existing measurement model; the Step-1 uncertainty in later
+steps is that of the sample the model was estimated on.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.low.fitZ2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitZ_from_fit0.html">fitZ_from_fit0</a></span><span class="op">(</span></span>
-<span>  fit0 <span class="op">=</span> <span class="va">d.low.measurement2000</span><span class="op">$</span><span class="va">measurement_model</span><span class="op">$</span><span class="va">fit0</span>,</span>
-<span>  data <span class="op">=</span> <span class="va">d.low</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">d.low.measurement2000</span><span class="op">$</span><span class="va">measurement_model</span><span class="op">$</span><span class="va">fitZ</span> <span class="op">&lt;-</span> <span class="va">d.low.fitZ2</span></span>
-<span></span>
-<span><span class="va">d.low.three_step.prop3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.low</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">d.low.measurement2000</span><span class="op">$</span><span class="va">measurement_model</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.low.three_step.prop3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1983.8159</span></span>
-<span><span class="co">#&gt; AIC            : 4047.6319</span></span>
-<span><span class="co">#&gt; BIC            : 4216.2162</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.3770  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.5856 -4.2916</span></span>
-<span><span class="co">#&gt; Zp        -1.3548  1.0808</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.7061    1.1851  2.2835 0.0224  *  </span></span>
-<span><span class="co">#&gt; Zp:C2         -1.3765    0.9785 -1.4068 0.1595     </span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.9495    2.0920 -1.8879 0.0590  .  </span></span>
-<span><span class="co">#&gt; Zp:C3          1.0305    0.4740  2.1741 0.0297  *  </span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<hr>
+<code class="sourceCode R"><span><span class="va">sub</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">300</span>, <span class="op">]</span></span>
+<span><span class="va">fc_sub</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="fu"><a href="../reference/tse_classify.html">tse_classify</a></span><span class="op">(</span><span class="va">m</span>, newdata <span class="op">=</span> <span class="va">sub</span><span class="op">)</span>, <span class="op">~</span> <span class="va">Zp</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fc_sub</span><span class="op">)</span></span>
+<span><span class="co">#&gt; (Intercept):C2          Zp:C2 (Intercept):C3          Zp:C3 </span></span>
+<span><span class="co">#&gt;      2.1769002     -1.0400321     -3.4247725      0.9448009</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">fc_sub</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 300</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="fixed-step-1-initialization">Fixed Step-1 initialization<a class="anchor" aria-label="anchor" href="#fixed-step-1-initialization"></a>
+<h2 id="missing-data-and-indicator-coding">Missing data and indicator coding<a class="anchor" aria-label="anchor" href="#missing-data-and-indicator-coding"></a>
 </h2>
-<p><code><a href="https://rdrr.io/pkg/multilevLCA/man/multiLCA.html" class="external-link">multilevLCA::multiLCA()</a></code>’s default initialization
-(k-means on principal components) is deterministic given the data, and
-on some datasets can converge to a local rather than global optimum of
-the Step-1 log-likelihood. The <code>startval</code> argument anchors
-Step 1 to a fixed starting classification instead, bypassing k-means
-entirely (<code>kmea = FALSE</code> under the hood).</p>
-<p><code>startval</code> accepts an integer classification vector (one
-predicted class per row)…</p>
+<p>Indicators can be factors, logicals, character variables, or numeric
+codes in any coding; their categories are stored with the model and
+reused on new data. With <code>missing = "fiml"</code>, observations
+with some missing indicators are kept (full-information maximum
+likelihood); the default drops them. Rows with a missing covariate or
+distal outcome are dropped from that Step-3 model only.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">startval.vec</span> <span class="op">&lt;-</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">classifications</span></span>
-<span><span class="va">d.three_step.startval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  startval <span class="op">=</span> <span class="va">startval.vec</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.startval</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0651</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1302</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7145</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.0411    0.3237  6.3049 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8821    0.1406 -6.2730 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.4836    0.5913 -5.8913 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.8985    0.1435  6.2606 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<p>…or a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>×</mo><mi>C</mi></mrow><annotation encoding="application/x-tex">T \times C</annotation></semantics></math>
-conditional item-response probability matrix – e.g. from an external
-solver such as <code>poLCA</code>, or, as here, a first-pass tseLCA
-fit’s own <code>mPhi</code> expanded to both categories per item.</p>
+<code class="sourceCode R"><span><span class="va">d_miss</span> <span class="op">&lt;-</span> <span class="va">d</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">d_miss</span><span class="op">$</span><span class="va">Y1</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="va">d_miss</span><span class="op">$</span><span class="va">Y2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">d_miss</span><span class="op">$</span><span class="va">Y2</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"no"</span>, <span class="st">"yes"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">m_fiml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tse_lca.html">tse_lca</a></span><span class="op">(</span><span class="va">f_items</span>, data <span class="op">=</span> <span class="va">d_miss</span>, nclass <span class="op">=</span> <span class="fl">3</span>, missing <span class="op">=</span> <span class="st">"fiml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">m_fiml</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1000</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="fu"><a href="../reference/tse_lca.html">tse_lca</a></span><span class="op">(</span><span class="va">f_items</span>, data <span class="op">=</span> <span class="va">d_miss</span>, nclass <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 900</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="estimation-settings">Estimation settings<a class="anchor" aria-label="anchor" href="#estimation-settings"></a>
+</h2>
+<p><code><a href="../reference/tse_control.html">tse_control()</a></code> collects the numerical settings: iteration
+limits and tolerances for Step 1 and Step 3, random starts, the boundary
+tolerance for the Step-1 variance, and the information matrix used for
+Step-3 standard errors.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">phi.compact</span> <span class="op">&lt;-</span> <span class="va">d.measurement</span><span class="op">$</span><span class="va">measurement_model</span><span class="op">$</span><span class="va">fit0</span><span class="op">$</span><span class="va">mPhi</span> <span class="co"># 6 binary items x 3 classes</span></span>
-<span><span class="va">phi.full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span></span>
-<span>  <span class="va">rbind</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, \<span class="op">(</span><span class="va">h</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">phi.compact</span><span class="op">[</span><span class="va">h</span>, <span class="op">]</span>, <span class="va">phi.compact</span><span class="op">[</span><span class="va">h</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">d.three_step.startval.phi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  startval <span class="op">=</span> <span class="va">phi.full</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co"># Same solution as startval.vec above (both anchor Step 1 to the same fit)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.three_step.startval.phi</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1339.0650</span></span>
-<span><span class="co">#&gt; AIC            : 2758.1299</span></span>
-<span><span class="co">#&gt; BIC            : 2926.7142</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8693  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.1934 -3.4524</span></span>
-<span><span class="co">#&gt; Zp        -0.9411  0.8972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.0411    0.3237  6.3050 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -0.8821    0.1406 -6.2730 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -3.4836    0.5913 -5.8913 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          0.8985    0.1435  6.2606 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<hr>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/tse_control.html">tse_control</a></span><span class="op">(</span>step1.maxit <span class="op">=</span> <span class="fl">10000</span>, n_init <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
+<span><span class="co">#&gt; tseLCA estimation settings</span></span>
+<span><span class="co">#&gt;                  value   </span></span>
+<span><span class="co">#&gt; step1.maxit      10000   </span></span>
+<span><span class="co">#&gt; step1.tol        1e-08   </span></span>
+<span><span class="co">#&gt; step1.restarts   10      </span></span>
+<span><span class="co">#&gt; step1.restart.R2 0.7     </span></span>
+<span><span class="co">#&gt; n_init           20      </span></span>
+<span><span class="co">#&gt; step3.maxit      200     </span></span>
+<span><span class="co">#&gt; step3.tol        1e-06   </span></span>
+<span><span class="co">#&gt; boundary.tol     0.01    </span></span>
+<span><span class="co">#&gt; hessian          observed</span></span>
+<span><span class="co">#&gt; verbose          FALSE</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="missing-data">Missing data<a class="anchor" aria-label="anchor" href="#missing-data"></a>
+<h2 id="migrating-from-tselca-1-x">Migrating from tseLCA 1.x<a class="anchor" aria-label="anchor" href="#migrating-from-tselca-1-x"></a>
 </h2>
-<p><code>tseLCA</code> uses a two-pass row-filtering strategy that
-matches <code>multilevLCA</code>’s approach for the measurement model
-while allowing more observations into Steps 1 and 2 than Step 3.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span><span class="va">d.new</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span><span class="fl">500</span>, separation <span class="op">=</span> <span class="st">"high"</span>, seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="va">sparsity</span> <span class="op">&lt;-</span> <span class="fl">0.1</span></span>
-<span><span class="va">missing</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/prod.html" class="external-link">prod</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">d.new</span><span class="op">)</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">sparsity</span><span class="op">)</span>,</span>
-<span>    nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d.new</span><span class="op">)</span>,</span>
-<span>    ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">d.new</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="va">missing</span><span class="op">[</span><span class="va">missing</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA_real_</span></span>
-<span><span class="va">d.sparse</span> <span class="op">&lt;-</span> <span class="va">d.new</span> <span class="op">*</span> <span class="va">missing</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d.sparse</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Y1 Y2 Y3 Y4 Y5 Y6  X Zp</span></span>
-<span><span class="co">#&gt; 1  0  0 NA  0  1  0  3  5</span></span>
-<span><span class="co">#&gt; 2  1  1 NA  0  0  0  2  2</span></span>
-<span><span class="co">#&gt; 3  1  1  1  1  1  0  1  4</span></span>
-<span><span class="co">#&gt; 4  0  0  0  0  0  0  3  4</span></span>
-<span><span class="co">#&gt; 5  1  1  1  0  0  0 NA  2</span></span>
-<span><span class="co">#&gt; 6  1  1 NA  0  0  0  2  3</span></span></code></pre></div>
-<p>With <code>incomplete = FALSE</code> (the default), any row with a
-missing indicator is dropped before the measurement model is
-estimated.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.sparse.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  incomplete <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; 242 row(s) dropped from measurement/classification steps (missing Y).</span></span>
-<span><span class="co"># Rows dropped = number of rows with at least one missing Y</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">d.sparse</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">]</span>, <span class="fl">1</span>, \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 242</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.sparse.measurement</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Measurement Model --------------------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Log-likelihood : -742.0656</span></span>
-<span><span class="co">#&gt; AIC            : 1524.1311</span></span>
-<span><span class="co">#&gt; BIC            : 1595.1903</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.9027</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Class prevalences:</span></span>
-<span><span class="co">#&gt;             </span></span>
-<span><span class="co">#&gt; P(C1) 0.2995</span></span>
-<span><span class="co">#&gt; P(C2) 0.3967</span></span>
-<span><span class="co">#&gt; P(C3) 0.3037</span></span>
-<span><span class="co">#&gt; attr(,"names")</span></span>
-<span><span class="co">#&gt; [1] "C1" "C2" "C3"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Item-response probabilities (P(Y=1|class)):</span></span>
-<span><span class="co">#&gt;             C1     C2     C3</span></span>
-<span><span class="co">#&gt; P(Y1|C) 0.8241 0.8869 0.0834</span></span>
-<span><span class="co">#&gt; P(Y2|C) 0.8600 0.9104 0.0811</span></span>
-<span><span class="co">#&gt; P(Y3|C) 0.9110 0.9344 0.0633</span></span>
-<span><span class="co">#&gt; P(Y4|C) 0.9035 0.0486 0.1302</span></span>
-<span><span class="co">#&gt; P(Y5|C) 0.9349 0.1517 0.0795</span></span>
-<span><span class="co">#&gt; P(Y6|C) 0.9331 0.1555 0.0762</span></span></code></pre></div>
-<p>With <code>incomplete = TRUE</code>, only fully-missing rows are
-dropped; partially observed rows contribute to the measurement model
-through FIML.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.sparse.measurement2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  incomplete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.sparse.measurement2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Measurement Model --------------------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1342.8026</span></span>
-<span><span class="co">#&gt; AIC            : 2725.6052</span></span>
-<span><span class="co">#&gt; BIC            : 2809.8974</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8425</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Class prevalences:</span></span>
-<span><span class="co">#&gt;             </span></span>
-<span><span class="co">#&gt; P(C1) 0.3049</span></span>
-<span><span class="co">#&gt; P(C2) 0.3652</span></span>
-<span><span class="co">#&gt; P(C3) 0.3299</span></span>
-<span><span class="co">#&gt; attr(,"names")</span></span>
-<span><span class="co">#&gt; [1] "C1" "C2" "C3"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Item-response probabilities (P(Y=1|class)):</span></span>
-<span><span class="co">#&gt;             C1     C2     C3</span></span>
-<span><span class="co">#&gt; P(Y1|C) 0.8797 0.8916 0.0925</span></span>
-<span><span class="co">#&gt; P(Y2|C) 0.8888 0.8858 0.0677</span></span>
-<span><span class="co">#&gt; P(Y3|C) 0.9337 0.8859 0.1453</span></span>
-<span><span class="co">#&gt; P(Y4|C) 0.9079 0.0819 0.1339</span></span>
-<span><span class="co">#&gt; P(Y5|C) 0.9536 0.1359 0.1056</span></span>
-<span><span class="co">#&gt; P(Y6|C) 0.9583 0.1590 0.1176</span></span></code></pre></div>
-<p>Regardless of <code>incomplete</code>, Step 3 drops any row with a
-missing covariate. The rows used in Step 3 are a subset of those used in
-Steps 1 and 2.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.sparse.three_step</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  incomplete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; 43 row(s) excluded from covariate step (missing Z).</span></span>
-<span><span class="co">#&gt; fitZ EM converged in 9 iterations.</span></span>
-<span><span class="co">#&gt; 43 row(s) excluded from covariate step (missing Z).</span></span>
-<span><span class="co">#&gt; EM converged in 8 iterations.</span></span>
-<span><span class="co"># Additional rows dropped from Step 3 due to missing Zp</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">d.sparse</span><span class="op">$</span><span class="va">Zp</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 43</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.sparse.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1088.3344</span></span>
-<span><span class="co">#&gt; AIC            : 2256.6688</span></span>
-<span><span class="co">#&gt; BIC            : 2421.6562</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8672  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.5023 -4.6555</span></span>
-<span><span class="co">#&gt; Zp        -1.0494  1.2929</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.4803    0.3807  6.5149 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -1.0136    0.1667 -6.0789 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.7754    0.7267 -6.5716 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.3164    0.1796  7.3290 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<p>A FIML measurement model can be passed in and then reused for the
-covariate step on the same sparse data.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.sparse.three_step2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.sparse</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  incomplete <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">d.sparse.measurement2</span><span class="op">$</span><span class="va">measurement_model</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; 43 row(s) excluded from covariate step (missing Z).</span></span>
-<span><span class="co">#&gt; fitZ EM converged in 9 iterations.</span></span>
-<span><span class="co">#&gt; 43 row(s) excluded from covariate step (missing Z).</span></span>
-<span><span class="co">#&gt; EM converged in 8 iterations.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.sparse.three_step2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1088.3344</span></span>
-<span><span class="co">#&gt; AIC            : 2256.6688</span></span>
-<span><span class="co">#&gt; BIC            : 2421.6562</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.8672  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.5023 -4.6555</span></span>
-<span><span class="co">#&gt; Zp        -1.0494  1.2929</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.4803    0.3807  6.5149 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -1.0136    0.1667 -6.0789 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.7754    0.7267 -6.5716 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.3164    0.1796  7.3290 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="polytomous-items">Polytomous items<a class="anchor" aria-label="anchor" href="#polytomous-items"></a>
-</h2>
-<p><code>tseLCA</code> supports polytomous indicators, following
-<code>multilevLCA</code>’s convention that item categories are coded as
-consecutive integers starting at 0.</p>
-<p>Here we reproduce the example from the <code>poLCA</code>
-package.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">election</span>, package <span class="op">=</span> <span class="st">"poLCA"</span><span class="op">)</span></span>
-<span><span class="va">elec</span> <span class="op">&lt;-</span> <span class="va">election</span></span>
-<span><span class="va">elec.items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">election</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span></span>
-<span></span>
-<span><span class="co"># Recode to 0-based integers as required by multilevLCA</span></span>
-<span><span class="va">elec</span><span class="op">[</span>, <span class="va">elec.items</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">elec</span><span class="op">[</span>, <span class="va">elec.items</span><span class="op">]</span>, \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">elec.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">elec</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="va">elec.items</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  <span class="co">#The poLCA example drops any row with a missing cell</span></span>
-<span>  incomplete <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">elec.three_step</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">elec</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="va">elec.items</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PARTY"</span><span class="op">)</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">elec.measurement</span><span class="op">$</span><span class="va">measurement_model</span>,</span>
-<span>  incomplete <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  <span class="co">#With the neutral group as the base-category</span></span>
-<span>  rebase <span class="op">=</span> <span class="st">"C3"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: lca_indiv_varmat: Infomat is singular even after removing boundary</span></span>
-<span><span class="co">#&gt; parameters; returning NA matrix. Check for near-empty classes.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">elec.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Covariate Model -----------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Log-likelihood : -16278.0242</span></span>
-<span><span class="co">#&gt; AIC            : 32852.0485</span></span>
-<span><span class="co">#&gt; BIC            : 33617.2262</span></span>
-<span><span class="co">#&gt; Entropy R²     : 0.7956  (covariate-adjusted)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C1      C2</span></span>
-<span><span class="co">#&gt; Intercept -2.5781  1.8687</span></span>
-<span><span class="co">#&gt; PARTY      0.4289 -0.6983</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value p.value</span></span>
-<span><span class="co">#&gt; Intercept:C1  -2.4701        NA      NA      NA</span></span>
-<span><span class="co">#&gt; PARTY:C1       0.4077        NA      NA      NA</span></span>
-<span><span class="co">#&gt; Intercept:C2   1.7324        NA      NA      NA</span></span>
-<span><span class="co">#&gt; PARTY:C2      -0.6727        NA      NA      NA</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="va">party.x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span>from <span class="op">=</span> <span class="fl">1</span>, to <span class="op">=</span> <span class="fl">7</span>, length.out <span class="op">=</span> <span class="fl">101</span><span class="op">)</span></span>
-<span><span class="va">pidmat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">party.x</span><span class="op">)</span></span>
-<span><span class="va">exb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">pidmat</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">elec.three_step</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/matplot.html" class="external-link">matplot</a></span><span class="op">(</span></span>
-<span>  <span class="va">party.x</span>,</span>
-<span>  <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">exb</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">exb</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"l"</span>,</span>
-<span>  lwd <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  col <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  xlab <span class="op">=</span> <span class="st">"Party ID: strong Democratic (1) to strong Republican (7)"</span>,</span>
-<span>  ylab <span class="op">=</span> <span class="st">"Probability of latent class membership"</span>,</span>
-<span>  main <span class="op">=</span> <span class="st">"Party ID as a predictor of candidate affinity class"</span>,</span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/text.html" class="external-link">text</a></span><span class="op">(</span><span class="fl">3.9</span>, <span class="fl">0.60</span>, <span class="st">"Other"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/text.html" class="external-link">text</a></span><span class="op">(</span><span class="fl">6.2</span>, <span class="fl">0.6</span>, <span class="st">"Bush affinity"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/text.html" class="external-link">text</a></span><span class="op">(</span><span class="fl">2.0</span>, <span class="fl">0.65</span>, <span class="st">"Gore affinity"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tseLCA-workflow_files/figure-html/elec-example-1.png" class="r-plt" alt="" width="672"></p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="distal-outcomes">Distal outcomes<a class="anchor" aria-label="anchor" href="#distal-outcomes"></a>
-</h2>
-<p>For distal outcomes
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Z</mi><mi>o</mi></msub><mo>←</mo><mi>X</mi><mo>→</mo><mi>Y</mi></mrow><annotation encoding="application/x-tex">Z_o \leftarrow X \rightarrow Y</annotation></semantics></math>),
-supply <code>Zo.name</code> and a <code>family</code> argument. The
-available families are <code>"gaussian"</code> (default),
-<code>"poisson"</code>, <code>"binomial"</code>, and
-<code>"multinomial"</code> (for a nominal categorical outcome; see
-below). Both ML and BCH estimators are available.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.distal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
-<span>  n <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  separation <span class="op">=</span> <span class="st">"high"</span>,</span>
-<span>  scenario <span class="op">=</span> <span class="st">"distal"</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">4</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co"># True class means: mu = (0, 1, -1) for C1, C2, C3</span></span></code></pre></div>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.distal.measurement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.distal</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># ML estimator</span></span>
-<span><span class="va">d.distal.three_step.ml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.distal</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zo.name <span class="op">=</span> <span class="st">"Zo"</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">d.distal.measurement</span><span class="op">$</span><span class="va">measurement_model</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"gaussian"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># BCH estimator: closed-form M-step for distal outcomes</span></span>
-<span><span class="va">d.distal.three_step.bch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.distal</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zo.name <span class="op">=</span> <span class="st">"Zo"</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">d.distal.measurement</span><span class="op">$</span><span class="va">measurement_model</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  use.bch <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"gaussian"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.distal.three_step.ml</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Distal Outcome Model -------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Family         : gaussian</span></span>
-<span><span class="co">#&gt; Log-likelihood : -2169.0110</span></span>
-<span><span class="co">#&gt; AIC            : 4384.0220</span></span>
-<span><span class="co">#&gt; BIC            : 4480.9580</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Distal outcome estimates by class:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error  z.value     p.value</span></span>
-<span><span class="co">#&gt; mu_C1 (mean)  -1.0821    0.0817 -13.2495 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C2 (mean)   1.0172    0.0819  12.4151 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C3 (mean)   0.0254    0.0878   0.2887 0.7728     </span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.distal.three_step.bch</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Distal Outcome Model -------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : BCH</span></span>
-<span><span class="co">#&gt; Family         : gaussian</span></span>
-<span><span class="co">#&gt; Log-likelihood : -2168.8166</span></span>
-<span><span class="co">#&gt; AIC            : 4383.6331</span></span>
-<span><span class="co">#&gt; BIC            : 4480.5691</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Distal outcome estimates by class:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error  z.value     p.value</span></span>
-<span><span class="co">#&gt; mu_C1 (mean)  -1.0836    0.0861 -12.5815 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C2 (mean)   0.9869    0.0830  11.8889 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C3 (mean)   0.0604    0.0856   0.7057 0.4804     </span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="categorical-distal-outcomes">Categorical distal outcomes<a class="anchor" aria-label="anchor" href="#categorical-distal-outcomes"></a>
-</h2>
-<p>For a nominal <code>Zo</code> with two or more categories and no
-natural ordering, <code>family = "multinomial"</code> estimates a
-saturated model: the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>×</mo><mi>C</mi></mrow><annotation encoding="application/x-tex">T \times C</annotation></semantics></math>
-matrix of class-conditional category probabilities
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>π</mi><mo accent="true">̂</mo></mover><mrow><mi>t</mi><mi>c</mi></mrow></msub><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>Z</mi><mi>o</mi></msub><mo>=</mo><mi>c</mi><mo>∣</mo><mi>X</mi><mo>=</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat\pi_{tc} = P(Z_o = c \mid X = t)</annotation></semantics></math>,
-together with its
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mi>C</mi><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mi>C</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(TC) \times (TC)</annotation></semantics></math>
-sandwich covariance.</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cat.probs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.7</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.7</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.15</span>, <span class="fl">.7</span><span class="op">)</span>, <span class="fl">3</span>, <span class="fl">3</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">d.distal</span><span class="op">$</span><span class="va">Zcat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span></span>
-<span>  <span class="va">cat.probs</span><span class="op">[</span><span class="va">d.distal</span><span class="op">$</span><span class="va">X</span>, <span class="op">]</span>,</span>
-<span>  <span class="fl">1</span>,</span>
-<span>  \<span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"mid"</span>, <span class="st">"high"</span><span class="op">)</span>, <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">p</span><span class="op">)</span></span>
-<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.distal.three_step.multi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.distal</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zo.name <span class="op">=</span> <span class="st">"Zcat"</span>,</span>
-<span>  step1 <span class="op">=</span> <span class="va">d.distal.measurement</span><span class="op">$</span><span class="va">measurement_model</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"multinomial"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co"># coef() returns a T x C matrix of category probabilities (rows sum to 1)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">d.distal.three_step.multi</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         high       low       mid</span></span>
-<span><span class="co">#&gt; C1 0.1386734 0.7121485 0.1491781</span></span>
-<span><span class="co">#&gt; C2 0.1428699 0.1274120 0.7297182</span></span>
-<span><span class="co">#&gt; C3 0.6892212 0.2019472 0.1088316</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.distal.three_step.multi</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Distal Outcome Model -------------------</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Family         : multinomial</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1855.2387</span></span>
-<span><span class="co">#&gt; AIC            : 3762.4774</span></span>
-<span><span class="co">#&gt; BIC            : 3872.0572</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Distal outcome estimates by class:</span></span>
-<span><span class="co">#&gt;                       Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; C1:high (probability)   0.1387    0.0289  4.7948 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C2:high (probability)   0.1429    0.0310  4.6101 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C3:high (probability)   0.6892    0.0366 18.8429 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C1:low (probability)    0.7121    0.0360 19.7800 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C2:low (probability)    0.1274    0.0303  4.2019 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C3:low (probability)    0.2019    0.0327  6.1707 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C1:mid (probability)    0.1492    0.0332  4.4890 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C2:mid (probability)    0.7297    0.0344 21.1863 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; C3:mid (probability)    0.1088    0.0276  3.9392 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span><span class="co">#&gt; Note: Std.Error above is on the probability scale; the per-cell z/p-value</span></span>
-<span><span class="co">#&gt; tests each probability against 0 (rarely of interest), and a symmetric</span></span>
-<span><span class="co">#&gt; CI can fall outside [0, 1] near a boundary. See omnibus_test() for a</span></span>
-<span><span class="co">#&gt; test of whether the distribution differs across classes.</span></span></code></pre></div>
-<p>Unlike <code>"binomial"</code>, whose
-<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>/<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> are on the logit scale,
-<code>"multinomial"</code> reports both directly on the probability
-scale, so <code>Std.Error</code> is directly interpretable without a
-delta-method back-transform – but a symmetric interval
-<code>Estimate ± 1.96 * Std.Error</code> can fall outside the unit
-interval for a probability near a boundary, the same familiar limitation
-as a naive Wald interval for a sample proportion. The per-cell
-<code>z.value</code>/<code>p.value</code> above (testing each
-probability against zero) are rarely the question of interest; the
-omnibus test below gives a boundary-safe test of whether the outcome’s
-distribution differs across classes.</p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="omnibus-test-of-class-equality">Omnibus test of class equality<a class="anchor" aria-label="anchor" href="#omnibus-test-of-class-equality"></a>
-</h2>
-<p><code><a href="../reference/omnibus_test.html">omnibus_test()</a></code> runs a generalized Wald test of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo>:</mo><msub><mi>θ</mi><mn>1</mn></msub><mo>=</mo><msub><mi>θ</mi><mn>2</mn></msub><mo>=</mo><mi>⋯</mi><mo>=</mo><msub><mi>θ</mi><mi>T</mi></msub></mrow><annotation encoding="application/x-tex">H_0: \theta_1 = \theta_2 = \cdots = \theta_T</annotation></semantics></math>
-– whether the distal outcome’s distribution is the same for every class
-– for any <code>tseLCA_distal</code> or <code>tseLCA_both</code> object,
-regardless of family. It uses a Moore-Penrose pseudo-inverse of the
-contrast covariance, so it stays valid when that covariance is singular,
-as it always is for <code>family = "multinomial"</code> (each class’s
-category probabilities sum to 1). The resulting degrees of freedom
-recover the textbook
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>T</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">(</mo><mi>C</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(T-1)(C-1)</annotation></semantics></math>
-for a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>×</mo><mi>C</mi></mrow><annotation encoding="application/x-tex">T \times C</annotation></semantics></math>
-chi-squared test of homogeneity in that case, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">T-1</annotation></semantics></math>
-for the scalar-parameter families.</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/omnibus_test.html">omnibus_test</a></span><span class="op">(</span><span class="va">d.distal.three_step.ml</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Omnibus Wald test of class equality (distal outcome)</span></span>
-<span><span class="co">#&gt;   Family: gaussian   Classes: 3</span></span>
-<span><span class="co">#&gt;   W(2) = 347.5847, p &lt; 0.001</span></span>
-<span><span class="fu"><a href="../reference/omnibus_test.html">omnibus_test</a></span><span class="op">(</span><span class="va">d.distal.three_step.multi</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Omnibus Wald test of class equality (distal outcome)</span></span>
-<span><span class="co">#&gt;   Family: multinomial   Classes: 3</span></span>
-<span><span class="co">#&gt;   W(4) = 299.5837, p &lt; 0.001</span></span></code></pre></div>
-<p>A significant result only says <em>some</em> class differs from some
-other on this outcome, not which – pairwise post-hoc comparisons with
-multiplicity correction are a natural next step and are not yet
-implemented in tseLCA.</p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="three-step-estimation-with-both-covariates-zp-and-distal-outcomes-zo">Three-step estimation with both covariates (Zp) and distal outcomes
-(Zo)<a class="anchor" aria-label="anchor" href="#three-step-estimation-with-both-covariates-zp-and-distal-outcomes-zo"></a>
-</h2>
-<p>Consistent with how most research in the social sciences construct
-the relationships between
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>p</mi></msub><annotation encoding="application/x-tex">Z_p</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>,
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>o</mi></msub><annotation encoding="application/x-tex">Z_o</annotation></semantics></math>,
-the relationship between
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>p</mi></msub><annotation encoding="application/x-tex">Z_p</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
-is estimated <strong>first</strong>, followed by estimation between
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Z</mi><mi>o</mi></msub><annotation encoding="application/x-tex">Z_o</annotation></semantics></math>,
-adjusting for the covariate-adjusted posteriors in the estimation
-procedures for the distal outcome model in step 3.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d.covariate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_data.html">generate_data</a></span><span class="op">(</span></span>
-<span>  n <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  separation <span class="op">=</span> <span class="st">"high"</span>,</span>
-<span>  scenario <span class="op">=</span> <span class="st">"covariate"</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">4</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">d.covariate</span><span class="op">$</span><span class="va">Zo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/draw_Zo.html">draw_Zo</a></span><span class="op">(</span><span class="va">d.covariate</span><span class="op">$</span><span class="va">X</span>, <span class="va">bk2018_params</span><span class="op">$</span><span class="va">distal_params</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d.covariate</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Y1 Y2 Y3 Y4 Y5 Y6 X Zp         Zo</span></span>
-<span><span class="co">#&gt; 1  1  1  1  1  0  0 2  3 -0.1624650</span></span>
-<span><span class="co">#&gt; 2  1  1  1  1  1  1 1  3 -1.1591833</span></span>
-<span><span class="co">#&gt; 3  1  1  1  1  1  1 1  3 -1.2055132</span></span>
-<span><span class="co">#&gt; 4  0  0  0  0  0  0 3  4  1.8752276</span></span>
-<span><span class="co">#&gt; 5  1  1  1  1  1  1 1  3 -2.5582369</span></span>
-<span><span class="co">#&gt; 6  1  1  1  1  1  1 1  5 -0.4723262</span></span>
-<span></span>
-<span><span class="va">d.covariate.three_step</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.covariate</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zp.names <span class="op">=</span> <span class="st">"Zp"</span>,</span>
-<span>  Zo.name <span class="op">=</span> <span class="st">"Zo"</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">d.covariate.three_step</span><span class="op">)</span></span>
-<span><span class="co">#&gt; -- tseLCA Three-step Model: Covariate + Distal Outcome -----</span></span>
-<span><span class="co">#&gt; Latent classes : 3</span></span>
-<span><span class="co">#&gt; Estimator      : ML</span></span>
-<span><span class="co">#&gt; Family         : gaussian</span></span>
-<span><span class="co">#&gt; Log-likelihood : -1315.6597</span></span>
-<span><span class="co">#&gt; AIC            : 2711.3193</span></span>
-<span><span class="co">#&gt; BIC            : 2879.9037</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Covariate -- two-step (starting) estimates:</span></span>
-<span><span class="co">#&gt;                C2      C3</span></span>
-<span><span class="co">#&gt; Intercept  2.4973 -4.2196</span></span>
-<span><span class="co">#&gt; Zp        -1.0177  1.1159</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Covariate -- three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error z.value     p.value</span></span>
-<span><span class="co">#&gt; Intercept:C2   2.6602    0.3998  6.6538 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C2         -1.0790    0.1632 -6.6133 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Intercept:C3  -4.6917    0.7070 -6.6365 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; Zp:C3          1.2278    0.1735  7.0773 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Distal outcome -- three-step estimates:</span></span>
-<span><span class="co">#&gt;              Estimate Std.Error  z.value     p.value</span></span>
-<span><span class="co">#&gt; mu_C1 (mean)  -0.9851    0.0828 -11.8995 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C2 (mean)   0.9298    0.0851  10.9217 &lt; 0.001 ***</span></span>
-<span><span class="co">#&gt; mu_C3 (mean)   0.1188    0.0722   1.6458 0.0998  .  </span></span>
-<span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
-<p>Note that with covariates in a model with high separation, the
-standard errors above should, on average, by systematically smaller for
-distal outcome estimation than if there were no covariates in the model
-(see below).</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/three_step.html">three_step</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">d.covariate</span>,</span>
-<span>  Y.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Y"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>,</span>
-<span>  n_classes <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  Zo.name <span class="op">=</span> <span class="st">"Zo"</span>,</span>
-<span>  use.modal.assignment <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      mu_C1      mu_C2      mu_C3 </span></span>
-<span><span class="co">#&gt; 0.08302642 0.08922329 0.07595898</span></span></code></pre></div>
-<hr>
+<p><code><a href="../reference/three_step.html">three_step()</a></code> still works (with the same estimates) but
+is deprecated. The table maps its arguments to the new interface.</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th><code><a href="../reference/three_step.html">three_step()</a></code></th>
+<th>tseLCA 2.0</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>
+<code>Y.names</code>, <code>n_classes</code>
+</td>
+<td><code>tse_lca(cbind(...) ~ 1, nclass = )</code></td>
+</tr>
+<tr class="even">
+<td><code>Zp.names</code></td>
+<td><code>tse_covariate(, ~ ...)</code></td>
+</tr>
+<tr class="odd">
+<td>
+<code>Zo.name</code>, <code>family</code>
+</td>
+<td><code>tse_distal(, outcome ~ 1, family = )</code></td>
+</tr>
+<tr class="even">
+<td>
+<code>step1</code> (measurement model from another sample)</td>
+<td><code>tse_classify(, newdata = )</code></td>
+</tr>
+<tr class="odd">
+<td>
+<code>startval</code>, <code>n_init</code>
+</td>
+<td>
+<code>tse_lca(start = )</code>,
+<code>tse_control(n_init = )</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>use.modal.assignment</code></td>
+<td><code>tse_classify(assignment = )</code></td>
+</tr>
+<tr class="odd">
+<td>
+<code>use.bch</code>, <code>use.simple.cov</code>
+</td>
+<td>
+<code>method = "BCH"</code>, <code>se = "robust"</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>rebase</code></td>
+<td>
+<code>ref</code>, or <code><a href="https://rdrr.io/r/stats/relevel.html" class="external-link">relevel()</a></code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>incomplete</code></td>
+<td><code>tse_lca(missing = "fiml")</code></td>
+</tr>
+<tr class="even">
+<td>other tuning arguments</td>
+<td><code><a href="../reference/tse_control.html">tse_control()</a></code></td>
+</tr>
+<tr class="odd">
+<td><code>get.twostep.vcov</code></td>
+<td><code>tse_twostep(se = TRUE)</code></td>
+</tr>
+</tbody>
+</table>
+<p><code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> now returns a named vector matching
+<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> (use <code>coef(fit, matrix = TRUE)</code> for the
+coefficient matrix), so <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> works. See
+<code>NEWS.md</code> for all changes, including bug fixes affecting
+results for polytomous indicators, Gaussian distal outcomes, and
+proportional-assignment ML distal models.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
+<p>Bakk, Z., &amp; Kuha, J. (2018). Two-step estimation of models
+between latent classes and external variables. <em>Psychometrika</em>,
+83(4), 871–892.</p>
+<p>Bakk, Z., Oberski, D. L., &amp; Vermunt, J. K. (2014). Relating
+latent class assignments to external variables: Standard errors for
+correct inference. <em>Political Analysis</em>, 22(4), 520–540.</p>
 <p>Bakk, Z., Tekle, F. B., &amp; Vermunt, J. K. (2013). Estimating the
 association between latent class membership and external variables using
 bias-adjusted three-step approaches. <em>Sociological Methodology</em>,
-43(1), 272–311. <a href="https://doi.org/10.1177/0081175012470644" class="external-link uri">https://doi.org/10.1177/0081175012470644</a></p>
-<p>Bakk, Z., &amp; Kuha, J. (2018). Two-step estimation of models
-between latent classes and external variables. <em>Psychometrika</em>,
-83(4), 871–892. <a href="https://doi.org/10.1007/s11336-017-9592-7" class="external-link uri">https://doi.org/10.1007/s11336-017-9592-7</a></p>
+43(1), 272–311.</p>
 <p>Bolck, A., Croon, M., &amp; Hagenaars, J. (2004). Estimating latent
 structure models with categorical variables: One-step versus three-step
-estimators. <em>Political Analysis</em>, 12(1), 3–27. <a href="https://doi.org/10.1093/pan/mph001" class="external-link uri">https://doi.org/10.1093/pan/mph001</a></p>
-<p>Lyrvall, J., Di Mari, R., Bakk, Z., Oser, J., &amp; Kuha, J. (2025).
-Multilevel latent class analysis: State-of-the-art methodologies and
-their implementation in the R package multilevLCA. <em>Multivariate
-Behavioral Research</em>, 60(4), 731–747. <a href="https://doi.org/10.1080/00273171.2025.2473935" class="external-link uri">https://doi.org/10.1080/00273171.2025.2473935</a></p>
+estimators. <em>Political Analysis</em>, 12(1), 3–27.</p>
+<p>Masyn, K. E. (2013). Latent class analysis and finite mixture
+modeling. In T. D. Little (Ed.), <em>The Oxford Handbook of Quantitative
+Methods</em>, Vol. 2, 551–611. Oxford University Press.</p>
+<p>Nylund, K. L., Asparouhov, T., &amp; Muthén, B. O. (2007). Deciding
+on the number of classes in latent class analysis and growth mixture
+modeling: A Monte Carlo simulation study. <em>Structural Equation
+Modeling</em>, 14(4), 535–569.</p>
 <p>Vermunt, J. K. (2010). Latent class modeling with covariates: Two
 improved three-step approaches. <em>Political Analysis</em>, 18(4),
-450–469. <a href="https://doi.org/10.1093/pan/mpq025" class="external-link uri">https://doi.org/10.1093/pan/mpq025</a></p>
-<hr>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
-<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
-<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 </span></span>
-<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       </span></span>
-<span><span class="co">#&gt;  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
-<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          </span></span>
-<span><span class="co">#&gt; [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: UTC</span></span>
-<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; attached base packages:</span></span>
-<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] tseLCA_1.1.0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;  [1] sass_0.4.10        generics_0.1.4     tidyr_1.3.2        pracma_2.4.6      </span></span>
-<span><span class="co">#&gt;  [5] hms_1.1.4          digest_0.6.39      magrittr_2.0.5     RColorBrewer_1.1-3</span></span>
-<span><span class="co">#&gt;  [9] evaluate_1.0.5     iterators_1.0.14   fastmap_1.2.0      foreach_1.5.2     </span></span>
-<span><span class="co">#&gt; [13] jsonlite_2.0.0     mclust_6.1.3       combinat_0.0-9     promises_1.5.0    </span></span>
-<span><span class="co">#&gt; [17] purrr_1.2.2        codetools_0.2-20   textshaping_1.0.5  jquerylib_0.1.4   </span></span>
-<span><span class="co">#&gt; [21] cli_3.6.6          shiny_1.14.0       labelled_2.16.1    rlang_1.3.0       </span></span>
-<span><span class="co">#&gt; [25] withr_3.0.3        cachem_1.1.0       yaml_2.3.12        otel_0.2.0        </span></span>
-<span><span class="co">#&gt; [29] klaR_1.7-4         parallel_4.6.1     tools_4.6.1        dplyr_1.2.1       </span></span>
-<span><span class="co">#&gt; [33] httpuv_1.6.17      forcats_1.0.1      vctrs_0.7.3        R6_2.6.1          </span></span>
-<span><span class="co">#&gt; [37] mime_0.13          lifecycle_1.0.5    multilevLCA_2.1.6  tictoc_1.2.1      </span></span>
-<span><span class="co">#&gt; [41] fs_2.1.0           MASS_7.3-65        miniUI_0.1.2       cluster_2.1.8.2   </span></span>
-<span><span class="co">#&gt; [45] ragg_1.5.2         pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.1     </span></span>
-<span><span class="co">#&gt; [49] bslib_0.12.0       pillar_1.11.1      later_1.4.8        glue_1.8.1        </span></span>
-<span><span class="co">#&gt; [53] Rcpp_1.1.2         systemfonts_1.3.2  haven_2.5.5        xfun_0.61         </span></span>
-<span><span class="co">#&gt; [57] tibble_3.3.1       tidyselect_1.2.1   highr_0.12         rstudioapi_0.19.0 </span></span>
-<span><span class="co">#&gt; [61] knitr_1.52         xtable_1.8-8       htmltools_0.5.9    rmarkdown_2.32    </span></span>
-<span><span class="co">#&gt; [65] clustMixType_0.5-2 compiler_4.6.1     questionr_0.8.2</span></span></code></pre></div>
+450–469.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -1421,7 +645,7 @@ improved three-step approaches. <em>Political Analysis</em>, 18(4),
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

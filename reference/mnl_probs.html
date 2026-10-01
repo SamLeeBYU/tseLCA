@@ -9,7 +9,7 @@ with one or more covariates and class-specific intercepts and slopes."></head><b
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,12 +85,12 @@ reference class = 1).  See <code>bk2018_params$covariate_params</code>.</p></dd>
 <span class="r-in"><span><span class="va">Zp_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">5</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">params2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>b0 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span>, b <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">6</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span>, ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">mnl_probs</span><span class="op">(</span><span class="va">Zp_mat</span>, <span class="va">params2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           [,1]      [,2]      [,3]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.6335691 0.1066834 0.2597475</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.3127385 0.5291263 0.1581352</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.4510514 0.4250743 0.1238742</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.2640159 0.5708056 0.1651786</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 0.4097986 0.3290411 0.2611603</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           [,1]      [,2]       [,3]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.4343843 0.1446024 0.42101329</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.3473408 0.3235153 0.32914388</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.3362829 0.5510524 0.11266469</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.2246766 0.6806706 0.09465279</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 0.3051329 0.4730331 0.22183402</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -98,7 +98,7 @@ reference class = 1).  See <code>bk2018_params$covariate_params</code>.</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sam Lee.</p>
+  <p>Developed by Sam Lee, Jay Goodliffe.</p>
 </div>
 
 <div class="pkgdown-footer-right">

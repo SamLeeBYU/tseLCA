@@ -58,8 +58,9 @@ three_step(
 
 - Y.names:
 
-  Character vector of indicator column names. Need to be coded as
-  consecutive integers with base level starting at `0`.
+  Character vector of indicator column names. Indicators may be factors,
+  logicals, character, or numeric codes (see
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)).
 
 - n_classes:
 
@@ -96,8 +97,8 @@ three_step(
   item-response table). multilevLCA's default initialization (k-means on
   principal components) is deterministic given the data and can converge
   to a local optimum of the Step-1 log-likelihood; supplying `startval`
-  bypasses it entirely (`kmea = FALSE` with the classification injected
-  as multilevLCA's `startval`). Mutually exclusive with `step1` and
+  bypasses it (`kmea = FALSE` with the classification injected as
+  multilevLCA's `startval`). Mutually exclusive with `step1` and
   `n_init`. Default `NULL`.
 
 - n_init:
@@ -107,10 +108,10 @@ three_step(
   (`kmea = FALSE`, not multilevLCA's k-means-on-PCA path) and keeps the
   fit with the highest log-likelihood – the unconditional multi-start
   analog of `n_init` in StepMix or `nrep` in poLCA. This is distinct
-  from `iter.measurement`, which instead reruns multilevLCA's own
-  k-means initialization, and only when the entropy R\\^2\\ of the
-  default fit is below `R2.threshold`; `n_init` restarts always run.
-  Mutually exclusive with `step1` and `startval`. Default `NULL`.
+  from `iter.measurement`, which reruns multilevLCA's own k-means
+  initialization, and only when the entropy R\\^2\\ of the default fit
+  is below `R2.threshold`; `n_init` restarts always run. Mutually
+  exclusive with `step1` and `startval`. Default `NULL`.
 
 - use.two.step:
 
@@ -169,9 +170,9 @@ three_step(
 
 - use.bch:
 
-  Logical. Use BCH-corrected weights instead of the ML estimator in
-  Step 3. May error if BCH weights induce a non-positive semi-definite
-  Hessian in the third step (common in cases of low separation). Default
+  Logical. Use the BCH estimator in Step 3 (default: the ML estimator).
+  May error if BCH weights induce a non-positive semi-definite Hessian
+  in the third step (common in cases of low separation). Default
   `FALSE`.
 
 - em.maxIter:
@@ -206,7 +207,7 @@ three_step(
   [`factor()`](https://rdrr.io/r/base/factor.html)). For
   `"multinomial"`, [`coef()`](https://rdrr.io/r/stats/coef.html) returns
   a `T x C` matrix of class-conditional category probabilities
-  \\\hat\pi\_{tc} = P(Zo = c \mid X = t)\\ (rows sum to 1) instead of a
+  \\\hat\pi\_{tc} = P(Zo = c \mid X = t)\\ (rows sum to 1), not a
   length-`T` vector, and [`vcov()`](https://rdrr.io/r/stats/vcov.html)
   returns its `(T*C) x (T*C)` sandwich covariance (necessarily singular,
   since each class's row sums to 1 – see
@@ -235,8 +236,8 @@ three_step(
 - correct.spec:
 
   Logical. Use the model-robust outer-product Hessian for Step-3
-  standard errors rather than the observed-data Hessian. Not appropriate
-  when the Step-3 model may be misspecified. Default `FALSE`.
+  standard errors, not the observed-data Hessian. Not appropriate when
+  the Step-3 model may be misspecified. Default `FALSE`.
 
 - verbose:
 
@@ -275,11 +276,11 @@ were estimated:
 
   `posteriors`
 
-  :   N x T matrix of soft posterior class probabilities.
+  :   n x T matrix of soft posterior class probabilities.
 
   `classifications`
 
-  :   Length-N integer vector of modal class assignments.
+  :   Length-n integer vector of modal class assignments.
 
 - `tseLCA_covariate`:
 
@@ -288,16 +289,17 @@ were estimated:
 
   `three_step`
 
-  :   Q x (T-1) matrix of Step-3 gamma coefficients.
+  :   (Q+1) x (T-1) matrix of Step-3 gamma coefficients.
 
   `three_step_vcov`
 
-  :   Q(T-1) x Q(T-1) variance-covariance matrix for `three_step`, with
-      measurement-uncertainty correction unless `use.simple.cov = TRUE`.
+  :   (Q+1)(T-1) x (Q+1)(T-1) variance-covariance matrix for
+      `three_step`, with measurement-uncertainty correction unless
+      `use.simple.cov = TRUE`.
 
   `two_step`
 
-  :   Q x (T-1) matrix of two-step starting values, or `NULL` if
+  :   (Q+1) x (T-1) matrix of two-step starting values, or `NULL` if
       `use.two.step = FALSE`.
 
   `two_step_vcov`
@@ -370,11 +372,11 @@ were estimated:
 
   `posteriors`
 
-  :   N x T soft posterior matrix.
+  :   n x T soft posterior matrix.
 
   `classifications`
 
-  :   Length-N modal class assignment vector.
+  :   Length-n modal class assignment vector.
 
 - `tseLCA_both`:
 
@@ -396,7 +398,31 @@ were estimated:
 
   `posteriors`, `classifications`
 
-  :   Shared N x T posterior matrix and length-N modal class vector.
+  :   Shared n x T posterior matrix and length-n modal class vector.
+
+## Deprecated
+
+Deprecated as of tseLCA 2.0.0. It keeps working (and gives the same
+estimates) but warns once per session; set
+`options(tseLCA.warn.deprecated = FALSE)` to silence the warning. Use
+[`tseLCA()`](https://samleebyu.github.io/tseLCA/reference/tseLCA.md) or
+the step-wise functions:
+
+|  |  |
+|----|----|
+| `three_step()` | tseLCA 2.0 |
+| `Y.names`, `n_classes` | `tse_lca(cbind(...) ~ 1, nclass = )` |
+| `Zp.names` | `tse_covariate(, ~ ...)` or `tseLCA(... ~ covariates)` |
+| `Zo.name`, `family` | `tse_distal(, outcome ~ 1, family = )`, or [`tseLCA()`](https://samleebyu.github.io/tseLCA/reference/tseLCA.md) with the outcome after the bar |
+| `step1` (measurement model from another sample) | `tse_classify(, newdata = )` |
+| `startval` | `tse_lca(start = )` |
+| `use.modal.assignment` | `tse_classify(assignment = )` |
+| `use.bch` | `method = "BCH"` |
+| `use.simple.cov` | `se = "robust"` |
+| `rebase` | `ref` argument, or [`relevel()`](https://rdrr.io/r/stats/relevel.html) |
+| `incomplete` | `tse_lca(missing = "fiml")` |
+| `n_init`, `maxIter.measurement`, `measurement.tol`, `iter.measurement`, `R2.threshold`, `em.maxIter`, `covariate.tol`, `boundary.tol`, `correct.spec` | [`tse_control()`](https://samleebyu.github.io/tseLCA/reference/tse_control.md) |
+| `get.twostep.vcov` | `tse_twostep(se = TRUE)` |
 
 ## References
 
@@ -435,146 +461,107 @@ d <- generate_data(n = 200, separation = "high",
 # Measurement model only
 fit_m <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3)
 summary(fit_m)
-#> -- tseLCA Measurement Model --------------------------------
-#> Latent classes : 3
-#> Log-likelihood : -595.2880
-#> AIC            : 1230.5760
-#> BIC            : 1296.5424
-#> Entropy R²     : 0.8430
+#> Latent class measurement model
+#>   Classes: 3   N: 200
+#>   Log-lik: -595.2880 (df = 20)   AIC: 1230.58   BIC: 1296.54
+#>   Entropy R²: 0.8430
 #> 
-#> Class prevalences:
-#>             
-#> P(C1) 0.3495
-#> P(C2) 0.2915
-#> P(C3) 0.3590
-#> attr(,"names")
-#> [1] "C1" "C2" "C3"
+#> Class sizes:
+#>     C1     C2     C3 
+#> 0.3495 0.2915 0.3590 
 #> 
-#> Item-response probabilities (P(Y=1|class)):
-#>             C1     C2     C3
-#> P(Y1|C) 0.8702 0.7946 0.1232
-#> P(Y2|C) 0.9017 0.8853 0.1025
-#> P(Y3|C) 0.8743 0.8757 0.0672
-#> P(Y4|C) 0.8566 0.0913 0.0669
-#> P(Y5|C) 0.8910 0.0978 0.0281
-#> P(Y6|C) 0.8206 0.1385 0.0914
+#> Item-response probabilities:
+#>             C1      C2      C3
+#> P(Y1|C) 0.8702 0.79457 0.12318
+#> P(Y2|C) 0.9017 0.88526 0.10248
+#> P(Y3|C) 0.8743 0.87570 0.06720
+#> P(Y4|C) 0.8566 0.09128 0.06686
+#> P(Y5|C) 0.8910 0.09781 0.02808
+#> P(Y6|C) 0.8206 0.13853 0.09135
 
 # ML three-step with simple SEs (fast)
 fit <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                   Zp.names = "Zp", use.simple.cov = TRUE)
 summary(fit)
-#> -- tseLCA Three-step Covariate Model -----------------------
-#> Latent classes : 3
-#> Estimator      : ML
-#> Log-likelihood : -548.6403
-#> AIC            : 1177.2805
-#> BIC            : 1309.2132
-#> Entropy R²     : 0.8589  (covariate-adjusted)
+#> Three-step latent class model: covariates
+#>   Classes: 3   Estimator: ML   N: 200
+#>   Log-lik: -548.6403 (df = 22)   AIC: 1141.28   BIC: 1213.84
+#>   Entropy R² (covariate-adjusted): 0.8589
 #> 
-#> Two-step (starting) estimates:
-#>                C2      C3
-#> Intercept  1.9888 -3.1317
-#> Zp        -1.0175  0.9190
-#> 
-#> Three-step estimates:
-#>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.2334    0.6258  3.5688 < 0.001 ***
-#> Zp:C2         -1.1570    0.3002 -3.8545 < 0.001 ***
-#> Intercept:C3  -3.2742    0.7191 -4.5529 < 0.001 ***
-#> Zp:C3          0.9401    0.1896  4.9587 < 0.001 ***
+#> Covariate effects on class membership (multinomial logit):
+#>                Estimate Std. Error z value Pr(>|z|)    
+#> (Intercept):C2   2.2334     0.6258   3.569 0.000359 ***
+#> Zp:C2           -1.1570     0.3002  -3.854 0.000116 ***
+#> (Intercept):C3  -3.2742     0.7191  -4.553 5.29e-06 ***
+#> Zp:C3            0.9401     0.1896   4.959 7.10e-07 ***
 #> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 coef(fit)
-#>                  C2         C3
-#> Intercept  2.233384 -3.2742157
-#> Zp        -1.156988  0.9400712
+#> (Intercept):C2          Zp:C2 (Intercept):C3          Zp:C3 
+#>      2.2333837     -1.1569878     -3.2742157      0.9400712 
 vcov(fit)
-#>              Intercept:C2        Zp:C2 Intercept:C3        Zp:C3
-#> Intercept:C2  0.391644881 -0.173583653  0.001643327 -0.002599746
-#> Zp:C2        -0.173583653  0.090099886  0.016315352 -0.002300251
-#> Intercept:C3  0.001643327  0.016315352  0.517169347 -0.130664301
-#> Zp:C3        -0.002599746 -0.002300251 -0.130664301  0.035941355
+#>                (Intercept):C2        Zp:C2 (Intercept):C3        Zp:C3
+#> (Intercept):C2    0.391644881 -0.173583653    0.001643327 -0.002599746
+#> Zp:C2            -0.173583653  0.090099886    0.016315352 -0.002300251
+#> (Intercept):C3    0.001643327  0.016315352    0.517169347 -0.130664301
+#> Zp:C3            -0.002599746 -0.002300251   -0.130664301  0.035941355
 
 # Full measurement-uncertainty correction (see vignette for interpretation)
 fit_cor <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                       Zp.names = "Zp", use.simple.cov = FALSE,
                       use.modal.assignment = FALSE)
 summary(fit_cor)
-#> -- tseLCA Three-step Covariate Model -----------------------
-#> Latent classes : 3
-#> Estimator      : ML
-#> Log-likelihood : -548.4895
-#> AIC            : 1176.9790
-#> BIC            : 1308.9117
-#> Entropy R²     : 0.8596  (covariate-adjusted)
+#> Three-step latent class model: covariates
+#>   Classes: 3   Estimator: ML   N: 200
+#>   Log-lik: -548.4895 (df = 22)   AIC: 1140.98   BIC: 1213.54
+#>   Entropy R² (covariate-adjusted): 0.8596
 #> 
-#> Two-step (starting) estimates:
-#>                C2      C3
-#> Intercept  1.9888 -3.1317
-#> Zp        -1.0175  0.9190
-#> 
-#> Three-step estimates:
-#>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.0352    0.6245  3.2592 0.0011  ** 
-#> Zp:C2         -1.0576    0.2999 -3.5267 < 0.001 ***
-#> Intercept:C3  -3.1385    0.6919 -4.5361 < 0.001 ***
-#> Zp:C3          0.9090    0.1832  4.9619 < 0.001 ***
+#> Covariate effects on class membership (multinomial logit):
+#>                Estimate Std. Error z value Pr(>|z|)    
+#> (Intercept):C2   2.0352     0.6182   3.292 0.000994 ***
+#> Zp:C2           -1.0576     0.2974  -3.556 0.000377 ***
+#> (Intercept):C3  -3.1385     0.6919  -4.536 5.74e-06 ***
+#> Zp:C3            0.9090     0.1832   4.962 6.99e-07 ***
 #> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # BCH estimator
 fit_bch <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                       Zp.names = "Zp", use.bch = TRUE,
                       use.simple.cov = TRUE)
 summary(fit_bch)
-#> -- tseLCA Three-step Covariate Model -----------------------
-#> Latent classes : 3
-#> Estimator      : BCH
-#> Log-likelihood : -548.5643
-#> AIC            : 1177.1287
-#> BIC            : 1309.0614
-#> Entropy R²     : 0.8590  (covariate-adjusted)
+#> Three-step latent class model: covariates
+#>   Classes: 3   Estimator: BCH   N: 200
+#>   Log-lik: -548.5643 (df = 22)   AIC: 1141.13   BIC: 1213.69
+#>   Entropy R² (covariate-adjusted): 0.8590
 #> 
-#> Two-step (starting) estimates:
-#>                C2      C3
-#> Intercept  1.9888 -3.1317
-#> Zp        -1.0175  0.9190
-#> 
-#> Three-step estimates:
-#>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.1318    0.6582  3.2386 0.0012  ** 
-#> Zp:C2         -1.0967    0.3355 -3.2686 0.0011  ** 
-#> Intercept:C3  -3.2851    0.8029 -4.0913 < 0.001 ***
-#> Zp:C3          0.9407    0.2081  4.5196 < 0.001 ***
+#> Covariate effects on class membership (multinomial logit):
+#>                Estimate Std. Error z value Pr(>|z|)    
+#> (Intercept):C2   2.1318     0.6582   3.239  0.00120 ** 
+#> Zp:C2           -1.0967     0.3355  -3.269  0.00108 ** 
+#> (Intercept):C3  -3.2851     0.8029  -4.091 4.29e-05 ***
+#> Zp:C3            0.9407     0.2081   4.520 6.20e-06 ***
 #> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # Change reference class
 fit_c2 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                      Zp.names = "Zp", use.simple.cov = TRUE,
                      rebase = "C2")
 summary(fit_c2)
-#> -- tseLCA Three-step Covariate Model -----------------------
-#> Latent classes : 3
-#> Estimator      : ML
-#> Log-likelihood : -548.6403
-#> AIC            : 1177.2805
-#> BIC            : 1309.2132
-#> Entropy R²     : 0.8589  (covariate-adjusted)
+#> Three-step latent class model: covariates
+#>   Classes: 3   Estimator: ML   N: 200
+#>   Log-lik: -548.6403 (df = 22)   AIC: 1141.28   BIC: 1213.84
+#>   Entropy R² (covariate-adjusted): 0.8589
 #> 
-#> Two-step (starting) estimates:
-#>                C1      C3
-#> Intercept -1.9890 -5.1203
-#> Zp         1.0175  1.9363
-#> 
-#> Three-step estimates:
-#>              Estimate Std.Error z.value     p.value
-#> Intercept:C1  -2.2334    0.6258 -3.5688 < 0.001 ***
-#> Zp:C1          1.1570    0.3002  3.8545 < 0.001 ***
-#> Intercept:C3  -5.5076    0.9516 -5.7878 < 0.001 ***
-#> Zp:C3          2.0971    0.3614  5.8019 < 0.001 ***
+#> Covariate effects on class membership (multinomial logit):
+#>                Estimate Std. Error z value Pr(>|z|)    
+#> (Intercept):C1  -2.2334     0.6258  -3.569 0.000359 ***
+#> Zp:C1            1.1570     0.3002   3.854 0.000116 ***
+#> (Intercept):C3  -5.5076     0.9516  -5.788 7.13e-09 ***
+#> Zp:C3            2.0971     0.3614   5.802 6.56e-09 ***
 #> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # Gaussian distal outcome
 d2 <- generate_data(200, "high", "distal", seed = 2)
@@ -582,21 +569,17 @@ fit_dis <- three_step(d2, Y.names = paste0("Y", 1:6), n_classes = 3,
                       Zo.name = "Zo", family = "gaussian",
                       use.simple.cov = TRUE)
 summary(fit_dis)
-#> -- tseLCA Three-step Distal Outcome Model -------------------
-#> Latent classes : 3
-#> Estimator      : ML
-#> Family         : gaussian
-#> Log-likelihood : -892.7558
-#> AIC            : 1831.5116
-#> BIC            : 1907.3729
+#> Three-step latent class model: distal outcome
+#>   Classes: 3   Estimator: ML   Family: gaussian   N: 200
+#>   Log-lik: -892.6754 (df = 24)   AIC: 1833.35   BIC: 1912.51
 #> 
-#> Distal outcome estimates by class:
-#>              Estimate Std.Error z.value     p.value
-#> mu_C1 (mean)  -0.8223    0.1169 -7.0356 < 0.001 ***
-#> mu_C2 (mean)   1.0946    0.1141  9.5956 < 0.001 ***
-#> mu_C3 (mean)   0.0492    0.1531  0.3212 0.7480     
+#> Distal outcome means by class:
+#>       Estimate Std. Error z value Pr(>|z|)    
+#> mu_C1 -0.82982    0.11555  -7.182 6.89e-13 ***
+#> mu_C2  1.10449    0.11459   9.639  < 2e-16 ***
+#> mu_C3  0.04204    0.15518   0.271    0.786    
 #> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # Nominal categorical distal outcome (3+ categories): coef() returns a
 # T x C matrix of class-conditional category probabilities; omnibus_test()
@@ -607,14 +590,17 @@ fit_cat <- three_step(d2, Y.names = paste0("Y", 1:6), n_classes = 3,
                       Zo.name = "Zcat", family = "multinomial",
                       use.simple.cov = TRUE)
 coef(fit_cat)
-#>         high       low       mid
-#> C1 0.2973475 0.3543067 0.3483458
-#> C2 0.4450948 0.2178582 0.3370470
-#> C3 0.3628017 0.2689451 0.3682532
+#>   C1:high   C2:high   C3:high    C1:low    C2:low    C3:low    C1:mid    C2:mid 
+#> 0.2973475 0.4450948 0.3628017 0.3543067 0.2178582 0.2689451 0.3483458 0.3370470 
+#>    C3:mid 
+#> 0.3682532 
 omnibus_test(fit_cat)
-#> Omnibus Wald test of class equality (distal outcome)
-#>   Family: multinomial   Classes: 3
-#>   W(4) = 3.6188, p = 0.4600
+#> 
+#>  Wald test of equal distal outcome distributions across latent classes
+#> 
+#> data:  multinomial distal outcome, 3 classes
+#> W = 3.6188, df = 4, p-value = 0.46
+#> 
 
 # Pass a pre-fitted measurement model to skip Step 1
 fit_step1 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3)
@@ -622,27 +608,19 @@ fit2 <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                    Zp.names = "Zp", step1 = fit_step1,
                    use.simple.cov = TRUE)
 summary(fit2)
-#> -- tseLCA Three-step Covariate Model -----------------------
-#> Latent classes : 3
-#> Estimator      : ML
-#> Log-likelihood : -548.6403
-#> AIC            : 1177.2805
-#> BIC            : 1309.2132
-#> Entropy R²     : 0.8589  (covariate-adjusted)
+#> Three-step latent class model: covariates
+#>   Classes: 3   Estimator: ML   N: 200
+#>   Log-lik: -548.6403 (df = 22)   AIC: 1141.28   BIC: 1213.84
+#>   Entropy R² (covariate-adjusted): 0.8589
 #> 
-#> Two-step (starting) estimates:
-#>                C2      C3
-#> Intercept  1.9888 -3.1317
-#> Zp        -1.0175  0.9190
-#> 
-#> Three-step estimates:
-#>              Estimate Std.Error z.value     p.value
-#> Intercept:C2   2.2334    0.6258  3.5688 < 0.001 ***
-#> Zp:C2         -1.1570    0.3002 -3.8545 < 0.001 ***
-#> Intercept:C3  -3.2742    0.7191 -4.5529 < 0.001 ***
-#> Zp:C3          0.9401    0.1896  4.9587 < 0.001 ***
+#> Covariate effects on class membership (multinomial logit):
+#>                Estimate Std. Error z value Pr(>|z|)    
+#> (Intercept):C2   2.2334     0.6258   3.569 0.000359 ***
+#> Zp:C2           -1.1570     0.3002  -3.854 0.000116 ***
+#> (Intercept):C3  -3.2742     0.7191  -4.553 5.29e-06 ***
+#> Zp:C3            0.9401     0.1896   4.959 7.10e-07 ***
 #> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # Supply an external starting classification for Step 1 (bypasses
 # multilevLCA's k-means-on-PCA initialization; here we use the DGP's own
@@ -651,58 +629,46 @@ summary(fit2)
 fit_ext <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                       startval = d$X, use.simple.cov = TRUE)
 summary(fit_ext)
-#> -- tseLCA Measurement Model --------------------------------
-#> Latent classes : 3
-#> Log-likelihood : -595.2880
-#> AIC            : 1230.5760
-#> BIC            : 1296.5424
-#> Entropy R²     : 0.8430
+#> Latent class measurement model
+#>   Classes: 3   N: 200
+#>   Log-lik: -595.2880 (df = 20)   AIC: 1230.58   BIC: 1296.54
+#>   Entropy R²: 0.8430
 #> 
-#> Class prevalences:
-#>             
-#> P(C1) 0.3495
-#> P(C2) 0.2915
-#> P(C3) 0.3590
-#> attr(,"names")
-#> [1] "C1" "C2" "C3"
+#> Class sizes:
+#>     C1     C2     C3 
+#> 0.3495 0.2915 0.3590 
 #> 
-#> Item-response probabilities (P(Y=1|class)):
-#>             C1     C2     C3
-#> P(Y1|C) 0.8702 0.7946 0.1232
-#> P(Y2|C) 0.9017 0.8853 0.1025
-#> P(Y3|C) 0.8743 0.8757 0.0672
-#> P(Y4|C) 0.8566 0.0913 0.0669
-#> P(Y5|C) 0.8910 0.0978 0.0281
-#> P(Y6|C) 0.8206 0.1385 0.0914
+#> Item-response probabilities:
+#>             C1      C2      C3
+#> P(Y1|C) 0.8702 0.79457 0.12318
+#> P(Y2|C) 0.9017 0.88525 0.10248
+#> P(Y3|C) 0.8743 0.87570 0.06720
+#> P(Y4|C) 0.8566 0.09128 0.06686
+#> P(Y5|C) 0.8910 0.09781 0.02808
+#> P(Y6|C) 0.8206 0.13853 0.09135
 
 # Many random-classification restarts for Step 1, keeping the best
 # (analogous to n_init in StepMix or nrep in poLCA)
 fit_ninit <- three_step(d, Y.names = paste0("Y", 1:6), n_classes = 3,
                         n_init = 20L, use.simple.cov = TRUE)
 summary(fit_ninit)
-#> -- tseLCA Measurement Model --------------------------------
-#> Latent classes : 3
-#> Log-likelihood : -595.2880
-#> AIC            : 1230.5760
-#> BIC            : 1296.5424
-#> Entropy R²     : 0.8430
+#> Latent class measurement model
+#>   Classes: 3   N: 200
+#>   Log-lik: -595.2880 (df = 20)   AIC: 1230.58   BIC: 1296.54
+#>   Entropy R²: 0.8430
 #> 
-#> Class prevalences:
-#>             
-#> P(C1) 0.3495
-#> P(C2) 0.2915
-#> P(C3) 0.3590
-#> attr(,"names")
-#> [1] "C1" "C2" "C3"
+#> Class sizes:
+#>     C1     C2     C3 
+#> 0.3495 0.2915 0.3590 
 #> 
-#> Item-response probabilities (P(Y=1|class)):
-#>             C1     C2     C3
-#> P(Y1|C) 0.8702 0.7946 0.1232
-#> P(Y2|C) 0.9017 0.8852 0.1025
-#> P(Y3|C) 0.8743 0.8757 0.0672
-#> P(Y4|C) 0.8566 0.0913 0.0669
-#> P(Y5|C) 0.8910 0.0978 0.0281
-#> P(Y6|C) 0.8206 0.1385 0.0914
+#> Item-response probabilities:
+#>             C1      C2      C3
+#> P(Y1|C) 0.8702 0.79456 0.12317
+#> P(Y2|C) 0.9017 0.88524 0.10247
+#> P(Y3|C) 0.8743 0.87569 0.06719
+#> P(Y4|C) 0.8566 0.09127 0.06686
+#> P(Y5|C) 0.8910 0.09780 0.02808
+#> P(Y6|C) 0.8206 0.13853 0.09135
 
 # Plot item-response profiles from the measurement model
 plot(fit)

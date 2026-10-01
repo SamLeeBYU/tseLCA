@@ -12,7 +12,9 @@ clean_data(
   Zo.name = NULL,
   incomplete = FALSE,
   include.intercept = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  Zp.formula = NULL,
+  Y.levels = NULL
 )
 ```
 
@@ -28,7 +30,8 @@ clean_data(
 
 - Zp.names:
 
-  Character vector of covariate column names, or `NULL`.
+  Character vector of covariate column names, or `NULL`. Ignored when
+  `Zp.formula` is given.
 
 - Zo.name:
 
@@ -40,11 +43,23 @@ clean_data(
 
 - include.intercept:
 
-  Logical. Prepend intercept column to Z.
+  Logical. Include an intercept in the covariate design built from
+  `Zp.names`.
 
 - verbose:
 
   Logical. Print row-drop messages.
+
+- Zp.formula:
+
+  One-sided formula for the covariate design (e.g.
+  `~ age + factor(region)`), or `NULL` to build one from `Zp.names`.
+
+- Y.levels:
+
+  Named list of indicator categories, as returned by
+  `.recode_indicators()`, when `data` already holds 0-based codes;
+  `NULL` recodes the indicators here.
 
 ## Value
 
@@ -56,19 +71,27 @@ A named list with:
 
 - mDesign:
 
-  N_Y x K design/mask matrix (all 1s when incomplete = FALSE).
+  N_Y x K design/mask matrix (NULL when incomplete = FALSE).
 
 - ivItemcat:
 
   Integer vector of category counts per item.
 
+- Y.levels:
+
+  Named list of the categories of each item.
+
 - keep_Y:
 
-  Integer indices of rows kept for Steps 1 & 2 (into original N).
+  Integer indices of rows kept for Steps 1 & 2 (into original n).
 
 - Z_mat:
 
-  N_Z x Q covariate design matrix, or NULL.
+  n_Z x (Q+1) covariate design matrix, or NULL.
+
+- Zp.formula, Z_terms, Z_xlevels:
+
+  The covariate formula, its terms, and the factor levels used, or NULL.
 
 - keep_step3_Z_in_Y:
 
@@ -81,3 +104,12 @@ A named list with:
 - keep_step3_Zo_in_Y:
 
   Positions of Zo-complete rows within keep_Y.
+
+- keep_step3_Zo:
+
+  Indices of Zo-complete rows (into original n).
+
+- keep_step3_Zo_in_Z:
+
+  With covariates, positions of the distal rows within the covariate
+  rows (distal rows then also need complete covariates); otherwise NULL.
