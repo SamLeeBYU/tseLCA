@@ -181,6 +181,13 @@
   an observed distal outcome were kept in the distal model with `NA` class
   priors. The distal model now uses rows with complete covariates.
 
+- When the Step-3 Hessian of an ML covariate model could not be inverted
+  without an error being raised (non-finite entries), standard errors fell
+  back to the outer product of the scores without a warning. Every fallback
+  now warns. The documentation of `hessian = "opg"` (`correct.spec` in
+  `three_step()`) described the outer-product estimator as model-robust; it
+  is valid only under a correctly specified Step-3 model.
+
 ## Deprecated
 
 - `three_step()` is deprecated in favor of `tseLCA()` and the step-wise

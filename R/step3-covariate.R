@@ -244,19 +244,8 @@ lca_step3 <- function(
         qr.solve(-H)
       }
     },
-    error = function(e) {
-      if (!use.bch) {
-        warning(
-          "Exact Hessian inversion failed. Falling back to Hessian estimated from the cross-product of the case-wise log-likelihood gradients. This assumes a correct third-stage model specification."
-        )
-        matrix(NA_real_, Q * (iT - 1), Q * (iT - 1))
-      } else {
-        warning(
-          "Hessian inversion failed after BCH. Try again with use.bch = FALSE."
-        )
-        matrix(NA_real_, Q * (iT - 1), Q * (iT - 1))
-      }
-    }
+    # the caller falls back to the outer product of the scores and warns
+    error = function(e) matrix(NA_real_, Q * (iT - 1), Q * (iT - 1))
   )
   return(list(res = res, H.3.inv = H.3.inv))
 }
@@ -379,11 +368,17 @@ lca_step3 <- function(
     verbose = opts$verbose,
     correct.spec = opts$correct.spec
   )
-  if (
-    (opts$correct.spec && !opts$use.bch) ||
-      is.null(s3$H.3.inv) ||
-      any(is.na(s3$H.3.inv))
-  ) {
+  use_opg <- opts$correct.spec && !opts$use.bch
+  if (!use_opg && (is.null(s3$H.3.inv) || !all(is.finite(s3$H.3.inv)))) {
+    warning(
+      "The Step-3 Hessian could not be inverted; the information matrix is ",
+      "estimated by the outer product of the case-wise scores, which assumes ",
+      "a correctly specified Step-3 model.",
+      call. = FALSE
+    )
+    use_opg <- TRUE
+  }
+  if (use_opg) {
     s3$H.3.inv <- qr.solve(crossprod(three_step.score(s3$res$par)))
   }
 

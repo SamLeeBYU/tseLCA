@@ -26,9 +26,13 @@
 #' @param step3.tol Convergence tolerance of the Step-3 algorithm.
 #' @param boundary.tol Step-1 probabilities within this distance of 0 or 1
 #'   are treated as fixed when computing the Step-1 variance.
-#' @param hessian Step-3 information matrix used for standard errors:
-#'   `"observed"` (default), or `"opg"` for the outer product of the
-#'   case-wise scores. `"opg"` applies to ML covariate models.
+#' @param hessian Step-3 information matrix used for standard errors.
+#'   `"observed"` (default) uses the analytic Hessian, giving a sandwich
+#'   variance that is robust to misspecification of the Step-3 model. `"opg"`
+#'   uses the outer product of the case-wise scores, which relies on the
+#'   information-matrix equality and is valid only when the Step-3 model is
+#'   correctly specified. If the Hessian cannot be inverted, `"opg"` is used
+#'   with a warning. Applies to ML covariate models.
 #' @param verbose Logical. Print progress and convergence messages.
 #'
 #' @return A list of class `"tse_control"`.

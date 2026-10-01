@@ -44,9 +44,13 @@ always run. \code{NULL} (default) uses the default initialization.}
 \item{boundary.tol}{Step-1 probabilities within this distance of 0 or 1
 are treated as fixed when computing the Step-1 variance.}
 
-\item{hessian}{Step-3 information matrix used for standard errors:
-\code{"observed"} (default), or \code{"opg"} for the outer product of the
-case-wise scores. \code{"opg"} applies to ML covariate models.}
+\item{hessian}{Step-3 information matrix used for standard errors.
+\code{"observed"} (default) uses the analytic Hessian, giving a sandwich
+variance that is robust to misspecification of the Step-3 model. \code{"opg"}
+uses the outer product of the case-wise scores, which relies on the
+information-matrix equality and is valid only when the Step-3 model is
+correctly specified. If the Hessian cannot be inverted, \code{"opg"} is used
+with a warning. Applies to ML covariate models.}
 
 \item{verbose}{Logical. Print progress and convergence messages.}
 }
