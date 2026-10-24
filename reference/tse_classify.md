@@ -62,8 +62,8 @@ print(x, digits = max(3L, getOption("digits") - 4L), ...)
 A `tseLCA_classify` object with components `posteriors` (n x T),
 `classifications` (modal classes), `weights` (the assignment weights
 \\P(W = s \mid Y_i)\\), `D` (the T x T classification-error matrix),
-`entropy.R2` (computed from these posteriors), and `data`. Pass it to
-the Step-3 functions.
+`entropy.R2` (computed from these posteriors, relative to the entropy of
+the class proportions), and `data`. Pass it to the Step-3 functions.
 
 ## Details
 
@@ -86,7 +86,7 @@ m <- tse_lca(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ 1, data = d, nclass = 3)
 cl <- tse_classify(m)
 cl
 #> Latent class assignment (Step 2)
-#>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8782
+#>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8780
 #> 
 #> Classification error probabilities P(W = s | X = t)
 #> (rows: true class X; columns: assigned class W)
@@ -101,7 +101,7 @@ cl
 #> assigned  0.358 0.332 0.310
 tse_classify(m, assignment = "proportional")
 #> Latent class assignment (Step 2)
-#>   Classes: 3   Assignment: proportional   N: 500   Entropy R²: 0.8782
+#>   Classes: 3   Assignment: proportional   N: 500   Entropy R²: 0.8780
 #> 
 #> Classification error probabilities P(W = s | X = t)
 #> (rows: true class X; columns: assigned class W)
@@ -118,7 +118,7 @@ tse_classify(m, assignment = "proportional")
 # classify another sample with the same measurement model
 tse_classify(m, newdata = d[1:200, ])
 #> Latent class assignment (Step 2)
-#>   Classes: 3   Assignment: modal   N: 200   Entropy R²: 0.8703
+#>   Classes: 3   Assignment: modal   N: 200   Entropy R²: 0.8701
 #> 
 #> Classification error probabilities P(W = s | X = t)
 #> (rows: true class X; columns: assigned class W)

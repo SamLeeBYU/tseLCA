@@ -15,7 +15,7 @@ available for inspecting each step (see measurement())."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -151,7 +151,7 @@ example with <code>tse_lca(..., nclass = 1:6)</code>.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Three-step latent class model: covariates and distal outcome</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Estimator: ML   Family: gaussian   N: 500</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Log-lik: -2053.7961 (df = 26)   AIC: 4159.59   BIC: 4269.17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Log-lik: -2053.6739 (df = 26)   AIC: 4159.35   BIC: 4268.93</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Entropy R² (covariate-adjusted): 0.8693</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariate effects on class membership (multinomial logit):</span>
@@ -165,9 +165,9 @@ example with <code>tse_lca(..., nclass = 1:6)</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Distal outcome means by class:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       Estimate Std. Error z value Pr(&gt;|z|)    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu_C1 -1.03985    0.07961 -13.062   &lt;2e-16 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu_C2  0.94707    0.08158  11.609   &lt;2e-16 ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu_C3  0.09331    0.08508   1.097    0.273    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu_C1 -1.02975    0.07976 -12.910   &lt;2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu_C2  0.96307    0.08218  11.719   &lt;2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu_C3  0.07758    0.08553   0.907    0.364    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
 <span class="r-in"><span><span class="fu"><a href="measurement.html">measurement</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
@@ -177,7 +177,7 @@ example with <code>tse_lca(..., nclass = 1:6)</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Entropy R²: 0.8780</span>
 <span class="r-in"><span><span class="fu"><a href="measurement.html">classification</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent class assignment (Step 2)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8782</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8780</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Classification error probabilities P(W = s | X = t)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (rows: true class X; columns: assigned class W)</span>

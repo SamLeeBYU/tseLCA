@@ -9,7 +9,7 @@ result as the control argument of the model-fitting functions."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,9 +107,13 @@ are treated as fixed when computing the Step-1 variance.</p></dd>
 
 
 <dt id="arg-hessian">hessian<a class="anchor" aria-label="anchor" href="#arg-hessian"></a></dt>
-<dd><p>Step-3 information matrix used for standard errors:
-<code>"observed"</code> (default), or <code>"opg"</code> for the outer product of the
-case-wise scores. <code>"opg"</code> applies to ML covariate models.</p></dd>
+<dd><p>Step-3 information matrix used for standard errors.
+<code>"observed"</code> (default) uses the analytic Hessian, giving a sandwich
+variance that is robust to misspecification of the Step-3 model. <code>"opg"</code>
+uses the outer product of the case-wise scores, which relies on the
+information-matrix equality and is valid only when the Step-3 model is
+correctly specified. If the Hessian cannot be inverted, <code>"opg"</code> is used
+with a warning. Applies to ML covariate models.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

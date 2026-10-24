@@ -5,7 +5,10 @@ correcting for the classification error of the Step-2 class assignments
 (Bakk, Tekle, and Vermunt 2013). Given a covariate model from
 [`tse_covariate()`](https://samleebyu.github.io/tseLCA/reference/tse_covariate.md),
 the class prior depends on the covariates and the covariate-model
-uncertainty is propagated to the distal estimates.
+uncertainty is propagated to the distal estimates. The Step-2
+assignments and classification errors are those of the classification
+(they use the indicators only); only the class prior is
+covariate-adjusted.
 
 ## Usage
 

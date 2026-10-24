@@ -67,6 +67,6 @@ omnibus_test(distal(fit))
 #>  Wald test of equal distal outcome distributions across latent classes
 #> 
 #> data:  gaussian distal outcome, 3 classes
-#> W = 319, df = 2, p-value < 2.2e-16
+#> W = 319.95, df = 2, p-value < 2.2e-16
 #> 
 ```

@@ -65,9 +65,13 @@ tse_control(
 
 - hessian:
 
-  Step-3 information matrix used for standard errors: `"observed"`
-  (default), or `"opg"` for the outer product of the case-wise scores.
-  `"opg"` applies to ML covariate models.
+  Step-3 information matrix used for standard errors. `"observed"`
+  (default) uses the analytic Hessian, giving a sandwich variance that
+  is robust to misspecification of the Step-3 model. `"opg"` uses the
+  outer product of the case-wise scores, which relies on the
+  information-matrix equality and is valid only when the Step-3 model is
+  correctly specified. If the Hessian cannot be inverted, `"opg"` is
+  used with a warning. Applies to ML covariate models.
 
 - verbose:
 

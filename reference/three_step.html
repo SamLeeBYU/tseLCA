@@ -35,7 +35,7 @@ vignette("tseLCA", package = "tseLCA") for a worked example.
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -298,9 +298,11 @@ Default <code>"gaussian"</code>.</p></dd>
 
 
 <dt id="arg-correct-spec">correct.spec<a class="anchor" aria-label="anchor" href="#arg-correct-spec"></a></dt>
-<dd><p>Logical. Use the model-robust outer-product Hessian for
-Step-3 standard errors, not the observed-data Hessian. Not appropriate
-when the Step-3 model may be misspecified. Default <code>FALSE</code>.</p></dd>
+<dd><p>Logical. Estimate the Step-3 information matrix by the
+outer product of the case-wise scores, not the observed-data Hessian.
+Valid only when the Step-3 model is correctly specified; the default
+observed-Hessian sandwich is robust to misspecification. Default
+<code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

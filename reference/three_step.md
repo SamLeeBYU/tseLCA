@@ -235,9 +235,11 @@ three_step(
 
 - correct.spec:
 
-  Logical. Use the model-robust outer-product Hessian for Step-3
-  standard errors, not the observed-data Hessian. Not appropriate when
-  the Step-3 model may be misspecified. Default `FALSE`.
+  Logical. Estimate the Step-3 information matrix by the outer product
+  of the case-wise scores, not the observed-data Hessian. Valid only
+  when the Step-3 model is correctly specified; the default
+  observed-Hessian sandwich is robust to misspecification. Default
+  `FALSE`.
 
 - verbose:
 

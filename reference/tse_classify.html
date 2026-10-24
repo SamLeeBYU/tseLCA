@@ -17,7 +17,7 @@ correct for."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,7 +110,8 @@ every class with its posterior probability as weight.</p></dd>
     <p>A <code>tseLCA_classify</code> object with components <code>posteriors</code> (n x T),
 <code>classifications</code> (modal classes), <code>weights</code> (the assignment weights
 \(P(W = s \mid Y_i)\)), <code>D</code> (the T x T classification-error matrix),
-<code>entropy.R2</code> (computed from these posteriors), and <code>data</code>. Pass it to
+<code>entropy.R2</code> (computed from these posteriors, relative to the entropy of
+the class proportions), and <code>data</code>. Pass it to
 the Step-3 functions.</p>
     </div>
     <div class="section level2">
@@ -134,7 +135,7 @@ three-step approaches. <em>Political Analysis</em>, 18(4), 450–469.
 <span class="r-in"><span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">tse_classify</span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cl</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent class assignment (Step 2)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8782</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8780</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Classification error probabilities P(W = s | X = t)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (rows: true class X; columns: assigned class W)</span>
@@ -149,7 +150,7 @@ three-step approaches. <em>Political Analysis</em>, 18(4), 450–469.
 <span class="r-out co"><span class="r-pr">#&gt;</span> assigned  0.358 0.332 0.310</span>
 <span class="r-in"><span><span class="fu">tse_classify</span><span class="op">(</span><span class="va">m</span>, assignment <span class="op">=</span> <span class="st">"proportional"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent class assignment (Step 2)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: proportional   N: 500   Entropy R²: 0.8782</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: proportional   N: 500   Entropy R²: 0.8780</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Classification error probabilities P(W = s | X = t)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (rows: true class X; columns: assigned class W)</span>
@@ -166,7 +167,7 @@ three-step approaches. <em>Political Analysis</em>, 18(4), 450–469.
 <span class="r-in"><span><span class="co"># classify another sample with the same measurement model</span></span></span>
 <span class="r-in"><span><span class="fu">tse_classify</span><span class="op">(</span><span class="va">m</span>, newdata <span class="op">=</span> <span class="va">d</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">200</span>, <span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent class assignment (Step 2)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: modal   N: 200   Entropy R²: 0.8703</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Classes: 3   Assignment: modal   N: 200   Entropy R²: 0.8701</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Classification error probabilities P(W = s | X = t)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (rows: true class X; columns: assigned class W)</span>

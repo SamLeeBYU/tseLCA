@@ -120,7 +120,7 @@ fit <- tseLCA(cbind(Y1, Y2, Y3, Y4, Y5, Y6) ~ Zp | Zo, data = d, nclass = 3)
 summary(fit)
 #> Three-step latent class model: covariates and distal outcome
 #>   Classes: 3   Estimator: ML   Family: gaussian   N: 500
-#>   Log-lik: -2053.7961 (df = 26)   AIC: 4159.59   BIC: 4269.17
+#>   Log-lik: -2053.6739 (df = 26)   AIC: 4159.35   BIC: 4268.93
 #>   Entropy R² (covariate-adjusted): 0.8693
 #> 
 #> Covariate effects on class membership (multinomial logit):
@@ -134,9 +134,9 @@ summary(fit)
 #> 
 #> Distal outcome means by class:
 #>       Estimate Std. Error z value Pr(>|z|)    
-#> mu_C1 -1.03985    0.07961 -13.062   <2e-16 ***
-#> mu_C2  0.94707    0.08158  11.609   <2e-16 ***
-#> mu_C3  0.09331    0.08508   1.097    0.273    
+#> mu_C1 -1.02975    0.07976 -12.910   <2e-16 ***
+#> mu_C2  0.96307    0.08218  11.719   <2e-16 ***
+#> mu_C3  0.07758    0.08553   0.907    0.364    
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 measurement(fit)
@@ -146,7 +146,7 @@ measurement(fit)
 #>   Entropy R²: 0.8780
 classification(fit)
 #> Latent class assignment (Step 2)
-#>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8782
+#>   Classes: 3   Assignment: modal   N: 500   Entropy R²: 0.8780
 #> 
 #> Classification error probabilities P(W = s | X = t)
 #> (rows: true class X; columns: assigned class W)

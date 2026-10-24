@@ -202,7 +202,7 @@ class $`W`$, which the Step-3 estimators correct for.
 cl <- tse_classify(m)
 cl
 #> Latent class assignment (Step 2)
-#>   Classes: 3   Assignment: modal   N: 1000   Entropy R²: 0.8721
+#>   Classes: 3   Assignment: modal   N: 1000   Entropy R²: 0.8720
 #> 
 #> Classification error probabilities P(W = s | X = t)
 #> (rows: true class X; columns: assigned class W)
@@ -429,7 +429,7 @@ fb <- tse_distal(fc, Zo ~ 1)
 fb
 #> Three-step latent class model: covariates and distal outcome
 #>   Classes: 3   Estimator: ML   Family: gaussian   N: 1000
-#>   Log-lik: -4176.2103 (df = 26)   AIC: 8404.42   BIC: 8532.02
+#>   Log-lik: -4176.1391 (df = 26)   AIC: 8404.28   BIC: 8531.88
 #> 
 #> Covariate effects on class membership (multinomial logit):
 #>                Estimate Std. Error z value Pr(>|z|)    
@@ -442,9 +442,9 @@ fb
 #> 
 #> Distal outcome means by class:
 #>       Estimate Std. Error z value Pr(>|z|)    
-#> mu_C1 -0.89181    0.05550 -16.070   <2e-16 ***
-#> mu_C2  1.05856    0.06580  16.087   <2e-16 ***
-#> mu_C3 -0.07797    0.05580  -1.397    0.162    
+#> mu_C1 -0.89069    0.05563 -16.010   <2e-16 ***
+#> mu_C2  1.06501    0.06687  15.926   <2e-16 ***
+#> mu_C3 -0.08288    0.05691  -1.456    0.145    
 #> ---
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -565,7 +565,9 @@ matching [`vcov()`](https://rdrr.io/r/stats/vcov.html) (use
 [`confint()`](https://rdrr.io/r/stats/confint.html) works. See `NEWS.md`
 for all changes, including bug fixes affecting results for polytomous
 indicators, Gaussian distal outcomes, and proportional-assignment ML
-distal models.
+distal models (version 2.0.0), and for the combined covariate and distal
+model and the BCH standard errors of Poisson and Binomial distal
+outcomes (version 2.1.0).
 
 ## References
 

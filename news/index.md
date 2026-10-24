@@ -1,6 +1,68 @@
 # Changelog
 
+## tseLCA 2.1.0
+
+- Bug fix: the standard errors of the BCH estimator of Poisson and
+  Binomial distal outcomes used the inverse Hessian of the Gaussian case
+  (a within-class variance divided by the BCH class weights) and were
+  far too large or too small. They now use the variance function of the
+  family. The point estimates and the Gaussian and multinomial results
+  are unchanged.
+- Bug fix: the safeguard of the BCH Newton-Raphson loop for covariate
+  effects checked that the Hessian, which is negative definite, was
+  positive semi-definite, and so stopped with “Hessian is not positive
+  semi-definite” whenever the loop ran past a fifth of `step3.maxit`
+  iterations, whatever the class separation. It now checks the negative
+  Hessian. Fits that do not converge now stop with “BCH NR reached
+  maximum iterations” instead.
+- Bug fix: in the combined covariate and distal model
+  ([`tse_distal()`](https://samleebyu.github.io/tseLCA/reference/tse_distal.md)
+  of a
+  [`tse_covariate()`](https://samleebyu.github.io/tseLCA/reference/tse_covariate.md)
+  fit), the respondents were reassigned to classes with the
+  covariate-adjusted posteriors, and the classification-error matrix was
+  computed from those assignments. The assignments then depended on the
+  covariates given the class, which biased the class means of the distal
+  outcome (about -0.08 for a mean of 1 at n = 1000, mid separation). The
+  model now keeps the Step-2 assignments and classification errors,
+  which use the indicators only, and uses the covariate-adjusted class
+  probabilities as the prior, as the corrected standard errors assume.
+- [`tse_classify()`](https://samleebyu.github.io/tseLCA/reference/tse_classify.md)
+  now reports the entropy R^2 as the measurement model does (relative to
+  the entropy of the class proportions, as in Latent GOLD), instead of
+  relative to log(T).
+  [`as_tse_lca()`](https://samleebyu.github.io/tseLCA/reference/as_tse_lca.md)
+  models use the same definition.
+- [`as_tse_lca()`](https://samleebyu.github.io/tseLCA/reference/as_tse_lca.md)
+  has a new argument `vcov`: the variance matrix of the Step-1
+  parameters, in the layout of
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html) of a
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)
+  model. Corrected standard errors in Step 3 now use it. Before, the
+  Step-1 variance of such a model was recomputed at the given parameters
+  on `data`, which is only valid when they are the maximum likelihood
+  estimates for `data`. For parameters estimated on another sample, the
+  correction was wrong: too large when `data` is smaller than that
+  sample, too small when it is larger.
+- Without `vcov`, Step 3
+  ([`tse_covariate()`](https://samleebyu.github.io/tseLCA/reference/tse_covariate.md),
+  [`tse_distal()`](https://samleebyu.github.io/tseLCA/reference/tse_distal.md))
+  of an
+  [`as_tse_lca()`](https://samleebyu.github.io/tseLCA/reference/as_tse_lca.md)
+  model gives a warning and reports robust standard errors
+  (`se = "robust"`), which do not include the Step-1 uncertainty.
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html) of such a model is an
+  error, since it has no variance matrix.
+- To use a measurement model estimated on one sample with another, the
+  `newdata` argument of
+  [`tse_classify()`](https://samleebyu.github.io/tseLCA/reference/tse_classify.md)
+  on the original
+  [`tse_lca()`](https://samleebyu.github.io/tseLCA/reference/tse_lca.md)
+  model keeps the original Step-1 variance.
+
 ## tseLCA 2.0.0
+
+CRAN release: 2026-10-01
 
 ### Step-wise interface
 
@@ -258,6 +320,15 @@
 - In combined covariate + distal models, rows with a missing covariate
   but an observed distal outcome were kept in the distal model with `NA`
   class priors. The distal model now uses rows with complete covariates.
+
+- When the Step-3 Hessian of an ML covariate model could not be inverted
+  without an error being raised (non-finite entries), standard errors
+  fell back to the outer product of the scores without a warning. Every
+  fallback now warns. The documentation of `hessian = "opg"`
+  (`correct.spec` in
+  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md))
+  described the outer-product estimator as model-robust; it is valid
+  only under a correctly specified Step-3 model.
 
 ### Deprecated
 

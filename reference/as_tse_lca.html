@@ -15,7 +15,7 @@ analysis."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,6 +60,7 @@ analysis.</p>
 <span>  <span class="va">data</span>,</span>
 <span>  <span class="va">class_sizes</span>,</span>
 <span>  <span class="va">item_probs</span>,</span>
+<span>  vcov <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  missing <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"listwise"</span>, <span class="st">"fiml"</span><span class="op">)</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="tse_control.html">tse_control</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -90,6 +91,17 @@ category of a polytomous item (\(P(Y = k \mid X = t)\)), in the order
 of the indicators.</p></dd>
 
 
+<dt id="arg-vcov">vcov<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>
+<dd><p>Optional variance matrix of the Step-1 parameters, for
+corrected standard errors in Step 3. It refers to the unconstrained
+log-ratio parameters, in the layout of <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> of a <code><a href="tse_lca.html">tse_lca()</a></code> model:
+the class-size log-ratios \(\log(\pi_t / \pi_1)\), \(t = 2, \dots, T\),
+then, class by class and item by item,
+\(\log(P(Y = k \mid X = t) / P(Y = 0 \mid X = t))\) for each category
+\(k \ge 1\). Classes and items are in the order of <code>class_sizes</code> and
+of the indicators. Row and column names are ignored.</p></dd>
+
+
 <dt id="arg-missing-control">missing, control<a class="anchor" aria-label="anchor" href="#arg-missing-control"></a></dt>
 <dd><p>As in <code><a href="tse_lca.html">tse_lca()</a></code>.</p></dd>
 
@@ -100,12 +112,18 @@ of the indicators.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The Step-1 variance used for corrected standard errors in Step 3 is
-computed on <code>data</code> at the given parameters, which is valid when they are
-the maximum likelihood estimates for <code>data</code> (e.g. a model estimated on these
-data and saved). For parameters estimated on another sample, use
-<code>se = "robust"</code> in Step 3, or refit with <code><a href="tse_lca.html">tse_lca()</a></code> using the parameters as
-<code>start</code>.</p>
+    <p>Corrected standard errors in Step 3 (<code>se = "corrected"</code>) need the
+variance matrix of the Step-1 parameters, which can only come from the
+sample they were estimated on. A model from <code>as_tse_lca()</code> receives only the
+parameter values, so it uses the variance matrix given in <code>vcov</code>. Without
+<code>vcov</code>, Step 3 warns and reports robust standard errors (<code>se = "robust"</code>),
+which do not include the Step-1 uncertainty. <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> of the model returns
+<code>vcov</code>, or an error if none was given.</p>
+<p>If the parameters are the maximum likelihood estimates for <code>data</code> (a model
+estimated on these data and saved), <code>vcov(m)</code> of the original <code><a href="tse_lca.html">tse_lca()</a></code>
+model is the matching <code>vcov</code>. For parameters estimated on another sample,
+take the variance matrix from that estimation (e.g. Latent GOLD or Mplus
+output), or use <code><a href="tse_classify.html">tse_classify()</a></code> with <code>newdata</code> on the original model.</p>
     </div>
 
     <div class="section level2">
@@ -113,14 +131,21 @@ data and saved). For parameters estimated on another sample, use
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_data.html">generate_data</a></span><span class="op">(</span><span class="fl">500</span>, <span class="st">"high"</span>, <span class="st">"covariate"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="tse_lca.html">tse_lca</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Y1</span>, <span class="va">Y2</span>, <span class="va">Y3</span>, <span class="va">Y4</span>, <span class="va">Y5</span>, <span class="va">Y6</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">d</span>, nclass <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># the same measurement model from its parameters</span></span></span>
+<span class="r-in"><span><span class="co"># the same measurement model from its parameters and their variance</span></span></span>
 <span class="r-in"><span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="fu">as_tse_lca</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Y1</span>, <span class="va">Y2</span>, <span class="va">Y3</span>, <span class="va">Y4</span>, <span class="va">Y5</span>, <span class="va">Y6</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">d</span>,</span></span>
-<span class="r-in"><span>                 class_sizes <span class="op">=</span> <span class="fu"><a href="class_sizes.html">class_sizes</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>, item_probs <span class="op">=</span> <span class="fu"><a href="class_sizes.html">item_probs</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                 class_sizes <span class="op">=</span> <span class="fu"><a href="class_sizes.html">class_sizes</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>, item_probs <span class="op">=</span> <span class="fu"><a href="class_sizes.html">item_probs</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>                 vcov <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik</a></span><span class="op">(</span><span class="va">m2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>, tolerance <span class="op">=</span> <span class="fl">1e-6</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="fu"><a href="tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="fu"><a href="tse_classify.html">tse_classify</a></span><span class="op">(</span><span class="va">m2</span><span class="op">)</span>, <span class="op">~</span> <span class="va">Zp</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept):C2          Zp:C2 (Intercept):C3          Zp:C3 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      2.0410764     -0.8820801     -3.4835616      0.8984978 </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># without `vcov`, Step 3 warns and reports robust standard errors</span></span></span>
+<span class="r-in"><span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="fu">as_tse_lca</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Y1</span>, <span class="va">Y2</span>, <span class="va">Y3</span>, <span class="va">Y4</span>, <span class="va">Y5</span>, <span class="va">Y6</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">d</span>,</span></span>
+<span class="r-in"><span>                 class_sizes <span class="op">=</span> <span class="fu"><a href="class_sizes.html">class_sizes</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>, item_probs <span class="op">=</span> <span class="fu"><a href="class_sizes.html">item_probs</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu"><a href="tse_covariate.html">tse_covariate</a></span><span class="op">(</span><span class="fu"><a href="tse_classify.html">tse_classify</a></span><span class="op">(</span><span class="va">m3</span><span class="op">)</span>, <span class="op">~</span> <span class="va">Zp</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The measurement model was created by as_tse_lca() without `vcov`, so the standard errors cannot be corrected for the Step-1 uncertainty; robust standard errors are reported. Supply the variance matrix of the Step-1 parameters with as_tse_lca(vcov = ).</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
