@@ -409,16 +409,20 @@ write_sim_tables <- function(s, dir) {
   }
   # Every table is set at the common width \tablewidth, the natural width of
   # the widest table of the manuscript, and scaled to the text width, so that
-  # all tables have the same font size. The manuscript measures \tablewidth
-  # from the natural-width versions written here (sim_<name>_natural.tex).
+  # all tables have the same font size. The gaps between the columns and the
+  # margins left and right of the table are equally wide (\eqtab, defined in the
+  # manuscript). The manuscript measures \tablewidth from the calls written
+  # here (sim_<name>_measure.tex), which read the rows (sim_<name>_rows.tex).
   for (nm in names(tabular)) {
     inner <- c("\\toprule", tabular[[nm]]$lines, "\\bottomrule")
-    writeLines(c(sprintf("\\begin{tabular}{%s}", tabular[[nm]]$spec), inner, "\\end{tabular}"),
-               file.path(dir, sprintf("sim_%s_natural.tex", nm)))
+    spec <- tabular[[nm]]$spec
+    n_col <- nchar(gsub("[^a-zA-Z]", "", gsub("\\{[^}]*\\}", "", spec)))
+    rows_input <- sprintf("tseLCA_sim_output/tables/sim_%s_rows", nm)
+    writeLines(inner, file.path(dir, sprintf("sim_%s_rows.tex", nm)))
+    writeLines(sprintf("\\measureeq{%d}{%s}{\\inputrows{%s}}", n_col, spec, rows_input),
+               file.path(dir, sprintf("sim_%s_measure.tex", nm)))
     body <- c("\\resizebox{\\textwidth}{!}{%",
-              sprintf("\\begin{tabular*}{\\tablewidth}{@{\\extracolsep{\\fill}}%s}",
-                      tabular[[nm]]$spec),
-              inner, "\\end{tabular*}%", "}")
+              sprintf("\\eqtab{%d}{%s}{\\inputrows{%s}}}", n_col, spec, rows_input))
     writeLines(c("\\begin{table}[t!]", "\\centering", body,
                  sprintf("\\caption{\\footnotesize %s}", SIM_CAPTIONS[[nm]]),
                  sprintf("\\label{tab:%s}", nm), "\\end{table}"),

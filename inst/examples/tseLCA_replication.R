@@ -28,7 +28,63 @@ r_opts <- options(
 
 
 ###################################################
-### code chunk number 2: sim-tables
+### code chunk number 2: sim-numbers
+###################################################
+## Numbers quoted in the text, computed from the saved simulation results
+sim_f <- function(x, d = 2) sub("^(-?)0\\.", "\\1.", formatC(x, digits = d, format = "f"))
+sim_and <- function(x, d = 2) sprintf("%s and %s", sim_f(min(x), d), sim_f(max(x), d))
+sim_dash <- function(x, d = 2) sprintf("%s--%s", sim_f(min(x), d), sim_f(max(x), d))
+sim_list <- function(x, d = 2) {
+  x <- sim_f(x, d)
+  paste0(paste(x[-length(x)], collapse = ", "), ", and ", x[length(x)])
+}
+sim <- read.csv(file.path("tseLCA_sim_output", "sim_summary.csv"))
+sim_reps <- readRDS(file.path("tseLCA_sim_output", "sim_replicates.rds"))
+sim_cov <- subset(sim, scenario == "covariate")
+sim_dis <- subset(sim, scenario == "distal")
+sim_pick <- function(d, est = NULL, sep = NULL, n = NULL) {
+  d <- d[order(d$n), ]
+  d[(is.null(est) | d$estimator %in% est) & (is.null(sep) | d$separation %in% sep) &
+      (is.null(n) | d$n %in% n), ]
+}
+## number of replications, and the number of conditions of one scenario
+sim_nrep <- max(sim$n_ok)
+sim_ncond <- nrow(sim_pick(sim_cov, "two_step"))
+## covariate effects: bias, coverage, and SE/SD
+cb_low <- abs(sim_pick(sim_cov, sep = "low", n = 500)$bias)
+cb_mid <- max(abs(sim_pick(sim_cov, sep = "mid")$bias))
+cc_ml <- sim_pick(sim_cov, "prop.ml", "low")$coverage
+cc_2s <- sim_pick(sim_cov, "two_step", "low")$coverage
+cs_bch_mid <- sim_pick(sim_cov, c("modal.bch", "prop.bch"), "mid")$se_sd
+cs_modal_low <- sim_pick(sim_cov, "modal.ml", "low")$se_sd
+cs_prop_low <- sim_pick(sim_cov, "prop.ml", "low")$se_sd
+## non-convergence of the BCH estimator of the covariate effects
+cf <- function(est) sim_nrep - sim_pick(sim_cov, est)$n_ok
+cf_prop <- sum(cf("prop.bch")); cf_modal <- sum(cf("modal.bch"))
+cf_ml <- sum(cf(c("modal.ml", "prop.ml", "two_step")))
+## the ML estimates under low separation, and the dependence of the estimates
+## and their standard errors (ML with proportional assignment, n = 500)
+lowml <- subset(sim_reps, scenario == "covariate" & separation == "low" &
+  estimator %in% c("modal.ml", "prop.ml") & is.finite(estimate))
+dev_max <- max(abs(lowml$estimate - 1))
+pml <- subset(lowml, estimator == "prop.ml" & n == 500)
+pml_cor <- cor(pml$se, pml$estimate)
+pml_q <- cut(pml$se, quantile(pml$se, 0:4 / 4), include.lowest = TRUE)
+pml_cover1 <- tapply(abs(pml$estimate - 1) <= qnorm(.975) * pml$se, pml_q, mean)[[1]]
+## distal outcome
+db_range <- function(sep) max(tapply(sim_pick(sim_dis, sep = sep)$bias,
+  sim_pick(sim_dis, sep = sep)$n, function(x) max(x) - min(x)))
+db_low <- db_range("low"); db_mid <- db_range("mid")
+db_mh500 <- max(abs(sim_pick(sim_dis, sep = c("mid", "high"), n = 500)$bias))
+dc_high <- sim_pick(sim_dis, sep = "high")$coverage
+dc_mid <- sim_pick(sim_dis, sep = "mid")$coverage
+dse_mid <- sim_pick(sim_dis, sep = "mid")$se_sd
+dc_bch_low <- sim_pick(sim_dis, c("modal.bch", "prop.bch"), "low")$coverage
+dc_ml_low <- sim_pick(sim_dis, c("modal.ml", "prop.ml"), "low")$coverage
+
+
+###################################################
+### code chunk number 3: sim-tables
 ###################################################
 ## The simulation tables are written by tseLCA_sim.R; rebuild them from the
 ## saved replication results (tseLCA_sim_output/sim_replicates.rds) if needed.
@@ -39,10 +95,21 @@ if (!file.exists(file.path("tseLCA_sim_output", "tables", "sim_covariate_bias.te
 
 
 ###################################################
-### code chunk number 3: illus-setup
+### code chunk number 4: illus-setup
 ###################################################
 library("poLCA")
 N_STARTS <- 50L # random starts per measurement model
+## Sample sizes quoted in the text of the two examples
+data("election", package = "poLCA")
+N_ELECTION <- nrow(election)
+gss_raw <- read.csv("gss7677_tolerance.csv")
+gss_items0 <- c("atheists", "communists", "militarists", "racists", "homosexuals")
+G_N <- nrow(gss_raw)
+G_N76 <- sum(gss_raw$year == 1976)
+G_N77 <- sum(gss_raw$year == 1977)
+G_N5 <- sum(complete.cases(gss_raw[gss_items0]))
+G_NCC <- sum(complete.cases(gss_raw[c(gss_items0, "cohort", "education")]))
+G_TOL <- colMeans(gss_raw[complete.cases(gss_raw[gss_items0]), gss_items0] == 1)
 ## Fits from many random starts are stored in tseLCA_replication_cache.rds.
 ## With TSELCA_REP_QUICK=TRUE they are read from it (fits missing from it are
 ## computed and added); otherwise all models are estimated anew.
@@ -65,23 +132,35 @@ num <- function(x, d = 2) {
 est_se <- function(est, se, d = 2) paste0(num(est, d), " (", num(se, d), ")")
 ## All tables are set at the common width \tablewidth (the natural width of
 ## the widest table of the paper) and scaled to the text width, so that they
-## have the same font size; tables/<label>_natural.tex is the natural-width
-## version used to measure it.
+## have the same font size, with equally wide gaps between the columns and
+## margins left and right (\eqtab in the preamble); tables/<label>_rows.tex
+## holds the rows and tables/<label>_measure.tex the call that measures them.
 write_table <- function(body, header, align, caption, label, footer = NULL) {
   rows <- c(if (is.matrix(body)) {
     paste0(apply(body, 1, paste, collapse = " & "), " \\\\")
   } else body, footer)
   inner <- c("\\toprule", header, "\\midrule", rows, "\\bottomrule")
-  writeLines(c(sprintf("\\begin{tabular}{%s}", align), inner, "\\end{tabular}"),
-             file.path("tables", paste0(label, "_natural.tex")))
+  ## the rows, and the call that measures the table for the common width
+  rows_file <- file.path("tables", paste0(label, "_rows"))
+  n_col <- length(strsplit(gsub("[^a-zA-Z]", "", gsub("\\{[^}]*\\}", "", align)), "")[[1]])
+  writeLines(inner, paste0(rows_file, ".tex"))
+  writeLines(sprintf("\\measureeq{%d}{%s}{\\inputrows{%s}}", n_col, align, rows_file),
+             file.path("tables", paste0(label, "_measure.tex")))
   writeLines(c("\\begin{table}[t!]", "\\centering", "\\resizebox{\\textwidth}{!}{%",
-               sprintf("\\begin{tabular*}{\\tablewidth}{@{\\extracolsep{\\fill}}%s}", align),
-               inner, "\\end{tabular*}%", "}",
+               sprintf("\\eqtab{%d}{%s}{\\inputrows{%s}}}", n_col, align, rows_file),
                sprintf("\\caption{\\footnotesize %s}", caption),
                sprintf("\\label{tab:%s}", label), "\\end{table}"),
              file.path("tables", paste0(label, ".tex")))
 }
 tex_line <- function(...) paste(paste(c(...), collapse = " & "), "\\\\")
+## a column header broken before its last word, e.g. "Intolerant of / right"
+wrap_hdr <- function(x) vapply(x, function(s) {
+  w <- strsplit(s, " ")[[1]]
+  if (length(w) < 2L) s else sprintf("\\shortstack{%s\\\\%s}",
+    paste(w[-length(w)], collapse = " "), w[length(w)])
+}, "", USE.NAMES = FALSE)
+## a row with a little extra space below it, for rows whose label spans two lines
+tex_line_sp <- function(...) paste(paste(c(...), collapse = " & "), "\\\\[3pt]")
 prob_se <- function(model, row = NULL) {
   x <- if (is.null(row)) class_sizes(model, se = TRUE) else item_probs(model, se = TRUE)
   if (is.null(row)) rbind(est = x$estimate, se = x$se)
@@ -90,7 +169,7 @@ prob_se <- function(model, row = NULL) {
 
 
 ###################################################
-### code chunk number 4: elec-data
+### code chunk number 5: elec-data
 ###################################################
 data("election", package = "poLCA")
 items <- colnames(election)[1:12]
@@ -101,7 +180,7 @@ nrow(elec)
 
 
 ###################################################
-### code chunk number 5: elec-select (eval = FALSE)
+### code chunk number 6: elec-select (eval = FALSE)
 ###################################################
 ## set.seed(20260928)
 ## sel <- tse_lca(f_elec, data = elec, nclass = 1:6,
@@ -110,7 +189,7 @@ nrow(elec)
 
 
 ###################################################
-### code chunk number 6: elec-select-run
+### code chunk number 7: elec-select-run
 ###################################################
 set.seed(20260928)
 sel <- fit_or_load("sel_elec", tse_lca(f_elec, data = elec, nclass = 1:6,
@@ -119,7 +198,7 @@ sel
 
 
 ###################################################
-### code chunk number 7: elec-onestep
+### code chunk number 8: elec-onestep
 ###################################################
 elec_pol <- elec
 elec_pol[items] <- lapply(elec_pol[items], as.integer)
@@ -141,14 +220,14 @@ one <- fit_or_load("onestep_elec", lapply(1:6, onestep))
 
 
 ###################################################
-### code chunk number 8: elec-measurement
+### code chunk number 9: elec-measurement
 ###################################################
 m_elec <- sel[[3]]
 m_elec
 
 
 ###################################################
-### code chunk number 9: elec-labels
+### code chunk number 10: elec-labels
 ###################################################
 G <- c("MORALG", "CARESG", "KNOWG", "LEADG", "INTELG")
 B <- c("MORALB", "CARESB", "KNOWB", "LEADB", "INTELB")
@@ -166,7 +245,7 @@ lab_elec <- label_elec(posterior(m_elec))
 ord_elec <- match(c("Gore affinity", "Bush affinity", "Other"), lab_elec)
 traits <- c(MORAL = "Moral", CARES = "Caring", KNOW = "Knowledgeable",
   LEAD = "Good leader", DISHON = "Dishonest", INTEL = "Intelligent")
-## one-step (poLCA) classes, labelled by the same rule
+## one-step (poLCA) classes, labeled by the same rule
 one3 <- one[[3]]
 lab_one <- label_elec(one3$posterior)
 ord_one <- match(c("Gore affinity", "Bush affinity", "Other"), lab_one)
@@ -182,6 +261,13 @@ for (cand in c("Gore", "Bush")) for (tr in names(traits)) {
       one3$probs[[item]][, 1], one3$probs.se[[item]][, 1])))
 }
 cls <- c("Gore affinity", "Bush affinity", "Other")
+## entropy R^2 from the posterior class probabilities, relative to the entropy
+## of the class proportions (as reported by tseLCA)
+entropy_r2 <- function(post) {
+  if (ncol(post) < 2) return(NA_real_)
+  h <- function(p) -sum(p[p > 1e-12] * log(p[p > 1e-12]))
+  1 - mean(apply(post, 1, h)) / h(colMeans(post))
+}
 write_table(body,
   header = c(paste(" & &", paste(sprintf("\\multicolumn{2}{c}{%s}", cls),
       collapse = " & "), "\\\\"),
@@ -192,19 +278,21 @@ write_table(body,
     "class sizes and probabilities that a trait describes the candidate",
     "``extremely well'', with standard errors in parentheses. Three-step: the",
     "measurement model; one-step: the latent class regression on \\code{PARTY}",
-    "(\\pkg{poLCA}), whose class sizes are averages over respondents."),
+    "(\\pkg{poLCA}), whose class sizes are averages over respondents. The entropy",
+    sprintf("$R^2$ is %s for the three-step and %s for the one-step model.",
+      num(as.data.frame(sel)$entropy.R2[3]), num(entropy_r2(one3$posterior)))),
   label = "elec_measurement")
 
 
 ###################################################
-### code chunk number 10: elec-classify
+### code chunk number 11: elec-classify
 ###################################################
 cl_elec <- tse_classify(m_elec, assignment = "modal")
 cl_elec
 
 
 ###################################################
-### code chunk number 11: elec-covariate
+### code chunk number 12: elec-covariate
 ###################################################
 other <- which(lab_elec == "Other")
 fc_elec <- tse_covariate(cl_elec, ~ PARTY, ref = other)
@@ -212,7 +300,7 @@ summary(fc_elec)
 
 
 ###################################################
-### code chunk number 12: elec-estimators
+### code chunk number 13: elec-estimators
 ###################################################
 fits_elec <- list(
   "ML, corrected SE" = fc_elec,
@@ -223,7 +311,7 @@ fits_elec <- list(
 
 
 ###################################################
-### code chunk number 13: elec-party-table
+### code chunk number 14: elec-party-table
 ###################################################
 party <- grep("^PARTY:", names(coef(fc_elec)), value = TRUE)
 est <- sapply(fits_elec, function(f) coef(f)[party])
@@ -274,6 +362,8 @@ body <- t(sapply(names(labels_est), function(e) {
 ## poLCA: PARTY is the second row of each class's coefficients
 one_cols <- match(c("Gore affinity", "Bush affinity"), lab_one[lab_one != "Other"])
 idx_party <- 2 * one_cols
+ratio_bush <- one_rb$est["PARTY", one_cols[2]] /
+  coef(fits_elec[["ML, corrected SE"]])[[sprintf("PARTY:C%d", which(lab_elec == "Bush affinity"))]]
 body <- rbind(body, party_row("One-step (\\pkg{poLCA})",
   one_rb$est["PARTY", one_cols], one_se[2, one_cols],
   one_rb$vcov[idx_party, idx_party, drop = FALSE]))
@@ -288,12 +378,12 @@ write_table(unname(body),
     "coefficients with standard errors, 95\\% Wald confidence intervals (all",
     "coefficients have $p < .001$), and the Wald test that party identification",
     "has no effect on class membership (2 df). Three-class models of the ANES",
-    "2000 data ($N = 1300$); the three-step estimators use modal assignment."),
+    paste0("2000 data ($N = ", nrow(elec), "$); the three-step estimators use modal assignment.")),
   label = "elec_party")
 
 
 ###################################################
-### code chunk number 14: elec-plot
+### code chunk number 15: elec-plot
 ###################################################
 party_x <- seq(1, 7, length.out = 101)
 p_three <- predict(fc_elec, newdata = data.frame(PARTY = party_x))
@@ -317,7 +407,7 @@ legend("topright", c("tseLCA (three-step)", "poLCA (one-step)"),
 
 
 ###################################################
-### code chunk number 15: elec-onecall
+### code chunk number 16: elec-onecall
 ###################################################
 fit_elec <- tseLCA(cbind(MORALG, CARESG, KNOWG, LEADG, DISHONG, INTELG,
   MORALB, CARESB, KNOWB, LEADB, DISHONB, INTELB) ~ PARTY, data = elec,
@@ -326,7 +416,7 @@ all.equal(coef(fit_elec), coef(fc_elec), tolerance = 1e-4)
 
 
 ###################################################
-### code chunk number 16: gss-download
+### code chunk number 17: gss-download
 ###################################################
 ## gss7677_tolerance.csv is an extract of GSScombined_1977original.tab from
 ## the replication archive of Bakk, Oberski & Vermunt (2014), Harvard
@@ -347,7 +437,7 @@ if (!file.exists("gss7677_tolerance.csv")) {
 
 
 ###################################################
-### code chunk number 17: gss-data
+### code chunk number 18: gss-data
 ###################################################
 gss <- read.csv("gss7677_tolerance.csv")
 gss$cohort <- factor(gss$cohort, 0:3,
@@ -356,11 +446,12 @@ gss$education <- factor(gss$education, 0:2,
   c("< 12 years", "12 years", "> 12 years"))
 gss$natrace <- factor(gss$natrace, 1:3,
   c("too little", "about right", "too much"))
-f_gss <- cbind(atheists, communists, militarists, racists, homosexuals) ~ 1
+f_gss <- cbind(atheists, communists, militarists, racists,
+  homosexuals) ~ 1
 
 
 ###################################################
-### code chunk number 18: gss-select (eval = FALSE)
+### code chunk number 19: gss-select (eval = FALSE)
 ###################################################
 ## set.seed(20260929)
 ## sel_gss <- tse_lca(f_gss, data = gss, nclass = 1:5,
@@ -369,7 +460,7 @@ f_gss <- cbind(atheists, communists, militarists, racists, homosexuals) ~ 1
 
 
 ###################################################
-### code chunk number 19: gss-select-run
+### code chunk number 20: gss-select-run
 ###################################################
 set.seed(20260929)
 sel_gss <- fit_or_load("sel_gss", tse_lca(f_gss, data = gss, nclass = 1:5,
@@ -378,7 +469,7 @@ m_gss <- sel_gss[[4]]
 
 
 ###################################################
-### code chunk number 20: gss-labels
+### code chunk number 21: gss-labels
 ###################################################
 ip <- item_probs(m_gss)
 rownames(ip) <- c("atheists", "communists", "militarists", "racists", "homosexuals")
@@ -414,27 +505,36 @@ onestep_gss <- function(n_cl) {
 }
 set.seed(20260930)
 one_gss <- fit_or_load("onestep_gss", lapply(1:5, onestep_gss))
-## BIC table of both examples (smallest value of each column in bold)
+## BIC tables of the two examples (smallest value of each column in bold)
 bic_col <- function(x) {
   out <- formatC(x, format = "f", digits = 1)
   out[which.min(x)] <- sprintf("\\textbf{%s}", out[which.min(x)])
-  c(out, rep("", 6 - length(x)))
+  out
 }
-body <- cbind(1:6, bic_col(as.data.frame(sel)$BIC),
-  bic_col(sapply(one, function(f) f$bic)),
-  bic_col(as.data.frame(sel_gss_cc)$BIC), bic_col(sapply(one_gss, function(f) f$bic)))
-write_table(body,
-  header = c(paste(" & \\multicolumn{2}{c}{ANES 2000 ($N = 1300$)} &",
-      "\\multicolumn{2}{c}{GSS 1976--77 ($N = 2668$)} \\\\"),
-    "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}",
-    tex_line("Classes ($T$)", rep(c("Three-step", "One-step"), 2))),
-  align = "c cc cc",
-  caption = paste("BIC of the three-step measurement model and of the one-step",
-    "latent class regression (\\pkg{poLCA}) on \\code{PARTY} (ANES) or on cohort",
-    "and education (GSS), for $T$ classes; the smallest value of each column is",
-    "in bold. Both approaches use the respondents with complete covariates."),
-  label = "bic")
-## the four-class one-step model: classes labelled from their profiles
+r2_col <- function(x) ifelse(is.na(x), "--", sub("^0", "", formatC(x, format = "f", digits = 2)))
+bic_table <- function(sel_fits, one_fits, covariates, data_name, n, label) {
+  three <- as.data.frame(sel_fits)
+  write_table(cbind(seq_along(three$BIC),
+      bic_col(three$AIC), bic_col(three$BIC), r2_col(three$entropy.R2),
+      bic_col(sapply(one_fits, function(f) f$aic)),
+      bic_col(sapply(one_fits, function(f) f$bic)),
+      r2_col(sapply(one_fits, function(f) entropy_r2(f$posterior)))),
+    header = c(" & \\multicolumn{3}{c}{Three-step} & \\multicolumn{3}{c}{One-step} \\\\",
+      "\\cmidrule(lr){2-4} \\cmidrule(lr){5-7}",
+      tex_line("Classes ($T$)", rep(c("AIC", "BIC", "Entropy $R^2$"), 2))),
+    align = "c ccc ccc",
+    caption = paste0("AIC, BIC, and entropy $R^2$ of the three-step measurement model and of the ",
+      "one-step latent class regression (\\pkg{poLCA}) on ", covariates, ", ", data_name,
+      " ($N = ", n, "$), for $T$ classes; the smallest AIC and BIC of each approach are in bold. ",
+      "Both approaches use the respondents with complete covariates. The posterior class ",
+      "probabilities of the one-step model also use the covariates, so its entropy $R^2$ is ",
+      "similar to or higher than that of the three-step model, which uses the items only."),
+    label = label)
+}
+bic_table(sel, one, "\\code{PARTY}", "ANES 2000", nrow(elec), "bic_elec")
+bic_table(sel_gss_cc, one_gss, "cohort and education", "GSS 1976--77", nrow(gss_cc),
+  "bic_gss")
+## the four-class one-step model: classes labeled from their profiles
 p1 <- one_gss[[4]]
 tol1 <- sapply(items_gss, function(it) p1$probs[[it]][, 2]) # P(tolerant)
 avg1 <- rowMeans(tol1)
@@ -448,6 +548,23 @@ lab_one_gss[big1] <- "Partially tolerant"
 lab_one_gss[small1] <- paste("Tolerant of", names(which.max(tol1[small1, ])))
 one_classes <- c("Intolerant", "Tolerant", "Partially tolerant", lab_one_gss[small1])
 ord1 <- match(one_classes, lab_one_gss)
+## the three-class one-step model (the number of classes selected by its BIC) and
+## the three-step model with three classes, labeled by the same rule
+label3 <- function(avg) {
+  lab <- character(3)
+  lab[which.max(avg)] <- "Tolerant"
+  lab[which.min(avg)] <- "Intolerant"
+  lab[setdiff(1:3, c(which.max(avg), which.min(avg)))] <- "Partially tolerant"
+  lab
+}
+p3 <- one_gss[[3]]
+lab_p3 <- label3(rowMeans(sapply(items_gss, function(it) p3$probs[[it]][, 2])))
+classes3 <- c("Intolerant", "Tolerant", "Partially tolerant")
+ord3 <- match(classes3, lab_p3)
+m3_gss <- sel_gss_cc[[3]]
+lab_m3 <- label3(colMeans(item_probs(m3_gss)))
+agree3 <- mean(lab_p3[max.col(p3$posterior)] ==
+  lab_m3[classes(tse_classify(m3_gss, assignment = "modal"))])
 ord_gss <- match(gss_classes, lab_gss)
 bakk_est <- rbind(size = c(.56, .23, .11, .10),
   atheists = c(.03, .98, .41, .61), communists = c(.04, .95, .59, .27),
@@ -457,41 +574,63 @@ bakk_se <- rbind(size = c(.02, .01, .03, .03),
   atheists = c(.01, .01, .06, .07), communists = c(.01, .02, .11, .07),
   militarists = c(.01, .02, .05, .06), racists = c(.01, .02, .06, .20),
   homosexuals = c(.01, .01, .07, .06))
-row_label <- function(row) if (row == "size") "Class size" else paste0("Tolerant of ", row)
+row_label <- function(row) {
+  if (row == "size") "Class size" else sprintf("\\shortstack[l]{Tolerant of\\\\%s}", row)
+}
 cm4 <- "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7} \\cmidrule(lr){8-9}"
-panel_a <- "\\multicolumn{9}{l}{\\textit{Three-step: measurement model ($N = 2689$)}} \\\\"
+panel_a <- sprintf("\\multicolumn{9}{l}{\\textit{Three-step: measurement model ($N = %d$)}} \\\\", G_N5)
+bakk_diff <- bakk_est
 for (row in rownames(bakk_est)) {
   s <- if (row == "size") prob_se(m_gss) else prob_se(m_gss, sprintf("P(%s|C)", row))
-  panel_a <- c(panel_a, tex_line(row_label(row),
+  bakk_diff[row, ] <- s["est", ord_gss] - bakk_est[row, ]
+  panel_a <- c(panel_a, tex_line_sp(row_label(row),
     as.vector(rbind(est_se(s["est", ord_gss], s["se", ord_gss]),
       est_se(bakk_est[row, ], bakk_se[row, ])))))
 }
+## largest difference from the estimates of Bakk et al., except for the probability
+## that the intolerant of right tolerate racists (on the boundary in our estimates)
+bakk_diff["racists", which(gss_classes == "Intolerant of right")] <- NA
+bakk_max <- max(abs(bakk_diff), na.rm = TRUE)
 panel_b <- c("\\midrule",
-  paste("\\multicolumn{9}{l}{\\textit{One-step: classes estimated with cohort and",
-    "education (\\pkg{poLCA}, $N = 2668$)}} \\\\"),
-  tex_line("", sprintf("\\multicolumn{2}{c}{%s}", one_classes)), cm4)
+  paste("\\multicolumn{9}{l}{\\textit{One-step, four classes, estimated with cohort and",
+    sprintf("education (\\pkg{poLCA}, $N = %d$)}} \\\\[3pt]", G_NCC)),
+  tex_line("", sprintf("\\multicolumn{2}{c}{%s}", wrap_hdr(one_classes))), cm4)
 for (row in rownames(bakk_est)) {
   est <- if (row == "size") p1$P else p1$probs[[row]][, 2]
   se <- if (row == "size") p1$P.se else p1$probs.se[[row]][, 2]
-  panel_b <- c(panel_b, tex_line(row_label(row),
+  panel_b <- c(panel_b, tex_line_sp(row_label(row),
     sprintf("\\multicolumn{2}{c}{%s}", est_se(est[ord1], se[ord1]))))
 }
-write_table(c(panel_a, panel_b),
-  header = c(paste(" &", paste(sprintf("\\multicolumn{2}{c}{%s}", gss_classes),
+panel_c <- c("\\midrule",
+  paste("\\multicolumn{9}{l}{\\textit{One-step, three classes",
+    sprintf("estimated with cohort and education (\\pkg{poLCA}, $N = %d$)}} \\\\[3pt]", G_NCC)),
+  tex_line("", sprintf("\\multicolumn{2}{c}{%s}", wrap_hdr(classes3))),
+  "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7}")
+for (row in rownames(bakk_est)) {
+  est <- if (row == "size") p3$P else p3$probs[[row]][, 2]
+  se <- if (row == "size") p3$P.se else p3$probs.se[[row]][, 2]
+  panel_c <- c(panel_c, tex_line_sp(row_label(row),
+    sprintf("\\multicolumn{2}{c}{%s}", est_se(est[ord3], se[ord3]))))
+}
+write_table(c(panel_a, panel_b, panel_c),
+  header = c(paste(" &", paste(sprintf("\\multicolumn{2}{c}{%s}", wrap_hdr(gss_classes)),
     collapse = " & "), "\\\\"), cm4,
     paste(" &", paste(rep("\\pkg{tseLCA} & Bakk et al.", 4), collapse = " & "), "\\\\")),
   align = "l cc cc cc cc",
-  caption = paste("Four-class models of tolerance for nonconformity (GSS 1976--77):",
-    "class sizes and probabilities of a tolerant answer, with standard errors in",
-    "parentheses. Top: the three-step measurement model, estimated by \\pkg{tseLCA}",
-    "and reported by \\citet[Table~7]{Bakk2014}. Bottom: the one-step latent class",
-    "regression on cohort and education, whose class sizes are averages over",
-    "respondents."),
+  caption = paste("Latent class models of tolerance for nonconformity (GSS 1976--77),",
+    "with class sizes and probabilities of a tolerant answer and standard errors in",
+    "parentheses. Top, the four-class three-step measurement model, estimated by",
+    "\\pkg{tseLCA} and reported by \\citet[Table~7]{Bakk2014}. Middle and bottom, the",
+    "one-step latent class regressions on cohort and education (\\pkg{poLCA}) with four",
+    "and with three classes, whose class sizes are averages over respondents.",
+    sprintf("The entropy $R^2$ is %s for the three-step and %s and %s for the one-step models.",
+      num(as.data.frame(sel_gss)$entropy.R2[4]), num(entropy_r2(p1$posterior)),
+      num(entropy_r2(p3$posterior)))),
   label = "gss_measurement")
 
 
 ###################################################
-### code chunk number 21: gss-covariate
+### code chunk number 22: gss-covariate
 ###################################################
 cl_gss <- tse_classify(m_gss, assignment = "proportional")
 intolerant <- which(lab_gss == "Intolerant")
@@ -500,26 +639,28 @@ anova(fc_gss)
 
 
 ###################################################
-### code chunk number 22: gss-covariate-table
+### code chunk number 23: gss-covariate-table
 ###################################################
 unc_gss <- tse_covariate(tse_classify(m_gss, assignment = "modal"),
   ~ cohort + education, method = "none", ref = intolerant)
 terms <- c("cohort1934-1951" = "Born 1934--1951", "cohort1915-1933" = "Born 1915--1933",
-  "cohort1914 or before" = "Born 1914 or before",
-  "education12 years" = "12 years of education",
-  "education> 12 years" = "More than 12 years of education")
+  "cohort1914 or before" = "\\shortstack[l]{Born 1914\\\\or before}",
+  "education12 years" = "\\shortstack[l]{12 years of\\\\education}",
+  "education> 12 years" = "\\shortstack[l]{More than 12\\\\years of education}")
 se_c <- sqrt(diag(vcov(fc_gss)))
 se_r <- sqrt(diag(vcov(update(fc_gss, se = "robust"))))
 se_u <- sqrt(diag(vcov(unc_gss)))
 panel_a <- "\\multicolumn{7}{l}{\\textit{Three-step (classes of the measurement model)}} \\\\"
+ratio_cu <- numeric(0) # corrected relative to uncorrected coefficients
 for (tm in names(terms)) {
   cells <- character(0)
   for (k in gss_classes[-1]) {
     nm <- sprintf("%s:C%d", tm, which(lab_gss == k))
+    ratio_cu <- c(ratio_cu, coef(fc_gss)[[nm]] / coef(unc_gss)[[nm]])
     cells <- c(cells, est_se(coef(fc_gss)[nm], se_c[nm]),
       est_se(coef(unc_gss)[nm], se_u[nm]))
   }
-  panel_a <- c(panel_a, tex_line(terms[[tm]], cells))
+  panel_a <- c(panel_a, tex_line_sp(terms[[tm]], cells))
 }
 ## one-step: poLCA's coefficients against its first class, re-expressed
 ## against its intolerant class
@@ -527,16 +668,29 @@ rb1 <- rebase_polca(p1, which(lab_one_gss == "Intolerant"))
 se1 <- matrix(sqrt(diag(rb1$vcov)), nrow(rb1$est), dimnames = dimnames(rb1$est))
 panel_b <- c("\\midrule",
   paste("\\multicolumn{7}{l}{\\textit{One-step: classes estimated with cohort and",
-    "education (\\pkg{poLCA})}} \\\\"),
-  tex_line("", sprintf("\\multicolumn{2}{c}{%s}", one_classes[-1])),
+    "education (\\pkg{poLCA})}} \\\\[3pt]"),
+  tex_line("", sprintf("\\multicolumn{2}{c}{%s}", wrap_hdr(one_classes[-1]))),
   "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7}")
 for (tm in names(terms)) {
   cols <- as.character(match(one_classes[-1], lab_one_gss))
-  panel_b <- c(panel_b, tex_line(terms[[tm]],
+  panel_b <- c(panel_b, tex_line_sp(terms[[tm]],
     sprintf("\\multicolumn{2}{c}{%s}", est_se(rb1$est[tm, cols], se1[tm, cols]))))
 }
-write_table(c(panel_a, panel_b),
-  header = c(paste(" &", paste(sprintf("\\multicolumn{2}{c}{%s}", gss_classes[-1]),
+## one-step with three classes, against its intolerant class
+rb3 <- rebase_polca(p3, which(lab_p3 == "Intolerant"))
+se3 <- matrix(sqrt(diag(rb3$vcov)), nrow(rb3$est), dimnames = dimnames(rb3$est))
+panel_c <- c("\\midrule",
+  paste("\\multicolumn{7}{l}{\\textit{One-step with three classes, cohort and",
+    "education (\\pkg{poLCA})}} \\\\[3pt]"),
+  tex_line("", sprintf("\\multicolumn{2}{c}{%s}", wrap_hdr(classes3[-1]))),
+  "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}")
+for (tm in names(terms)) {
+  cols <- as.character(match(classes3[-1], lab_p3))
+  panel_c <- c(panel_c, tex_line_sp(terms[[tm]],
+    sprintf("\\multicolumn{2}{c}{%s}", est_se(rb3$est[tm, cols], se3[tm, cols]))))
+}
+write_table(c(panel_a, panel_b, panel_c),
+  header = c(paste(" &", paste(sprintf("\\multicolumn{2}{c}{%s}", wrap_hdr(gss_classes[-1])),
     collapse = " & "), "\\\\"),
     "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} \\cmidrule(lr){6-7}",
     paste(" &", paste(rep("Corrected & Uncorrected", 3), collapse = " & "), "\\\\")),
@@ -546,15 +700,16 @@ write_table(c(panel_a, panel_b),
     "born after 1951, less than 12 years of education), with standard errors in",
     "parentheses. Top, corrected: ML three-step estimator with proportional",
     "assignment and standard errors corrected for the Step-1 uncertainty;",
-    "uncorrected: multinomial logit of the modal class assignments. Bottom: the",
-    "one-step latent class regression, whose classes differ from those of the",
-    "measurement model (Table~\\ref{tab:gss_measurement})."),
+    "uncorrected: multinomial logit of the modal class assignments. Middle and",
+    "bottom: the one-step latent class regression with four and with three",
+    "classes, whose classes differ from those of the measurement model",
+    "(Table~\\ref{tab:gss_measurement})."),
   label = "gss_covariate")
 nm_old <- sprintf("cohort1914 or before:C%d", which(lab_gss == "Intolerant of right"))
 
 
 ###################################################
-### code chunk number 23: gss-distal
+### code chunk number 24: gss-distal
 ###################################################
 fd_pol <- tse_distal(cl_gss, polviews ~ 1, family = "gaussian")
 omnibus_test(fd_pol)
@@ -562,7 +717,25 @@ fd_race <- tse_distal(cl_gss, natrace ~ 1, family = "multinomial")
 
 
 ###################################################
-### code chunk number 24: gss-combined
+### code chunk number 25: gss-distal-bch
+###################################################
+## the BCH estimates, compared with the ML estimates in the text
+fd_pol_bch <- tse_distal(cl_gss, polviews ~ 1, family = "gaussian", method = "BCH")
+fd_race_bch <- tse_distal(cl_gss, natrace ~ 1, family = "multinomial", method = "BCH")
+mu_left <- sprintf("mu_C%d", which(lab_gss == "Intolerant of left"))
+d_pol <- abs(coef(fd_pol) - coef(fd_pol_bch)[names(coef(fd_pol))])
+d_pol_other <- max(d_pol[setdiff(names(d_pol), mu_left)])
+d_pol_left <- d_pol[[mu_left]]
+d_race <- max(abs(coef(fd_race) - coef(fd_race_bch)[names(coef(fd_race))]))
+se_ratio_left <- sqrt(diag(vcov(fd_pol_bch)))[[mu_left]] / sqrt(diag(vcov(fd_pol)))[[mu_left]]
+## the same models with the covariates
+fc_gss_bch <- tse_covariate(cl_gss, ~ cohort + education, method = "BCH", ref = intolerant)
+fb_pol_bch <- tse_distal(fc_gss_bch, polviews ~ 1, family = "gaussian")
+fb_race_bch <- tse_distal(fc_gss_bch, natrace ~ 1, family = "multinomial")
+
+
+###################################################
+### code chunk number 26: gss-combined
 ###################################################
 fb_pol <- tse_distal(fc_gss, polviews ~ 1, family = "gaussian")
 fb_race <- tse_distal(fc_gss, natrace ~ 1, family = "multinomial")
@@ -570,72 +743,70 @@ summary(distal(fb_pol))
 
 
 ###################################################
-### code chunk number 25: gss-distal-tables
+### code chunk number 27: gss-distal-tables
 ###################################################
-fd_pol_bch <- tse_distal(cl_gss, polviews ~ 1, family = "gaussian", method = "BCH")
-pol_fits <- list(fd_pol, fd_pol_bch, fb_pol)
-body <- NULL
-for (k in gss_classes) {
-  nm <- sprintf("mu_C%d", which(lab_gss == k))
-  body <- rbind(body, c(k, sapply(pol_fits, function(f)
-    est_se(coef(f)[nm], sqrt(diag(vcov(f)))[nm]))))
+## two panels (distal outcome alone; with covariates), each with the ML and BCH estimators
+panel_title <- function(txt, ncol) sprintf("\\multicolumn{%d}{l}{\\textit{%s}} \\\\", ncol, txt)
+pol_panel <- function(fits, title) {
+  rows <- sapply(gss_classes, function(k) {
+    nm <- sprintf("mu_C%d", which(lab_gss == k))
+    tex_line(k, sapply(fits, function(f) est_se(coef(f)[nm], sqrt(diag(vcov(f)))[nm])))
+  })
+  c(panel_title(title, 3), unname(rows))
 }
-wald <- sapply(pol_fits, function(f) {
-  h <- omnibus_test(f)
-  sprintf("%.1f (%d)", h$statistic, as.integer(h$parameter))
-})
-write_table(body,
-  footer = c("\\midrule", paste("Wald test (df) &", paste(wald, collapse = " & "), "\\\\")),
-  header = c(" & \\multicolumn{2}{c}{Distal outcome only} & With covariates \\\\",
-    "\\cmidrule(lr){2-3} \\cmidrule(lr){4-4}", "Class & ML & BCH & ML \\\\"),
-  align = "l cc c",
+## omnibus Wald statistics of the four fits, for the captions
+wald_caption <- function(fits, what) {
+  w <- sapply(fits, function(f) sprintf("%.1f", omnibus_test(f)$statistic))
+  df <- as.integer(omnibus_test(fits[[1]])$parameter)
+  sprintf(paste("The omnibus Wald tests of equal %s across classes (%d df) are %s (ML) and",
+    "%s (BCH) for the distal outcome alone and %s (ML) and %s (BCH) with covariates."),
+    what, df, w[1], w[2], w[3], w[4])
+}
+write_table(c(pol_panel(list(fd_pol, fd_pol_bch), "Distal outcome only"), "\\midrule",
+    pol_panel(list(fb_pol, fb_pol_bch), "With covariates")),
+  header = "Class & ML & BCH \\\\",
+  align = "l cc",
   caption = paste("Class means of liberal (1) to conservative (7) self-placement",
-    "(\\code{polviews}), with standard errors in parentheses, and Wald tests of",
-    "equal means across classes. Proportional assignment; ``with covariates'':",
-    "class membership depends on cohort and education."),
+    "(\\code{polviews}), with standard errors in parentheses. Proportional",
+    "assignment; ``with covariates'': class membership depends on cohort and",
+    "education.", wald_caption(list(fd_pol, fd_pol_bch, fb_pol, fb_pol_bch), "means")),
   label = "gss_polviews")
 cats <- levels(gss$natrace)
-race_fits <- list(fd_race, fb_race)
-body <- NULL
-for (k in gss_classes) {
-  t <- which(lab_gss == k)
-  cells <- character(0)
-  for (f in race_fits) {
+race_panel <- function(fits, title) {
+  rows <- sapply(gss_classes, function(k) {
+    t <- which(lab_gss == k)
     nm <- sprintf("C%d:%s", t, cats)
-    cells <- c(cells, est_se(coef(f)[nm], sqrt(diag(vcov(f)))[nm]))
-  }
-  body <- rbind(body, c(k, cells))
+    tex_line(k, unlist(lapply(fits, function(f)
+      est_se(coef(f)[nm], sqrt(diag(vcov(f)))[nm]))))
+  })
+  c(panel_title(title, 7), unname(rows))
 }
-wald <- sapply(race_fits, function(f) {
-  h <- omnibus_test(f)
-  sprintf("\\multicolumn{3}{c}{%.1f (%d)}", h$statistic, as.integer(h$parameter))
-})
 cat_head <- paste(tools::toTitleCase(cats), collapse = " & ")
-write_table(body,
-  footer = c("\\midrule", paste("Wald test (df) &", wald[1], "&", wald[2], "\\\\")),
-  header = c(paste(" & \\multicolumn{3}{c}{Distal outcome only} &",
-    "\\multicolumn{3}{c}{With covariates} \\\\"),
+write_table(c(race_panel(list(fd_race, fd_race_bch), "Distal outcome only"), "\\midrule",
+    race_panel(list(fb_race, fb_race_bch), "With covariates")),
+  header = c(" & \\multicolumn{3}{c}{ML} & \\multicolumn{3}{c}{BCH} \\\\",
     "\\cmidrule(lr){2-4} \\cmidrule(lr){5-7}",
-    paste("Class &", cat_head, "&", cat_head, "\\\\")),
+    paste("Class &", paste(rep(cat_head, 2), collapse = " & "), "\\\\")),
   align = "l ccc ccc",
   caption = paste("Class distributions of views on spending to improve the",
     "conditions of Black Americans (\\code{natrace}), with standard errors in",
-    "parentheses, and Wald tests of equal distributions across classes. ML",
-    "estimator with proportional assignment; ``with covariates'': class",
-    "membership depends on cohort and education."),
+    "parentheses. Proportional assignment; ``with covariates'': class membership",
+    "depends on cohort and education.",
+    wald_caption(list(fd_race, fd_race_bch, fb_race, fb_race_bch), "distributions")),
   label = "gss_natrace")
 
 
 ###################################################
-### code chunk number 26: gss-onecall (eval = FALSE)
+### code chunk number 28: gss-onecall (eval = FALSE)
 ###################################################
 ## tseLCA(cbind(atheists, communists, militarists, racists, homosexuals) ~
 ##   cohort + education | polviews, data = gss, nclass = 4,
-##   assignment = "proportional", ref = intolerant, start = item_probs(m_gss))
+##   assignment = "proportional", ref = intolerant,
+##   start = item_probs(m_gss))
 
 
 ###################################################
-### code chunk number 27: further-fiml
+### code chunk number 29: further-fiml
 ###################################################
 m_fiml <- tse_lca(f_elec, data = election, nclass = 3, missing = "fiml")
 nobs(m_fiml)
@@ -643,7 +814,7 @@ round(class_sizes(m_fiml), 3)
 
 
 ###################################################
-### code chunk number 28: further-newdata (eval = FALSE)
+### code chunk number 30: further-newdata (eval = FALSE)
 ###################################################
 ## set.seed(20260930)
 ## m_76 <- tse_lca(f_gss, data = subset(gss, year == 1976), nclass = 4,
@@ -653,24 +824,36 @@ round(class_sizes(m_fiml), 3)
 
 
 ###################################################
-### code chunk number 29: further-newdata-run
+### code chunk number 31: further-newdata-run
 ###################################################
 set.seed(20260930)
 m_76 <- fit_or_load("m_76", tse_lca(f_gss, data = subset(gss, year == 1976),
   nclass = 4, control = tse_control(n_init = N_STARTS)))
 cl_77 <- tse_classify(m_76, newdata = subset(gss, year == 1977),
   assignment = "proportional")
+## the same model estimated on the 1977 respondents alone, with its classes
+## matched to the 1976 classes by the smallest total difference in item probabilities
+perms <- function(v) if (length(v) <= 1) list(v) else
+  do.call(c, lapply(seq_along(v), function(i) lapply(perms(v[-i]), function(p) c(v[i], p))))
+set.seed(20260930)
+m_77 <- fit_or_load("m_77", tse_lca(f_gss, data = subset(gss, year == 1977),
+  nclass = 4, control = tse_control(n_init = N_STARTS)))
+ip76 <- item_probs(m_76)
+ip77 <- item_probs(m_77)
+pm <- perms(1:4)
+match77 <- pm[[which.min(sapply(pm, function(p) sum(abs(ip77[, p] - ip76))))]]
+diff77 <- max(abs(ip77[, match77] - ip76))
 
 
 ###################################################
-### code chunk number 30: save-cache
+### code chunk number 32: save-cache
 ###################################################
 if (cache_changed) saveRDS(cache, cache_file)
 ## the common table width: measure every generated table
-natural <- c(list.files("tables", "_natural\\.tex$", full.names = TRUE),
-  list.files(file.path("tseLCA_sim_output", "tables"), "_natural\\.tex$",
+measure <- c(list.files("tables", "_measure\\.tex$", full.names = TRUE),
+  list.files(file.path("tseLCA_sim_output", "tables"), "_measure\\.tex$",
     full.names = TRUE))
-writeLines(sprintf("\\measuretable{\\input{%s}}", sub("\\.tex$", "", natural)),
+writeLines(sprintf("\\input{%s}", sub("\\.tex$", "", measure)),
   file.path("tables", "table_width.tex"))
 
 
