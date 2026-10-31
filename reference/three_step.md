@@ -601,7 +601,7 @@ omnibus_test(fit_cat)
 #>  Wald test of equal distal outcome distributions across latent classes
 #> 
 #> data:  multinomial distal outcome, 3 classes
-#> W = 3.6188, df = 4, p-value = 0.46
+#> W = 3.6353, df = 4, p-value = 0.4576
 #> 
 
 # Pass a pre-fitted measurement model to skip Step 1

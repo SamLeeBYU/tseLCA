@@ -412,7 +412,7 @@ omnibus_test(fm)
 #>  Wald test of equal distal outcome distributions across latent classes
 #> 
 #> data:  multinomial distal outcome, 3 classes
-#> W = 417.4, df = 4, p-value < 2.2e-16
+#> W = 462.37, df = 4, p-value < 2.2e-16
 ```
 
 ### Covariates and a distal outcome
@@ -567,7 +567,8 @@ for all changes, including bug fixes affecting results for polytomous
 indicators, Gaussian distal outcomes, and proportional-assignment ML
 distal models (version 2.0.0), and for the combined covariate and distal
 model and the BCH standard errors of Poisson and Binomial distal
-outcomes (version 2.1.0).
+outcomes (version 2.1.0), and for the ML standard errors of multinomial
+distal outcomes (version 2.1.1).
 
 ## References
 

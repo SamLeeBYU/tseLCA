@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tseLCA</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,7 +37,11 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2.1.0" id="tselca-210">tseLCA 2.1.0<a class="anchor" aria-label="anchor" href="#tselca-210"></a></h2>
+<h2 class="pkg-version" data-toc-text="2.1.1" id="tselca-211">tseLCA 2.1.1<a class="anchor" aria-label="anchor" href="#tselca-211"></a></h2>
+<ul><li>Bug fix: the variance matrix of the ML estimator of multinomial distal outcomes was computed as <code>H^-1 M H^-1</code>. The right-hand factor should be the transpose of <code>H^-1</code>, and for the multinomial ML estimator <code>H</code> (the Jacobian of the estimating equation) is not symmetric. The variance matrix was not symmetric, and the standard errors were wrong, both robust and corrected, and under both modal and proportional assignment. For a two-category outcome, the standard errors of the two categories of a class now agree, and they match those of the equivalent Binomial model. The point estimates, the BCH estimator (whose <code>H</code> is diagonal), and the other distal families (whose <code>H</code> is symmetric) are unchanged.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.1.0" id="tselca-210">tseLCA 2.1.0<a class="anchor" aria-label="anchor" href="#tselca-210"></a></h2><p class="text-muted">CRAN release: 2026-10-24</p>
 <ul><li>Bug fix: the standard errors of the BCH estimator of Poisson and Binomial distal outcomes used the inverse Hessian of the Gaussian case (a within-class variance divided by the BCH class weights) and were far too large or too small. They now use the variance function of the family. The point estimates and the Gaussian and multinomial results are unchanged.</li>
 <li>Bug fix: the safeguard of the BCH Newton-Raphson loop for covariate effects checked that the Hessian, which is negative definite, was positive semi-definite, and so stopped with “Hessian is not positive semi-definite” whenever the loop ran past a fifth of <code>step3.maxit</code> iterations, whatever the class separation. It now checks the negative Hessian. Fits that do not converge now stop with “BCH NR reached maximum iterations” instead.</li>
 <li>Bug fix: in the combined covariate and distal model (<code><a href="../reference/tse_distal.html">tse_distal()</a></code> of a <code><a href="../reference/tse_covariate.html">tse_covariate()</a></code> fit), the respondents were reassigned to classes with the covariate-adjusted posteriors, and the classification-error matrix was computed from those assignments. The assignments then depended on the covariates given the class, which biased the class means of the distal outcome (about -0.08 for a mean of 1 at n = 1000, mid separation). The model now keeps the Step-2 assignments and classification errors, which use the indicators only, and uses the covariate-adjusted class probabilities as the prior, as the corrected standard errors assume.</li>
