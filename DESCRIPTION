@@ -1,11 +1,13 @@
 Package: tseLCA
 Type: Package
 Title: Three-Step Estimation for Latent Class Analysis
-Version: 2.1.0
+Version: 2.1.1
 Authors@R: c(
     person("Sam", "Lee", email = "samlee@arizona.edu", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0009-0007-2977-6661")),
-    person("Jay", "Goodliffe", email = "goodliffe@byu.edu", role = c("aut", "cph"))
+    person("Jay", "Goodliffe", email = "goodliffe@byu.edu", role = c("aut", "cph"),
+           comment = c(ORCID = "0000-0001-8272-7235")
+    )
     )
 Description: Bias-adjusted three-step estimation of latent class models with
     covariates and distal outcomes. The latent class measurement model is
