@@ -432,21 +432,19 @@ fb
 #>   Log-lik: -4176.1391 (df = 26)   AIC: 8404.28   BIC: 8531.88
 #> 
 #> Covariate effects on class membership (multinomial logit):
-#>                Estimate Std. Error z value Pr(>|z|)    
-#> (Intercept):C2  1.96000    0.24865   7.882 3.21e-15 ***
-#> Zp:C2          -0.90913    0.11546  -7.874 3.43e-15 ***
-#> (Intercept):C3 -3.79821    0.37232 -10.201  < 2e-16 ***
-#> Zp:C3           1.03333    0.09398  10.996  < 2e-16 ***
-#> ---
-#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#>                Estimate Std. Error
+#> (Intercept):C2   1.9600      0.249
+#> Zp:C2           -0.9091      0.115
+#> (Intercept):C3  -3.7982      0.372
+#> Zp:C3            1.0333      0.094
 #> 
 #> Distal outcome means by class:
-#>       Estimate Std. Error z value Pr(>|z|)    
-#> mu_C1 -0.89069    0.05563 -16.010   <2e-16 ***
-#> mu_C2  1.06501    0.06687  15.926   <2e-16 ***
-#> mu_C3 -0.08288    0.05691  -1.456    0.145    
-#> ---
-#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#>       Estimate Std. Error
+#> mu_C1 -0.89069      0.056
+#> mu_C2  1.06501      0.067
+#> mu_C3 -0.08288      0.057
+#> 
+#> Use summary() for z values, p-values, and the entropy R-squared.
 ```
 
 ## All steps in one call

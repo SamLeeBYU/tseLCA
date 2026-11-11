@@ -1,8 +1,10 @@
 # Summarize a fitted tseLCA model
 
-[`summary()`](https://rdrr.io/r/base/summary.html) collects fit
-statistics and coefficient tables; printing the result formats the
-tables with
+[`print()`](https://rdrr.io/r/base/print.html) of a fitted model is
+brief: the header, fit statistics, and the estimates with their standard
+errors. [`summary()`](https://rdrr.io/r/base/summary.html) collects fit
+statistics and the full coefficient tables (with z values and p-values);
+printing the result formats the tables with
 [`stats::printCoefmat()`](https://rdrr.io/r/stats/printCoefmat.html).
 The coefficient table (columns `Estimate`, `Std. Error`, `z value`,
 `Pr(>|z|)`) can be extracted with `coef(summary(fit))`.

@@ -1,6 +1,26 @@
 # Changelog
 
+## tseLCA 2.1.2
+
+- [`print()`](https://rdrr.io/r/base/print.html) of a fitted structural
+  model is now compact. It gives the header, the fit statistics, and the
+  estimates with their standard errors. It previously gave the same
+  output as [`summary()`](https://rdrr.io/r/base/summary.html), which
+  remains the full report (z values, p-values, significance stars, and
+  the covariate-adjusted entropy R-squared).
+- The deprecated
+  [`three_step()`](https://samleebyu.github.io/tseLCA/reference/three_step.md)
+  is now documented with `\keyword{internal}`, so it no longer appears
+  in
+  [`help(package = "tseLCA")`](https://samleebyu.github.io/tseLCA/reference).
+  It is still exported and works as before.
+- [`tse_twostep()`](https://samleebyu.github.io/tseLCA/reference/tse_twostep.md)
+  has a clearer help title, “Two-step estimation of covariate effects
+  (Bakk and Kuha 2018)”.
+
 ## tseLCA 2.1.1
+
+CRAN release: 2026-10-31
 
 - Bug fix: the variance matrix of the ML estimator of multinomial distal
   outcomes was computed as `H^-1 M H^-1`. The right-hand factor should

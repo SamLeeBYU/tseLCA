@@ -53,7 +53,7 @@ Relate the classes to covariates and distal outcomes.
 - [`tse_distal()`](https://samleebyu.github.io/tseLCA/reference/tse_distal.md)
   : Relate latent classes to a distal outcome (Step 3)
 - [`tse_twostep()`](https://samleebyu.github.io/tseLCA/reference/tse_twostep.md)
-  : Two-step estimates of covariate effects
+  : Two-step estimation of covariate effects (Bakk and Kuha 2018)
 - [`predict(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/predict.tseLCA_covariate.md)
   : Class-membership probabilities from a covariate model
 - [`relevel(`*`<tseLCA_covariate>`*`)`](https://samleebyu.github.io/tseLCA/reference/relevel.tseLCA_covariate.md)
