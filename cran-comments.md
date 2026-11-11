@@ -1,21 +1,23 @@
 ## Submission
 
-This is a patch release (2.1.1) of tseLCA, which is currently on CRAN as 2.1.0
-(published 2026-10-24). It fixes one estimation error in Step 3. We submit it
-soon after 2.1.0 because the error affects reported standard errors.
+This is a minor update (2.1.2) of tseLCA, which is currently on CRAN as 2.1.1.
+It changes the printed output and the help index only (per one reviewer's request from JSS). No estimates, standard
+errors, or function signatures change.
 
-* The variance matrix of the maximum likelihood estimator of multinomial distal
-  outcomes was computed as H^-1 M H^-1. Because H is not symmetric for this
-  estimator, the right-hand factor must be the transpose of H^-1. The variance
-  matrix was not symmetric and the standard errors were wrong. Point estimates
-  and the other distal families are unchanged.
+* `print()` of a fitted structural model is now brief (header, fit statistics,
+  and estimates with standard errors). It previously duplicated `summary()`,
+  which remains the full report.
+* The deprecated `three_step()` is now marked `\keyword{internal}` so it no
+  longer appears in the package help index. It is still exported and works as
+  before.
+* `tse_twostep()` has a clearer help title.
 
 No functions were added or removed. See NEWS.md.
 
 ## Test environments
 
 * local: Windows 11, R 4.5.1
-* win-builder: R-devel (2026-10-30 r90805 ucrt), Windows Server 2022
+* win-builder: R-devel (2026-11-10 r90874 ucrt), Windows Server 2022
 
 ## R CMD check results
 
